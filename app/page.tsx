@@ -214,6 +214,8 @@ export default function AppPage() {
       setSeason(prev => prev ? { ...prev, games: [...prev.games, game!].sort((a, b) => a.week_start.localeCompare(b.week_start)) } : prev)
     }
 
+    if (!game) return  // TypeScript guard — game is always defined at this point
+
     // Ensure inning exists for this date
     if (!game.innings.find(i => i.date === date)) {
       const iid = 'i_' + date + '_' + Date.now()
