@@ -1,19 +1,40 @@
-import { createClient } from '@/lib/supabase/server'
+import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { NextResponse } from 'next/server'
 
 export async function GET(request: Request) {
-  const { searchParams, origin } = new URL(request.url)
-  const code = searchParams.get('code')
-  const next = searchParams.get('next') ?? '/'
+  const requestUrl = new URL(request.url)
+  const code   = requestUrl.searchParams.get('code')
+  const origin = requestUrl.origin
+  const next   = requestUrl.searchParams.get('next') ?? '/'
 
   if (code) {
-    const supabase = createClient()
+    // Create the redirect response first so we can attach cookies to it
+    const response = NextResponse.redirect(`${origin}${next}`)
+
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return request.cookies.getAll()
+          },
+          setAll(cookiesToSet: { name: string; value: string; options: CookieOptions }[]) {
+            cookiesToSet.forEach(({ name, value, options }) => {
+              response.cookies.set(name, value, options)
+            })
+          },
+        },
+      }
+    )
+
     const { error } = await supabase.auth.exchangeCodeForSession(code)
     if (!error) {
-      return NextResponse.redirect(`${origin}${next}`)
+      return response
     }
+
     console.error('exchangeCodeForSession error:', JSON.stringify(error))
-    return NextResponse.redirect(`${origin}/login?error=${encodeURIComponent(error.message)}`)
+    return NextResponse.redirect(`${origin}/login?error=${encodeURIComponent(String(error))}`)
   }
 
   return NextResponse.redirect(`${origin}/login?error=no_code`)
