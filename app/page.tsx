@@ -12,6 +12,7 @@ import {
 import AppHeader    from '@/components/AppHeader'
 import SeasonGate   from '@/components/SeasonGate'
 import SeasonRecap  from '@/components/SeasonRecap'
+import PastSeasons  from '@/components/PastSeasons'
 import Scoreboard   from '@/components/Scoreboard'
 import SeasonGoals  from '@/components/SeasonGoals'
 import DailyQuote   from '@/components/DailyQuote'
@@ -26,7 +27,8 @@ export default function AppPage() {
   const [viewDate,  setViewDate]  = useState<string | null>(null)
   const [loading,   setLoading]   = useState(true)
   const [toast,     setToast]     = useState<string | null>(null)
-  const [recapSeason, setRecapSeason] = useState<FullSeason | null>(null)
+  const [recapSeason,    setRecapSeason]    = useState<FullSeason | null>(null)
+  const [showPastSeasons, setShowPastSeasons] = useState(false)
   const router  = useRouter()
   const supabase = createClient()
 
@@ -398,6 +400,16 @@ export default function AppPage() {
     )
   }
 
+  if (showPastSeasons) {
+    return (
+      <PastSeasons
+        userId={user!.id}
+        sport={profile?.sport ?? 'softball'}
+        onBack={() => setShowPastSeasons(false)}
+      />
+    )
+  }
+
   if (recapSeason) {
     return (
       <SeasonRecap
@@ -434,6 +446,7 @@ export default function AppPage() {
         streak={streak}
         sport={sport}
         profile={profile}
+        onPastSeasons={() => setShowPastSeasons(true)}
         onEndSeason={handleEndSeason}
         onSignOut={handleSignOut}
       />
