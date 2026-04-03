@@ -140,7 +140,7 @@ export default function OffenseSection({
             disabled={!canClose}
             className={`w-full py-3.5 rounded-xl font-black text-sm transition-all ${
               canClose
-                ? 'bg-gradient-to-r from-brand-orange to-[#FF4500] text-white shadow-lg hover:opacity-90 active:scale-[0.98]'
+                ? 'bg-gradient-to-r from-brand-orange to-[#FF4500] text-white shadow-lg hover:opacity-90 active:scale-[0.98] animate-pulse'
                 : 'bg-slate-100 text-slate-300 cursor-not-allowed'
             }`}
           >

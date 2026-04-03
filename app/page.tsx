@@ -9,10 +9,11 @@ import {
   today, getWeekStart, getWeekEnd, inningNumber,
   countOuts, inningResult, gameResult, getDailyQuote, currentStreak,
 } from '@/lib/game-logic'
-import AppHeader    from '@/components/AppHeader'
-import SeasonGate   from '@/components/SeasonGate'
-import SeasonRecap  from '@/components/SeasonRecap'
-import PastSeasons  from '@/components/PastSeasons'
+import AppHeader      from '@/components/AppHeader'
+import SeasonGate     from '@/components/SeasonGate'
+import SeasonRecap    from '@/components/SeasonRecap'
+import PastSeasons    from '@/components/PastSeasons'
+import WinCelebration from '@/components/WinCelebration'
 import Scoreboard   from '@/components/Scoreboard'
 import SeasonGoals  from '@/components/SeasonGoals'
 import DailyQuote   from '@/components/DailyQuote'
@@ -27,8 +28,9 @@ export default function AppPage() {
   const [viewDate,  setViewDate]  = useState<string | null>(null)
   const [loading,   setLoading]   = useState(true)
   const [toast,     setToast]     = useState<string | null>(null)
-  const [recapSeason,    setRecapSeason]    = useState<FullSeason | null>(null)
-  const [showPastSeasons, setShowPastSeasons] = useState(false)
+  const [recapSeason,      setRecapSeason]      = useState<FullSeason | null>(null)
+  const [showPastSeasons,  setShowPastSeasons]  = useState(false)
+  const [showWinCelebration, setShowWinCelebration] = useState(false)
   const router  = useRouter()
   const supabase = createClient()
 
@@ -340,7 +342,11 @@ export default function AppPage() {
       await supabase.from('games').update({ result: gr }).eq('id', viewGame.id)
       updateGame(viewGame.id, { result: gr })
     }
-    showToast(result === 'WIN' ? '🏆 Inning WIN! Great work!' : '💪 Inning closed. Get \'em tomorrow!')
+    if (result === 'WIN') {
+      setShowWinCelebration(true)
+    } else {
+      showToast('💪 Inning closed. Get \'em tomorrow!')
+    }
   }
 
   // ===== REFLECTION =====
@@ -440,7 +446,7 @@ export default function AppPage() {
   const quote       = getDailyQuote()
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+    <div className="min-h-screen bg-gradient-to-br from-slate-100 via-blue-50 to-indigo-100">
       <AppHeader
         record={record}
         streak={streak}
@@ -535,6 +541,10 @@ export default function AppPage() {
           </div>
         )}
       </div>
+
+      {showWinCelebration && (
+        <WinCelebration onDismiss={() => setShowWinCelebration(false)} />
+      )}
 
       {/* Toast */}
       {toast && (

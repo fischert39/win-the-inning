@@ -22,9 +22,11 @@ export default function DefenseSection({ inning, onToggle, onSaveTask }: Props) 
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
       {/* Header */}
-      <div className="px-5 pt-5 pb-3 flex items-center justify-between">
+      <div className={`px-5 pt-5 pb-3 flex items-center justify-between transition-colors ${outs === 3 ? 'bg-green-50' : ''}`}>
         <div>
-          <h2 className="text-brand-navy font-black text-base">🛡️ Defense — Get 3 Outs</h2>
+          <h2 className={`font-black text-base transition-colors ${outs === 3 ? 'text-brand-green' : 'text-brand-navy'}`}>
+            🛡️ Defense — {outs === 3 ? '3 Outs! Great job!' : 'Get 3 Outs'}
+          </h2>
           <p className="text-slate-400 text-xs mt-0.5">Complete your Mind, Spirit &amp; Body tasks</p>
         </div>
         <div className="flex flex-col items-end gap-1">
@@ -32,13 +34,15 @@ export default function DefenseSection({ inning, onToggle, onSaveTask }: Props) 
             {[0, 1, 2].map(i => (
               <span
                 key={i}
-                className={`w-3 h-3 rounded-full transition-all ${
-                  i < outs ? 'bg-brand-orange scale-110' : 'bg-slate-200'
+                className={`w-3 h-3 rounded-full transition-colors ${
+                  i < outs ? 'bg-brand-orange animate-pop' : 'bg-slate-200'
                 }`}
               />
             ))}
           </div>
-          <span className="text-xs font-bold text-slate-500">{outs}/3 Outs</span>
+          <span className={`text-xs font-bold transition-colors ${outs === 3 ? 'text-brand-green' : 'text-slate-500'}`}>
+            {outs}/3 Outs
+          </span>
         </div>
       </div>
 
