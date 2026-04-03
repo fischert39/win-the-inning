@@ -1,6 +1,6 @@
 export type Sport      = 'softball' | 'baseball'
 export type Status     = 'IN_PROGRESS' | 'CLOSED'
-export type GameResult = 'WIN' | 'LOSS' | 'IN_PROGRESS'
+export type GameResult = 'WIN' | 'LOSS' | 'TIE' | 'IN_PROGRESS'
 export type HitType    = 'single' | 'double' | 'triple' | 'homer'
 
 export interface Profile {

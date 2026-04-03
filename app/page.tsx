@@ -7,7 +7,7 @@ import { createClient } from '@/lib/supabase/client'
 import type { Profile, FullSeason, FullGame, FullInning, OffenseGoal, SeasonGoal, Sport, HitType, GameResult, Status } from '@/types'
 import {
   today, getWeekStart, getWeekEnd, inningNumber,
-  countOuts, inningResult, gameResult, getDailyQuote, currentStreak,
+  countOuts, simulateRuns, inningResult, gameResult, getDailyQuote, currentStreak, getPrevDate,
 } from '@/lib/game-logic'
 import AppHeader      from '@/components/AppHeader'
 import SeasonGate     from '@/components/SeasonGate'
@@ -239,7 +239,29 @@ export default function AppPage() {
         })
         .select().single()
       if (!newInning) return
-      const inning: FullInning = { ...newInning, offense_goals: [] }
+      let offenseGoals: OffenseGoal[] = []
+
+      // Auto-populate from previous day's future_goals
+      const prevDate    = getPrevDate(date)
+      const prevInning  = season.games.flatMap(g => g.innings).find(i => i.date === prevDate)
+      if (prevInning?.future_goals?.trim()) {
+        const lines = prevInning.future_goals.split('\n').map((l: string) => l.trim()).filter(Boolean)
+        const inserts = lines.map((text: string, idx: number) => ({
+          id: 'r_' + Date.now() + '_' + idx,
+          user_id: user.id,
+          inning_id: iid,
+          goal: text,
+          completed: false,
+          hit_type: 'single' as const,
+          sort_order: idx,
+        }))
+        if (inserts.length > 0) {
+          const { data: inserted } = await supabase.from('offense_goals').insert(inserts).select()
+          if (inserted) offenseGoals = inserted
+        }
+      }
+
+      const inning: FullInning = { ...newInning, offense_goals: offenseGoals }
       setSeason(prev => !prev ? prev : {
         ...prev,
         games: prev.games.map(g =>
@@ -324,12 +346,9 @@ export default function AppPage() {
 
   async function handleCloseInning() {
     if (!viewInning || viewInning.status === 'CLOSED') return
-    if (viewInning.offense_goals.length < viewInning.target_goals) {
-      showToast(`Add ${viewInning.target_goals - viewInning.offense_goals.length} more goal(s) first!`)
-      return
-    }
-    const outs      = countOuts(viewInning)
-    const result    = (outs === 3 ? 'WIN' : 'LOSS') as GameResult
+    const outs   = countOuts(viewInning)
+    const runs   = simulateRuns(viewInning.offense_goals)
+    const result = (outs === 3 ? (runs > 0 ? 'WIN' : 'TIE') : 'LOSS') as GameResult
     const closedAt  = new Date().toISOString()
     const updates   = { status: 'CLOSED' as Status, closed_at: closedAt, result }
     updateInning(viewInning.id, updates)
@@ -344,6 +363,8 @@ export default function AppPage() {
     }
     if (result === 'WIN') {
       setShowWinCelebration(true)
+    } else if (result === 'TIE') {
+      showToast('🤝 Tie inning — all outs, but no runs scored!')
     } else {
       showToast('💪 Inning closed. Get \'em tomorrow!')
     }
@@ -462,6 +483,7 @@ export default function AppPage() {
           games={season.games}
           todayStr={todayStr}
           viewDate={vDate}
+          seasonStartDate={season.start_date}
           onViewDate={handleViewDate}
         />
 
@@ -529,7 +551,6 @@ export default function AppPage() {
               onToggleGoal={handleToggleGoal}
               onSetHitType={handleSetHitType}
               onDeleteGoal={handleDeleteGoal}
-              onAdjustTarget={handleAdjustTarget}
               onCloseInning={handleCloseInning}
             />
 

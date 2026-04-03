@@ -11,7 +11,6 @@ interface Props {
   onToggleGoal:    (id: string) => void
   onSetHitType:    (id: string, type: HitType) => void
   onDeleteGoal:    (id: string) => void
-  onAdjustTarget:  (delta: number) => void
   onCloseInning:   () => void
 }
 
@@ -43,14 +42,12 @@ function BaseDiamond({ goals }: { goals: OffenseGoal[] }) {
 
 export default function OffenseSection({
   inning, sportEmoji,
-  onAddGoal, onSaveGoalText, onToggleGoal, onSetHitType, onDeleteGoal,
-  onAdjustTarget, onCloseInning,
+  onAddGoal, onSaveGoalText, onToggleGoal, onSetHitType, onDeleteGoal, onCloseInning,
 }: Props) {
-  const closed = inning.status === 'CLOSED'
-  const goals  = inning.offense_goals
-  const runs   = simulateRuns(goals)
-  const need   = Math.max(0, inning.target_goals - goals.length)
-  const canClose = goals.length >= inning.target_goals
+  const closed   = inning.status === 'CLOSED'
+  const goals    = inning.offense_goals
+  const runs     = simulateRuns(goals)
+  const showAdd  = !closed && (goals.length === 0 || goals[goals.length - 1].goal.trim() !== '')
 
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
@@ -104,47 +101,20 @@ export default function OffenseSection({
       {/* Footer */}
       {!closed && (
         <div className="px-5 pb-5 space-y-3">
-          {/* Target stepper + add button */}
-          <div className="flex items-center gap-3">
+          {showAdd && (
             <button
               onClick={onAddGoal}
-              className="flex-1 bg-slate-50 hover:bg-slate-100 border border-dashed border-slate-200 hover:border-brand-orange text-slate-500 hover:text-brand-orange rounded-xl py-2.5 text-sm font-semibold transition-all"
+              className="w-full bg-slate-50 hover:bg-slate-100 border border-dashed border-slate-200 hover:border-brand-orange text-slate-500 hover:text-brand-orange rounded-xl py-2.5 text-sm font-semibold transition-all"
             >
-              + Add Goal{need > 0 ? ` (need ${need} more)` : ''}
+              + Add {goals.length === 0 ? 'a goal' : 'another goal'}
             </button>
+          )}
 
-            <div className="flex items-center gap-1 bg-slate-50 rounded-xl px-2 py-1.5 border border-slate-100">
-              <button
-                onClick={() => onAdjustTarget(-1)}
-                disabled={inning.target_goals <= 1}
-                className="w-6 h-6 flex items-center justify-center text-slate-400 hover:text-brand-navy disabled:opacity-30 font-bold text-lg leading-none"
-              >
-                −
-              </button>
-              <span className="text-brand-navy font-black text-sm w-4 text-center tabular-nums">
-                {inning.target_goals}
-              </span>
-              <button
-                onClick={() => onAdjustTarget(1)}
-                disabled={inning.target_goals >= 15}
-                className="w-6 h-6 flex items-center justify-center text-slate-400 hover:text-brand-navy disabled:opacity-30 font-bold text-lg leading-none"
-              >
-                +
-              </button>
-            </div>
-          </div>
-
-          {/* Close inning button */}
           <button
             onClick={onCloseInning}
-            disabled={!canClose}
-            className={`w-full py-3.5 rounded-xl font-black text-sm transition-all ${
-              canClose
-                ? 'bg-gradient-to-r from-brand-orange to-[#FF4500] text-white shadow-lg hover:opacity-90 active:scale-[0.98] animate-pulse'
-                : 'bg-slate-100 text-slate-300 cursor-not-allowed'
-            }`}
+            className="w-full py-3.5 rounded-xl font-black text-sm transition-all bg-gradient-to-r from-brand-orange to-[#FF4500] text-white shadow-lg hover:opacity-90 active:scale-[0.98] animate-pulse"
           >
-            {canClose ? '🔒 Close the Inning' : `Add ${need} more goal${need !== 1 ? 's' : ''} to close`}
+            🔒 Close the Inning
           </button>
         </div>
       )}

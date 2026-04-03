@@ -1,57 +1,87 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import type { FullGame, FullInning } from '@/types'
-import { getWeekDates, dayShort, inningResult, gameResult, simulateRuns, countOuts } from '@/lib/game-logic'
+import { getWeekDates, getWeekStart, toDateKey, dayShort, inningResult, gameResult, simulateRuns, countOuts } from '@/lib/game-logic'
 
 interface Props {
-  games:       FullGame[]
-  todayStr:    string
-  viewDate:    string
-  onViewDate:  (date: string) => void
+  games:            FullGame[]
+  todayStr:         string
+  viewDate:         string
+  seasonStartDate:  string
+  onViewDate:       (date: string) => void
 }
 
-export default function Scoreboard({ games, todayStr, viewDate, onViewDate }: Props) {
-  // Find the game containing todayStr (or viewDate)
-  const activeDate  = viewDate || todayStr
-  const activeGame  = games.find(g => g.week_start <= activeDate && g.week_end >= activeDate)
-    ?? games.find(g => g.week_start <= todayStr && g.week_end >= todayStr)
-    ?? games[games.length - 1]
+export default function Scoreboard({ games, todayStr, viewDate, seasonStartDate, onViewDate }: Props) {
+  const [displayWeekStart, setDisplayWeekStart] = useState(() => getWeekStart(viewDate || todayStr))
 
-  if (!activeGame) return null
+  useEffect(() => {
+    setDisplayWeekStart(getWeekStart(viewDate || todayStr))
+  }, [viewDate, todayStr])
 
-  const dates  = getWeekDates(activeGame.week_start)
+  const todayWeekStart   = getWeekStart(todayStr)
+  const seasonWeekStart  = getWeekStart(seasonStartDate)
+  const canGoPrev        = displayWeekStart > seasonWeekStart
+  const canGoNext        = displayWeekStart < todayWeekStart
+
+  function shiftWeek(delta: number) {
+    const d = new Date(displayWeekStart + 'T12:00:00')
+    d.setDate(d.getDate() + delta * 7)
+    setDisplayWeekStart(toDateKey(d))
+  }
+
+  const activeGame = games.find(g => g.week_start === displayWeekStart) ?? null
+  const dates      = getWeekDates(displayWeekStart)
   const inningMap: Record<string, FullInning> = {}
-  for (const inn of activeGame.innings) inningMap[inn.date] = inn
+  for (const inn of (activeGame?.innings ?? [])) inningMap[inn.date] = inn
 
-  const totalRuns  = activeGame.innings.reduce((s, i) => s + simulateRuns(i.offense_goals), 0)
-  const gResult    = gameResult(activeGame.innings)
-  const inningWins = activeGame.innings.filter(i => inningResult(i) === 'WIN').length
-  const winsNeeded = 5
+  const totalRuns = activeGame?.innings.reduce((s, i) => s + simulateRuns(i.offense_goals), 0) ?? 0
+  const gResult   = activeGame ? gameResult(activeGame.innings) : null
+  const inningWins = (activeGame?.innings ?? []).filter(i => inningResult(i) === 'WIN').length
+  const winsNeeded = 4 // mathematical lock-in: win > loss + remaining means you need 4 wins typically
 
   return (
     <div className="bg-brand-navy rounded-2xl p-4 mb-4 shadow-xl overflow-x-auto scrollbar-hide">
-      {/* Week label */}
+      {/* Week label + navigation */}
       <div className="flex items-center justify-between mb-3 px-1">
-        <span className="text-white/40 text-xs font-bold uppercase tracking-widest">
-          Week of {new Date(activeGame.week_start + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-        </span>
-        {gResult !== 'IN_PROGRESS' && (
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => shiftWeek(-1)}
+            disabled={!canGoPrev}
+            className="text-white/40 hover:text-white disabled:opacity-20 transition-colors font-bold text-sm px-1"
+          >
+            ‹
+          </button>
+          <span className="text-white/40 text-xs font-bold uppercase tracking-widest">
+            Week of {new Date(displayWeekStart + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+          </span>
+          <button
+            onClick={() => shiftWeek(1)}
+            disabled={!canGoNext}
+            className="text-white/40 hover:text-white disabled:opacity-20 transition-colors font-bold text-sm px-1"
+          >
+            ›
+          </button>
+        </div>
+        {gResult && gResult !== 'IN_PROGRESS' && (
           <span className={`text-xs font-black px-2 py-0.5 rounded-full ${
-            gResult === 'WIN' ? 'bg-brand-green/20 text-brand-green' : 'bg-brand-red/20 text-brand-red'
+            gResult === 'WIN'  ? 'bg-brand-green/20 text-brand-green' :
+            gResult === 'TIE'  ? 'bg-yellow-500/20 text-yellow-400'   :
+                                 'bg-brand-red/20 text-brand-red'
           }`}>
-            {gResult === 'WIN' ? '🏆 GAME WIN' : '❌ GAME L'}
+            {gResult === 'WIN' ? '🏆 GAME WIN' : gResult === 'TIE' ? '🤝 GAME TIE' : '❌ GAME L'}
           </span>
         )}
       </div>
 
       {/* Win progress — only while game is in progress */}
-      {gResult === 'IN_PROGRESS' && (
+      {gResult === 'IN_PROGRESS' && activeGame && (
         <div className="mb-3 px-1">
           <div className="flex items-center justify-between mb-1.5">
             <span className="text-white/50 text-[10px] font-semibold">
-              Win {winsNeeded - inningWins > 0
-                ? `${winsNeeded - inningWins} more inning${winsNeeded - inningWins !== 1 ? 's' : ''} to win the game`
-                : 'Game secured!'}
+              {inningWins >= winsNeeded
+                ? 'Game secured!'
+                : `${winsNeeded - inningWins} more win${winsNeeded - inningWins !== 1 ? 's' : ''} to lock up the game`}
             </span>
             <span className="text-white/50 text-[10px] font-bold tabular-nums">{inningWins}/{winsNeeded}</span>
           </div>
@@ -71,16 +101,17 @@ export default function Scoreboard({ games, todayStr, viewDate, onViewDate }: Pr
       {/* Grid */}
       <div className="flex gap-1.5 min-w-max">
         {dates.map((date, idx) => {
-          const inn      = inningMap[date]
-          const isToday  = date === todayStr
+          const inn       = inningMap[date]
+          const isToday   = date === todayStr
           const isViewing = date === viewDate
-          const isFuture = date > todayStr
-          const res      = inn ? inningResult(inn) : null
-          const runs     = inn ? simulateRuns(inn.offense_goals) : 0
-          const outs     = inn ? countOuts(inn) : 0
+          const isFuture  = date > todayStr
+          const res       = inn ? inningResult(inn) : null
+          const runs      = inn ? simulateRuns(inn.offense_goals) : 0
+          const outs      = inn ? countOuts(inn) : 0
 
           let cellBg = 'bg-white/5 hover:bg-white/10'
           if (res === 'WIN')  cellBg = 'bg-brand-green/20 hover:bg-brand-green/30'
+          if (res === 'TIE')  cellBg = 'bg-yellow-500/20  hover:bg-yellow-500/30'
           if (res === 'LOSS') cellBg = 'bg-brand-red/20   hover:bg-brand-red/30'
           if (isViewing)      cellBg += ' ring-2 ring-brand-orange'
           if (isToday && !isViewing) cellBg += ' ring-2 ring-white/30'
@@ -99,6 +130,8 @@ export default function Scoreboard({ games, todayStr, viewDate, onViewDate }: Pr
                 <span className="text-white/20 text-xs">–</span>
               ) : res === 'WIN' ? (
                 <span className="text-brand-green text-xs font-black">W</span>
+              ) : res === 'TIE' ? (
+                <span className="text-yellow-400 text-xs font-black">T</span>
               ) : res === 'LOSS' ? (
                 <span className="text-brand-red text-xs font-black">L</span>
               ) : (

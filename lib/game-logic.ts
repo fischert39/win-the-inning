@@ -49,37 +49,41 @@ export function getBaseState(goals: Pick<OffenseGoal, 'completed' | 'hit_type'>[
   return bases
 }
 
-export function inningResult(inning: Pick<FullInning, 'status' | 'mind_completed' | 'spirit_completed' | 'body_completed'>): GameResult {
+export function inningResult(inning: Pick<FullInning, 'status' | 'mind_completed' | 'spirit_completed' | 'body_completed' | 'offense_goals'>): GameResult {
   if (inning.status !== 'CLOSED') return 'IN_PROGRESS'
-  return countOuts(inning) === 3 ? 'WIN' : 'LOSS'
+  if (countOuts(inning) < 3) return 'LOSS'
+  return simulateRuns(inning.offense_goals) > 0 ? 'WIN' : 'TIE'
 }
 
-export function gameResult(innings: Pick<FullInning, 'status' | 'mind_completed' | 'spirit_completed' | 'body_completed'>[]): GameResult {
-  const wins   = innings.filter(i => inningResult(i) === 'WIN').length
-  const closed = innings.filter(i => i.status === 'CLOSED').length
-  if (wins >= 5) return 'WIN'
-  if (closed === 7 && wins < 5) return 'LOSS'
+export function gameResult(innings: Pick<FullInning, 'status' | 'mind_completed' | 'spirit_completed' | 'body_completed' | 'offense_goals'>[]): GameResult {
+  const wins      = innings.filter(i => inningResult(i) === 'WIN').length
+  const losses    = innings.filter(i => inningResult(i) === 'LOSS').length
+  const closed    = innings.filter(i => i.status === 'CLOSED').length
+  const remaining = Math.max(0, 7 - closed)
+  if (wins > losses + remaining) return 'WIN'
+  if (losses > wins + remaining) return 'LOSS'
   return 'IN_PROGRESS'
 }
 
-export function currentStreak(games: { innings: Pick<FullInning, 'status' | 'date' | 'mind_completed' | 'spirit_completed' | 'body_completed'>[] }[]): { type: 'WIN' | 'LOSS' | null; count: number } {
+export function currentStreak(games: { innings: Pick<FullInning, 'status' | 'date' | 'mind_completed' | 'spirit_completed' | 'body_completed' | 'offense_goals'>[] }[]): { type: 'WIN' | 'LOSS' | null; count: number } {
   const closed = games
     .flatMap(g => g.innings)
     .filter(i => i.status === 'CLOSED')
     .sort((a, b) => a.date.localeCompare(b.date))
   if (closed.length === 0) return { type: null, count: 0 }
-  const last = closed[closed.length - 1]
-  const type = countOuts(last) === 3 ? 'WIN' : 'LOSS'
+  const lastResult = inningResult(closed[closed.length - 1])
+  if (lastResult === 'TIE' || lastResult === 'IN_PROGRESS') return { type: null, count: 0 }
+  const type = lastResult as 'WIN' | 'LOSS'
   let count = 0
   for (let i = closed.length - 1; i >= 0; i--) {
-    const r = countOuts(closed[i]) === 3 ? 'WIN' : 'LOSS'
+    const r = inningResult(closed[i])
     if (r !== type) break
     count++
   }
   return { type, count }
 }
 
-export function seasonRecord(games: { innings: Pick<FullInning, 'status' | 'mind_completed' | 'spirit_completed' | 'body_completed'>[] }[]): { wins: number; losses: number } {
+export function seasonRecord(games: { innings: Pick<FullInning, 'status' | 'mind_completed' | 'spirit_completed' | 'body_completed' | 'offense_goals'>[] }[]): { wins: number; losses: number } {
   let wins = 0, losses = 0
   for (const g of games) {
     const r = gameResult(g.innings)
@@ -90,6 +94,12 @@ export function seasonRecord(games: { innings: Pick<FullInning, 'status' | 'mind
 }
 
 // ===== DATE HELPERS =====
+
+export function getPrevDate(dateStr: string): string {
+  const d = new Date(dateStr + 'T12:00:00')
+  d.setDate(d.getDate() - 1)
+  return toDateKey(d)
+}
 
 export function toDateKey(date: Date): string {
   const y = date.getFullYear()
