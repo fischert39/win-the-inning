@@ -522,7 +522,7 @@ export default function AppPage() {
           </div>
         ) : (
           <div className="space-y-4 animate-slide-up">
-            {isClosed && (() => {
+            {isClosed && viewInning && (() => {
               const r = inningResult(viewInning)
               return (
                 <div className={`rounded-xl px-5 py-4 font-bold text-center text-sm ${
@@ -531,7 +531,7 @@ export default function AppPage() {
                                  'bg-red-50    border border-red-200    text-red-800'
                 }`}>
                   {r === 'WIN'  ? '🏆 Inning WIN! All 3 outs + runs scored — you crushed it!' :
-                   r === 'TIE'  ? `🤝 Inning TIE — 3 outs but no runs. Edit to change the result.` :
+                   r === 'TIE'  ? '🤝 Inning TIE — 3 outs but no runs. Edit to change the result.' :
                                   `😤 Inning closed — ${countOuts(viewInning)}/3 outs. Edit to change the result.`}
                 </div>
               )
