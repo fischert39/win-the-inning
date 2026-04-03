@@ -7,7 +7,7 @@ import { createClient } from '@/lib/supabase/client'
 import type { Profile, FullSeason, FullGame, FullInning, OffenseGoal, SeasonGoal, Sport, HitType, GameResult, Status } from '@/types'
 import {
   today, getWeekStart, getWeekEnd, inningNumber,
-  countOuts, inningResult, gameResult, getDailyQuote,
+  countOuts, inningResult, gameResult, getDailyQuote, currentStreak,
 } from '@/lib/game-logic'
 import AppHeader    from '@/components/AppHeader'
 import SeasonGate   from '@/components/SeasonGate'
@@ -420,6 +420,7 @@ export default function AppPage() {
   }
 
   const record      = getSeasonRecord()
+  const streak      = currentStreak(season.games)
   const sport       = profile?.sport ?? 'softball'
   const sportEmoji  = sport === 'baseball' ? '⚾' : '🥎'
   const isOther     = viewDate && viewDate !== todayStr
@@ -430,6 +431,7 @@ export default function AppPage() {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
       <AppHeader
         record={record}
+        streak={streak}
         sport={sport}
         profile={profile}
         onEndSeason={handleEndSeason}

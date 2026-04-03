@@ -62,6 +62,23 @@ export function gameResult(innings: Pick<FullInning, 'status' | 'mind_completed'
   return 'IN_PROGRESS'
 }
 
+export function currentStreak(games: { innings: Pick<FullInning, 'status' | 'date' | 'mind_completed' | 'spirit_completed' | 'body_completed'>[] }[]): { type: 'WIN' | 'LOSS' | null; count: number } {
+  const closed = games
+    .flatMap(g => g.innings)
+    .filter(i => i.status === 'CLOSED')
+    .sort((a, b) => a.date.localeCompare(b.date))
+  if (closed.length === 0) return { type: null, count: 0 }
+  const last = closed[closed.length - 1]
+  const type = countOuts(last) === 3 ? 'WIN' : 'LOSS'
+  let count = 0
+  for (let i = closed.length - 1; i >= 0; i--) {
+    const r = countOuts(closed[i]) === 3 ? 'WIN' : 'LOSS'
+    if (r !== type) break
+    count++
+  }
+  return { type, count }
+}
+
 export function seasonRecord(games: { innings: Pick<FullInning, 'status' | 'mind_completed' | 'spirit_completed' | 'body_completed'>[] }[]): { wins: number; losses: number } {
   let wins = 0, losses = 0
   for (const g of games) {

@@ -5,13 +5,14 @@ import type { Profile, Sport } from '@/types'
 
 interface Props {
   record:       { wins: number; losses: number }
+  streak:       { type: 'WIN' | 'LOSS' | null; count: number }
   sport:        Sport
   profile:      Profile | null
   onEndSeason:  () => void
   onSignOut:    () => void
 }
 
-export default function AppHeader({ record, sport, profile, onEndSeason, onSignOut }: Props) {
+export default function AppHeader({ record, streak, sport, profile, onEndSeason, onSignOut }: Props) {
   const [menuOpen, setMenuOpen] = useState(false)
   const sportEmoji = sport === 'baseball' ? '⚾' : '🥎'
   const avatar = profile?.avatar_url
@@ -28,7 +29,7 @@ export default function AppHeader({ record, sport, profile, onEndSeason, onSignO
           </span>
         </div>
 
-        {/* Center: season record */}
+        {/* Center: season record + streak */}
         <div className="flex flex-col items-center">
           <span className="text-2xl font-black tabular-nums tracking-tight">
             {record.wins}–{record.losses}
@@ -36,6 +37,15 @@ export default function AppHeader({ record, sport, profile, onEndSeason, onSignO
           <span className="text-white/50 text-[10px] font-semibold uppercase tracking-widest -mt-0.5">
             Season Record
           </span>
+          {streak.type && streak.count > 0 && (
+            <span className={`text-[10px] font-bold mt-1 px-2 py-0.5 rounded-full ${
+              streak.type === 'WIN'
+                ? 'bg-brand-orange/20 text-brand-orange'
+                : 'bg-red-500/20 text-red-400'
+            }`}>
+              {streak.type === 'WIN' ? '🔥' : '📉'} {streak.count} in a row
+            </span>
+          )}
         </div>
 
         {/* Right: avatar + menu */}
