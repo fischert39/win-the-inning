@@ -274,7 +274,7 @@ export default function AppPage() {
 
   // ===== DEFENSE ACTIONS =====
   async function handleToggleDefense(cat: 'mind' | 'spirit' | 'body') {
-    if (!viewInning || viewInning.status === 'CLOSED') return
+    if (!viewInning) return
     const key     = `${cat}_completed` as 'mind_completed' | 'spirit_completed' | 'body_completed'
     const newVal  = !viewInning[key]
     updateInning(viewInning.id, { [key]: newVal })
@@ -290,7 +290,7 @@ export default function AppPage() {
   }
 
   async function handleSaveDefenseTask(cat: 'mind' | 'spirit' | 'body', val: string) {
-    if (!viewInning || viewInning.status === 'CLOSED') return
+    if (!viewInning) return
     const key = `${cat}_task` as 'mind_task' | 'spirit_task' | 'body_task'
     updateInning(viewInning.id, { [key]: val })
     await supabase.from('innings').update({ [key]: val }).eq('id', viewInning.id)
@@ -298,7 +298,7 @@ export default function AppPage() {
 
   // ===== OFFENSE ACTIONS =====
   async function handleAddGoal() {
-    if (!viewInning || viewInning.status === 'CLOSED' || !user) return
+    if (!viewInning || !user) return
     const sortOrder = viewInning.offense_goals.length
     const { data: goal } = await supabase
       .from('offense_goals')
@@ -311,13 +311,13 @@ export default function AppPage() {
   }
 
   async function handleSaveGoalText(goalId: string, val: string) {
-    if (!viewInning || viewInning.status === 'CLOSED') return
+    if (!viewInning) return
     patchGoal(viewInning.id, goalId, { goal: val })
     await supabase.from('offense_goals').update({ goal: val }).eq('id', goalId)
   }
 
   async function handleToggleGoal(goalId: string) {
-    if (!viewInning || viewInning.status === 'CLOSED') return
+    if (!viewInning) return
     const g = viewInning.offense_goals.find(og => og.id === goalId)
     if (!g) return
     const newVal = !g.completed
@@ -326,13 +326,13 @@ export default function AppPage() {
   }
 
   async function handleSetHitType(goalId: string, type: HitType) {
-    if (!viewInning || viewInning.status === 'CLOSED') return
+    if (!viewInning) return
     patchGoal(viewInning.id, goalId, { hit_type: type })
     await supabase.from('offense_goals').update({ hit_type: type }).eq('id', goalId)
   }
 
   async function handleDeleteGoal(goalId: string) {
-    if (!viewInning || viewInning.status === 'CLOSED') return
+    if (!viewInning) return
     removeGoal(viewInning.id, goalId)
     await supabase.from('offense_goals').delete().eq('id', goalId)
   }
@@ -345,40 +345,47 @@ export default function AppPage() {
   }
 
   async function handleCloseInning() {
-    if (!viewInning || viewInning.status === 'CLOSED') return
-    const outs   = countOuts(viewInning)
-    const runs   = simulateRuns(viewInning.offense_goals)
-    const result = (outs === 3 ? (runs > 0 ? 'WIN' : 'TIE') : 'LOSS') as GameResult
-    const closedAt  = new Date().toISOString()
-    const updates   = { status: 'CLOSED' as Status, closed_at: closedAt, result }
-    updateInning(viewInning.id, updates)
-    await supabase.from('innings').update(updates).eq('id', viewInning.id)
+    if (!viewInning) return
+    const outs      = countOuts(viewInning)
+    const runs      = simulateRuns(viewInning.offense_goals)
+    const result    = (outs === 3 ? (runs > 0 ? 'WIN' : 'TIE') : 'LOSS') as GameResult
+    const isUpdate  = viewInning.status === 'CLOSED'
+
+    const dbUpdates = isUpdate
+      ? { result }
+      : { status: 'CLOSED' as Status, closed_at: new Date().toISOString(), result }
+
+    updateInning(viewInning.id, dbUpdates)
+    await supabase.from('innings').update(dbUpdates).eq('id', viewInning.id)
 
     if (viewGame) {
       const updatedInnings = viewGame.innings.map(i =>
-        i.id === viewInning.id ? { ...i, ...updates } : i)
+        i.id === viewInning.id ? { ...i, ...dbUpdates } : i)
       const gr = gameResult(updatedInnings)
       await supabase.from('games').update({ result: gr }).eq('id', viewGame.id)
       updateGame(viewGame.id, { result: gr })
     }
-    if (result === 'WIN') {
+
+    if (result === 'WIN' && !isUpdate) {
       setShowWinCelebration(true)
+    } else if (result === 'WIN') {
+      showToast('🏆 Inning updated — still a WIN!')
     } else if (result === 'TIE') {
       showToast('🤝 Tie inning — all outs, but no runs scored!')
     } else {
-      showToast('💪 Inning closed. Get \'em tomorrow!')
+      showToast(isUpdate ? '✅ Inning updated!' : '💪 Inning closed. Get \'em tomorrow!')
     }
   }
 
   // ===== REFLECTION =====
   async function handleSaveReflection(val: string) {
-    if (!viewInning || viewInning.status === 'CLOSED') return
+    if (!viewInning) return
     updateInning(viewInning.id, { reflection: val })
     await supabase.from('innings').update({ reflection: val }).eq('id', viewInning.id)
   }
 
   async function handleSaveFutureGoals(val: string) {
-    if (!viewInning || viewInning.status === 'CLOSED') return
+    if (!viewInning) return
     updateInning(viewInning.id, { future_goals: val })
     await supabase.from('innings').update({ future_goals: val }).eq('id', viewInning.id)
   }
@@ -515,16 +522,20 @@ export default function AppPage() {
           </div>
         ) : (
           <div className="space-y-4 animate-slide-up">
-            {isClosed && (
-              <div className={`rounded-xl px-5 py-4 font-bold text-center text-sm ${
-                viewInning.result === 'WIN'
-                  ? 'bg-green-50 border border-green-200 text-green-800'
-                  : 'bg-red-50 border border-red-200 text-red-800'
-              }`}>
-                {viewInning.result === 'WIN'
-                  ? '🏆 Inning WIN! All 3 outs recorded — you crushed it!'
-                  : `😤 Inning closed — ${countOuts(viewInning)}/3 outs. Keep grinding tomorrow!`}
-              </div>
+            {isClosed && (() => {
+              const r = inningResult(viewInning)
+              return (
+                <div className={`rounded-xl px-5 py-4 font-bold text-center text-sm ${
+                  r === 'WIN'  ? 'bg-green-50  border border-green-200  text-green-800'  :
+                  r === 'TIE'  ? 'bg-yellow-50 border border-yellow-200 text-yellow-800' :
+                                 'bg-red-50    border border-red-200    text-red-800'
+                }`}>
+                  {r === 'WIN'  ? '🏆 Inning WIN! All 3 outs + runs scored — you crushed it!' :
+                   r === 'TIE'  ? `🤝 Inning TIE — 3 outs but no runs. Edit to change the result.` :
+                                  `😤 Inning closed — ${countOuts(viewInning)}/3 outs. Edit to change the result.`}
+                </div>
+              )
+            })()}
             )}
 
             <SeasonGoals

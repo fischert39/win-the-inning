@@ -9,8 +9,6 @@ interface Props {
 }
 
 export default function EndOfDay({ inning, onSaveReflection, onSaveFutureGoals }: Props) {
-  const closed = inning.status === 'CLOSED'
-
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
       <div className="px-5 pt-5 pb-3">
@@ -25,11 +23,10 @@ export default function EndOfDay({ inning, onSaveReflection, onSaveFutureGoals }
           </label>
           <textarea
             rows={4}
-            disabled={closed}
             value={inning.reflection}
             onChange={e => onSaveReflection(e.target.value)}
             placeholder="How did today go? What did you learn? What are you grateful for?"
-            className="w-full text-sm text-brand-navy placeholder:text-slate-300 bg-slate-50 border border-slate-100 rounded-xl p-3 outline-none focus:border-brand-orange focus:bg-white transition-all disabled:opacity-60"
+            className="w-full text-sm text-brand-navy placeholder:text-slate-300 bg-slate-50 border border-slate-100 rounded-xl p-3 outline-none focus:border-brand-orange focus:bg-white transition-all"
           />
         </div>
 
@@ -39,11 +36,10 @@ export default function EndOfDay({ inning, onSaveReflection, onSaveFutureGoals }
           </label>
           <textarea
             rows={4}
-            disabled={closed}
             value={inning.future_goals}
             onChange={e => onSaveFutureGoals(e.target.value)}
             placeholder="What do you want to accomplish tomorrow?"
-            className="w-full text-sm text-brand-navy placeholder:text-slate-300 bg-slate-50 border border-slate-100 rounded-xl p-3 outline-none focus:border-brand-orange focus:bg-white transition-all disabled:opacity-60"
+            className="w-full text-sm text-brand-navy placeholder:text-slate-300 bg-slate-50 border border-slate-100 rounded-xl p-3 outline-none focus:border-brand-orange focus:bg-white transition-all"
           />
         </div>
       </div>

@@ -47,7 +47,7 @@ export default function OffenseSection({
   const closed   = inning.status === 'CLOSED'
   const goals    = inning.offense_goals
   const runs     = simulateRuns(goals)
-  const showAdd  = !closed && (goals.length === 0 || goals[goals.length - 1].goal.trim() !== '')
+  const showAdd  = goals.length === 0 || goals[goals.length - 1].goal.trim() !== ''
 
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
@@ -99,25 +99,27 @@ export default function OffenseSection({
       </div>
 
       {/* Footer */}
-      {!closed && (
-        <div className="px-5 pb-5 space-y-3">
-          {showAdd && (
-            <button
-              onClick={onAddGoal}
-              className="w-full bg-slate-50 hover:bg-slate-100 border border-dashed border-slate-200 hover:border-brand-orange text-slate-500 hover:text-brand-orange rounded-xl py-2.5 text-sm font-semibold transition-all"
-            >
-              + Add {goals.length === 0 ? 'a goal' : 'another goal'}
-            </button>
-          )}
-
+      <div className="px-5 pb-5 space-y-3">
+        {showAdd && (
           <button
-            onClick={onCloseInning}
-            className="w-full py-3.5 rounded-xl font-black text-sm transition-all bg-gradient-to-r from-brand-orange to-[#FF4500] text-white shadow-lg hover:opacity-90 active:scale-[0.98] animate-pulse"
+            onClick={onAddGoal}
+            className="w-full bg-slate-50 hover:bg-slate-100 border border-dashed border-slate-200 hover:border-brand-orange text-slate-500 hover:text-brand-orange rounded-xl py-2.5 text-sm font-semibold transition-all"
           >
-            🔒 Close the Inning
+            + Add {goals.length === 0 ? 'a goal' : 'another goal'}
           </button>
-        </div>
-      )}
+        )}
+
+        <button
+          onClick={onCloseInning}
+          className={`w-full py-3.5 rounded-xl font-black text-sm transition-all text-white shadow-lg hover:opacity-90 active:scale-[0.98] ${
+            closed
+              ? 'bg-gradient-to-r from-brand-blue to-[#005fa3]'
+              : 'bg-gradient-to-r from-brand-orange to-[#FF4500] animate-pulse'
+          }`}
+        >
+          {closed ? '✏️ Update Inning' : '🔒 Close the Inning'}
+        </button>
+      </div>
     </div>
   )
 }
@@ -141,7 +143,6 @@ function GoalRow({
           type="text"
           value={goal.goal}
           placeholder="What's your goal?"
-          disabled={closed}
           onChange={e => onSave(e.target.value)}
           className={`flex-1 text-sm bg-transparent outline-none placeholder:text-slate-300 ${
             goal.completed ? 'line-through text-slate-400' : 'text-brand-navy'
@@ -150,7 +151,6 @@ function GoalRow({
         {/* Complete checkbox */}
         <button
           onClick={onToggle}
-          disabled={closed && !goal.completed}
           className={`w-5 h-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center transition-all ${
             goal.completed ? 'bg-brand-green border-brand-green' : 'border-slate-300 hover:border-brand-green'
           }`}
@@ -161,11 +161,9 @@ function GoalRow({
             </svg>
           )}
         </button>
-        {!closed && (
-          <button onClick={onDelete} className="text-slate-200 hover:text-brand-red text-lg leading-none transition-colors">
-            ×
-          </button>
-        )}
+        <button onClick={onDelete} className="text-slate-200 hover:text-brand-red text-lg leading-none transition-colors">
+          ×
+        </button>
       </div>
 
       {/* Hit type selector */}
@@ -173,14 +171,13 @@ function GoalRow({
         {HIT_TYPES.map(ht => (
           <button
             key={ht.key}
-            onClick={() => !closed && onSetHit(ht.key)}
-            disabled={closed}
+            onClick={() => onSetHit(ht.key)}
             title={ht.title}
-            className={`px-2 py-0.5 rounded-md text-[11px] font-black transition-all ring-1 ring-transparent ${
+            className={`px-2 py-0.5 rounded-md text-[11px] font-black transition-all ring-1 ring-transparent cursor-pointer ${
               goal.hit_type === ht.key
                 ? ht.color + ' ring-offset-0'
                 : 'bg-white text-slate-400 hover:text-slate-600 ring-slate-100'
-            } ${closed ? 'cursor-default' : 'cursor-pointer'}`}
+            }`}
           >
             {ht.label}
           </button>

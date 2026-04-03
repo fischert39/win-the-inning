@@ -77,7 +77,6 @@ export default function DefenseSection({ inning, onToggle, onSaveTask }: Props) 
                   type="text"
                   value={task}
                   placeholder={cat.placeholder}
-                  disabled={closed}
                   onChange={e => onSaveTask(cat.key, e.target.value)}
                   className={`w-full text-sm text-brand-navy placeholder:text-slate-300 bg-transparent outline-none ${
                     completed ? 'line-through text-slate-400' : ''
@@ -87,13 +86,12 @@ export default function DefenseSection({ inning, onToggle, onSaveTask }: Props) 
 
               {/* Checkbox */}
               <button
-                onClick={() => !closed && onToggle(cat.key)}
-                disabled={closed && !completed}
-                className={`w-6 h-6 rounded-full border-2 flex-shrink-0 flex items-center justify-center transition-all ${
+                onClick={() => onToggle(cat.key)}
+                className={`w-6 h-6 rounded-full border-2 flex-shrink-0 flex items-center justify-center transition-all cursor-pointer ${
                   completed
                     ? 'bg-brand-green border-brand-green'
                     : 'border-slate-300 hover:border-brand-green'
-                } ${closed ? 'cursor-default' : 'cursor-pointer'}`}
+                }`}
               >
                 {completed && (
                   <svg className="w-3.5 h-3.5 text-white" viewBox="0 0 12 12" fill="none">
