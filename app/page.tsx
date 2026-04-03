@@ -11,6 +11,7 @@ import {
 } from '@/lib/game-logic'
 import AppHeader    from '@/components/AppHeader'
 import SeasonGate   from '@/components/SeasonGate'
+import SeasonRecap  from '@/components/SeasonRecap'
 import Scoreboard   from '@/components/Scoreboard'
 import SeasonGoals  from '@/components/SeasonGoals'
 import DailyQuote   from '@/components/DailyQuote'
@@ -25,6 +26,7 @@ export default function AppPage() {
   const [viewDate,  setViewDate]  = useState<string | null>(null)
   const [loading,   setLoading]   = useState(true)
   const [toast,     setToast]     = useState<string | null>(null)
+  const [recapSeason, setRecapSeason] = useState<FullSeason | null>(null)
   const router  = useRouter()
   const supabase = createClient()
 
@@ -186,6 +188,7 @@ export default function AppPage() {
     if (!season) return
     if (!confirm('End this season? Your record will be saved.')) return
     await supabase.from('seasons').update({ end_date: todayStr, is_current: false }).eq('id', season.id)
+    setRecapSeason({ ...season, end_date: todayStr })
     setSeason(null)
   }
 
@@ -392,6 +395,16 @@ export default function AppPage() {
           <p className="text-brand-navy font-bold text-lg">Loading your season…</p>
         </div>
       </div>
+    )
+  }
+
+  if (recapSeason) {
+    return (
+      <SeasonRecap
+        season={recapSeason}
+        sport={profile?.sport ?? 'softball'}
+        onStartNew={() => setRecapSeason(null)}
+      />
     )
   }
 
