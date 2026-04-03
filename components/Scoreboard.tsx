@@ -23,8 +23,10 @@ export default function Scoreboard({ games, todayStr, viewDate, onViewDate }: Pr
   const inningMap: Record<string, FullInning> = {}
   for (const inn of activeGame.innings) inningMap[inn.date] = inn
 
-  const totalRuns = activeGame.innings.reduce((s, i) => s + simulateRuns(i.offense_goals), 0)
-  const gResult   = gameResult(activeGame.innings)
+  const totalRuns  = activeGame.innings.reduce((s, i) => s + simulateRuns(i.offense_goals), 0)
+  const gResult    = gameResult(activeGame.innings)
+  const inningWins = activeGame.innings.filter(i => inningResult(i) === 'WIN').length
+  const winsNeeded = 5
 
   return (
     <div className="bg-brand-navy rounded-2xl p-4 mb-4 shadow-xl overflow-x-auto scrollbar-hide">
@@ -41,6 +43,30 @@ export default function Scoreboard({ games, todayStr, viewDate, onViewDate }: Pr
           </span>
         )}
       </div>
+
+      {/* Win progress — only while game is in progress */}
+      {gResult === 'IN_PROGRESS' && (
+        <div className="mb-3 px-1">
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="text-white/50 text-[10px] font-semibold">
+              Win {winsNeeded - inningWins > 0
+                ? `${winsNeeded - inningWins} more inning${winsNeeded - inningWins !== 1 ? 's' : ''} to win the game`
+                : 'Game secured!'}
+            </span>
+            <span className="text-white/50 text-[10px] font-bold tabular-nums">{inningWins}/{winsNeeded}</span>
+          </div>
+          <div className="flex gap-1">
+            {Array.from({ length: winsNeeded }).map((_, i) => (
+              <div
+                key={i}
+                className={`h-1.5 flex-1 rounded-full transition-all ${
+                  i < inningWins ? 'bg-brand-green' : 'bg-white/15'
+                }`}
+              />
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Grid */}
       <div className="flex gap-1.5 min-w-max">
