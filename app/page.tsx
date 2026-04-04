@@ -22,8 +22,9 @@ import DefenseSection from '@/components/DefenseSection'
 import OffenseSection from '@/components/OffenseSection'
 import EndOfDay        from '@/components/EndOfDay'
 import Achievements   from '@/components/Achievements'
-import SeasonTrends   from '@/components/SeasonTrends'
-import WeeklyWrapUp   from '@/components/WeeklyWrapUp'
+import SeasonTrends      from '@/components/SeasonTrends'
+import WeeklyWrapUp      from '@/components/WeeklyWrapUp'
+import FriendComparison  from '@/components/FriendComparison'
 
 export default function AppPage() {
   const [user,      setUser]      = useState<User | null>(null)
@@ -301,6 +302,13 @@ export default function AppPage() {
     const key = `${cat}_task` as 'mind_task' | 'spirit_task' | 'body_task'
     updateInning(viewInning.id, { [key]: val })
     await supabase.from('innings').update({ [key]: val }).eq('id', viewInning.id)
+  }
+
+  async function handleSetUsername(username: string) {
+    if (!user) return
+    setProfile(prev => prev ? { ...prev, username } : prev)
+    await supabase.from('profiles').update({ username }).eq('id', user.id)
+    showToast(`✅ Username set to @${username}`)
   }
 
   async function handleSaveDefaultTask(cat: 'mind' | 'spirit' | 'body') {
@@ -613,6 +621,17 @@ export default function AppPage() {
             <Achievements achievements={achievements} />
 
             <SeasonTrends games={season.games} />
+
+            <FriendComparison
+              myUsername={profile?.username ?? null}
+              myStats={{
+                gameWins:      record.wins,
+                gameLosses:    record.losses,
+                inningsWon:    season.games.flatMap(g => g.innings).filter(i => i.status === 'CLOSED' && inningResult(i) === 'WIN').length,
+                inningsPlayed: season.games.flatMap(g => g.innings).filter(i => i.status === 'CLOSED').length,
+              }}
+              onSetUsername={handleSetUsername}
+            />
 
             <DailyQuote quote={quote} />
 

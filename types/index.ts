@@ -13,6 +13,7 @@ export interface Profile {
   default_spirit_task:  string | null
   default_body_task:    string | null
   default_offense_goals: string | null  // JSON array of goal strings
+  username:             string | null
 }
 
 export interface SeasonGoal {

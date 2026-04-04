@@ -21,6 +21,52 @@ alter table public.profiles add column if not exists default_mind_task    text d
 alter table public.profiles add column if not exists default_spirit_task  text default '';
 alter table public.profiles add column if not exists default_body_task    text default '';
 alter table public.profiles add column if not exists default_offense_goals text default '[]';
+alter table public.profiles add column if not exists username             text unique;
+
+-- ============================================================
+-- Friend comparison: privacy-safe public stats lookup by username
+-- ============================================================
+create or replace function public.get_friend_stats(p_username text)
+returns json
+language plpgsql
+security definer
+as $$
+declare
+  v_user_id uuid;
+  v_result  json;
+begin
+  select id into v_user_id
+  from public.profiles
+  where lower(username) = lower(p_username);
+
+  if v_user_id is null then return null; end if;
+
+  select json_build_object(
+    'username',      p_username,
+    'display_name',  (select display_name from public.profiles where id = v_user_id),
+    'game_wins',    (select count(*) from public.games g
+                     join public.seasons s on g.season_id = s.id
+                     where g.user_id = v_user_id and s.is_current = true and g.result = 'WIN'),
+    'game_losses',  (select count(*) from public.games g
+                     join public.seasons s on g.season_id = s.id
+                     where g.user_id = v_user_id and s.is_current = true and g.result = 'LOSS'),
+    'innings_won',  (select count(*) from public.innings i
+                     join public.games g on i.game_id = g.id
+                     join public.seasons s on g.season_id = s.id
+                     where i.user_id = v_user_id and s.is_current = true
+                       and i.status = 'CLOSED' and i.result = 'WIN'),
+    'innings_played',(select count(*) from public.innings i
+                     join public.games g on i.game_id = g.id
+                     join public.seasons s on g.season_id = s.id
+                     where i.user_id = v_user_id and s.is_current = true
+                       and i.status = 'CLOSED')
+  ) into v_result;
+
+  return v_result;
+end;
+$$;
+
+grant execute on function public.get_friend_stats(text) to authenticated;
 
 -- Seasons
 create table if not exists public.seasons (
