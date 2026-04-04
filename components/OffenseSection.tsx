@@ -4,14 +4,17 @@ import type { FullInning, OffenseGoal, HitType } from '@/types'
 import { simulateRuns, getBaseState } from '@/lib/game-logic'
 
 interface Props {
-  inning:          FullInning
-  sportEmoji:      string
-  onAddGoal:       () => void
-  onSaveGoalText:  (id: string, val: string) => void
-  onToggleGoal:    (id: string) => void
-  onSetHitType:    (id: string, type: HitType) => void
-  onDeleteGoal:    (id: string) => void
-  onCloseInning:   () => void
+  inning:            FullInning
+  sportEmoji:        string
+  templates:         string[]
+  onAddGoal:         () => void
+  onSaveGoalText:    (id: string, val: string) => void
+  onToggleGoal:      (id: string) => void
+  onSetHitType:      (id: string, type: HitType) => void
+  onDeleteGoal:      (id: string) => void
+  onCloseInning:     () => void
+  onLoadTemplates:   () => void
+  onSaveTemplates:   () => void
 }
 
 const HIT_TYPES: { key: HitType; label: string; title: string; color: string }[] = [
@@ -41,13 +44,19 @@ function BaseDiamond({ goals }: { goals: OffenseGoal[] }) {
 }
 
 export default function OffenseSection({
-  inning, sportEmoji,
+  inning, sportEmoji, templates,
   onAddGoal, onSaveGoalText, onToggleGoal, onSetHitType, onDeleteGoal, onCloseInning,
+  onLoadTemplates, onSaveTemplates,
 }: Props) {
-  const closed   = inning.status === 'CLOSED'
-  const goals    = inning.offense_goals
-  const runs     = simulateRuns(goals)
-  const showAdd  = goals.length === 0 || goals[goals.length - 1].goal.trim() !== ''
+  const closed      = inning.status === 'CLOSED'
+  const goals       = inning.offense_goals
+  const runs        = simulateRuns(goals)
+  const showAdd     = goals.length === 0 || goals[goals.length - 1].goal.trim() !== ''
+  const hasGoals    = goals.some(g => g.goal.trim() !== '')
+  const goalTexts   = goals.map(g => g.goal.trim()).filter(Boolean)
+  const matchesTmpl = templates.length > 0 &&
+    goalTexts.length === templates.length &&
+    goalTexts.every((t, i) => t === templates[i])
 
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
@@ -92,9 +101,17 @@ export default function OffenseSection({
         ))}
 
         {goals.length === 0 && !closed && (
-          <p className="text-slate-300 text-sm text-center py-3">
-            No goals yet — add your first one below!
-          </p>
+          <div className="text-center py-3 space-y-2">
+            <p className="text-slate-300 text-sm">No goals yet — add your first one below!</p>
+            {templates.length > 0 && (
+              <button
+                onClick={onLoadTemplates}
+                className="text-xs text-brand-orange font-bold hover:underline"
+              >
+                📋 Load my templates ({templates.length} goals)
+              </button>
+            )}
+          </div>
         )}
       </div>
 
@@ -106,6 +123,19 @@ export default function OffenseSection({
             className="w-full bg-slate-50 hover:bg-slate-100 border border-dashed border-slate-200 hover:border-brand-orange text-slate-500 hover:text-brand-orange rounded-xl py-2.5 text-sm font-semibold transition-all"
           >
             + Add {goals.length === 0 ? 'a goal' : 'another goal'}
+          </button>
+        )}
+
+        {hasGoals && (
+          <button
+            onClick={onSaveTemplates}
+            className={`w-full rounded-xl py-2 text-xs font-bold transition-all border ${
+              matchesTmpl
+                ? 'bg-brand-orange/5 border-brand-orange/20 text-brand-orange'
+                : 'bg-slate-50 border-slate-200 text-slate-400 hover:text-brand-orange hover:border-brand-orange/30'
+            }`}
+          >
+            {matchesTmpl ? '📌 Saved as my templates' : '📌 Save these goals as templates'}
           </button>
         )}
 

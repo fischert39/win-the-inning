@@ -354,6 +354,34 @@ export default function AppPage() {
     await supabase.from('offense_goals').delete().eq('id', goalId)
   }
 
+  async function handleSaveTemplates() {
+    if (!viewInning || !user) return
+    const texts = viewInning.offense_goals.map(g => g.goal.trim()).filter(Boolean)
+    const json  = JSON.stringify(texts)
+    setProfile(prev => prev ? { ...prev, default_offense_goals: json } : prev)
+    await supabase.from('profiles').update({ default_offense_goals: json }).eq('id', user.id)
+    showToast(`📌 Saved ${texts.length} goal${texts.length !== 1 ? 's' : ''} as templates!`)
+  }
+
+  async function handleLoadTemplates() {
+    if (!viewInning || !user) return
+    const templates: string[] = JSON.parse(profile?.default_offense_goals ?? '[]')
+    if (templates.length === 0) return
+    const inserts = templates.map((text, idx) => ({
+      id: 'r_' + Date.now() + '_' + idx,
+      user_id: user.id,
+      inning_id: viewInning.id,
+      goal: text,
+      completed: false,
+      hit_type: 'single' as const,
+      sort_order: viewInning.offense_goals.length + idx,
+    }))
+    const { data: inserted } = await supabase.from('offense_goals').insert(inserts).select()
+    if (inserted) {
+      inserted.forEach((g: typeof inserts[0]) => addGoal(viewInning.id, g))
+    }
+  }
+
   async function handleAdjustTarget(delta: number) {
     if (!viewInning || viewInning.status === 'CLOSED') return
     const next = Math.max(1, Math.min(15, viewInning.target_goals + delta))
@@ -603,12 +631,15 @@ export default function AppPage() {
             <OffenseSection
               inning={viewInning}
               sportEmoji={sportEmoji}
+              templates={JSON.parse(profile?.default_offense_goals ?? '[]')}
               onAddGoal={handleAddGoal}
               onSaveGoalText={handleSaveGoalText}
               onToggleGoal={handleToggleGoal}
               onSetHitType={handleSetHitType}
               onDeleteGoal={handleDeleteGoal}
               onCloseInning={handleCloseInning}
+              onLoadTemplates={handleLoadTemplates}
+              onSaveTemplates={handleSaveTemplates}
             />
 
             <EndOfDay

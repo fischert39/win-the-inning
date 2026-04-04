@@ -17,9 +17,10 @@ create table if not exists public.profiles (
 );
 
 -- Migration: add default task columns if table already exists
-alter table public.profiles add column if not exists default_mind_task   text default '';
-alter table public.profiles add column if not exists default_spirit_task text default '';
-alter table public.profiles add column if not exists default_body_task   text default '';
+alter table public.profiles add column if not exists default_mind_task    text default '';
+alter table public.profiles add column if not exists default_spirit_task  text default '';
+alter table public.profiles add column if not exists default_body_task    text default '';
+alter table public.profiles add column if not exists default_offense_goals text default '[]';
 
 -- Seasons
 create table if not exists public.seasons (

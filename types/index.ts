@@ -9,9 +9,10 @@ export interface Profile {
   avatar_url:          string | null
   sport:               Sport
   created_at:          string
-  default_mind_task:   string | null
-  default_spirit_task: string | null
-  default_body_task:   string | null
+  default_mind_task:    string | null
+  default_spirit_task:  string | null
+  default_body_task:    string | null
+  default_offense_goals: string | null  // JSON array of goal strings
 }
 
 export interface SeasonGoal {
