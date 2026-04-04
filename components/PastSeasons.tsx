@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import type { FullSeason } from '@/types'
-import { gameResult, inningResult, displayDate, currentStreak } from '@/lib/game-logic'
+import { gameResult, displayDate, currentStreak } from '@/lib/game-logic'
 
 interface Props {
   userId: string

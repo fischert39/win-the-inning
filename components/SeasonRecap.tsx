@@ -1,7 +1,7 @@
 'use client'
 
 import type { FullSeason } from '@/types'
-import { gameResult, inningResult, simulateRuns, displayDate } from '@/lib/game-logic'
+import { gameResult, simulateRuns, displayDate, currentStreak } from '@/lib/game-logic'
 
 interface Props {
   season: FullSeason

@@ -16,8 +16,7 @@ const CATS = [
 ]
 
 export default function DefenseSection({ inning, onToggle, onSaveTask }: Props) {
-  const outs   = countOuts(inning)
-  const closed = inning.status === 'CLOSED'
+  const outs = countOuts(inning)
 
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
