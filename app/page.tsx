@@ -22,6 +22,7 @@ import DefenseSection from '@/components/DefenseSection'
 import OffenseSection from '@/components/OffenseSection'
 import EndOfDay        from '@/components/EndOfDay'
 import Achievements   from '@/components/Achievements'
+import SeasonTrends   from '@/components/SeasonTrends'
 import WeeklyWrapUp   from '@/components/WeeklyWrapUp'
 
 export default function AppPage() {
@@ -582,6 +583,8 @@ export default function AppPage() {
             />
 
             <Achievements achievements={achievements} />
+
+            <SeasonTrends games={season.games} />
 
             <DailyQuote quote={quote} />
 
