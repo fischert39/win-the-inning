@@ -84,7 +84,7 @@ export function currentStreak(games: { innings: Pick<FullInning, 'status' | 'is_
   return { type, count }
 }
 
-export function seasonRecord(games: { innings: Pick<FullInning, 'status' | 'mind_completed' | 'spirit_completed' | 'body_completed' | 'offense_goals'>[] }[]): { wins: number; losses: number } {
+export function seasonRecord(games: { innings: Pick<FullInning, 'status' | 'is_rain_delay' | 'mind_completed' | 'spirit_completed' | 'body_completed' | 'offense_goals'>[] }[]): { wins: number; losses: number } {
   let wins = 0, losses = 0
   for (const g of games) {
     const r = gameResult(g.innings)
