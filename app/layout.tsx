@@ -7,17 +7,41 @@ const inter = Inter({ subsets: ['latin'] })
 export const metadata: Metadata = {
   title: 'Win the Inning, Win the Day',
   description: 'Turn your big goals into daily micro-wins using the psychology of baseball.',
+  manifest: '/manifest.json',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'black-translucent',
+    title: 'Win the Inning',
+  },
+  other: {
+    'mobile-web-app-capable': 'yes',
+  },
 }
 
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
+  themeColor: '#0D1B2A',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body className={inter.className}>{children}</body>
+      <head>
+        <link rel="apple-touch-icon" href="/icon.svg" />
+      </head>
+      <body className={inter.className}>
+        {children}
+        <script dangerouslySetInnerHTML={{
+          __html: `
+            if ('serviceWorker' in navigator) {
+              window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js').catch(() => {})
+              })
+            }
+          `
+        }} />
+      </body>
     </html>
   )
 }
