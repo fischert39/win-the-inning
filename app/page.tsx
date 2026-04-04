@@ -9,6 +9,7 @@ import {
   today, getWeekStart, getWeekEnd, inningNumber,
   countOuts, simulateRuns, inningResult, gameResult, getDailyQuote, currentStreak, getPrevDate,
 } from '@/lib/game-logic'
+import { computeAchievements } from '@/lib/achievements'
 import AppHeader      from '@/components/AppHeader'
 import SeasonGate     from '@/components/SeasonGate'
 import SeasonRecap    from '@/components/SeasonRecap'
@@ -19,7 +20,8 @@ import SeasonGoals  from '@/components/SeasonGoals'
 import DailyQuote   from '@/components/DailyQuote'
 import DefenseSection from '@/components/DefenseSection'
 import OffenseSection from '@/components/OffenseSection'
-import EndOfDay       from '@/components/EndOfDay'
+import EndOfDay        from '@/components/EndOfDay'
+import Achievements   from '@/components/Achievements'
 
 export default function AppPage() {
   const [user,      setUser]      = useState<User | null>(null)
@@ -478,8 +480,9 @@ export default function AppPage() {
     )
   }
 
-  const record      = getSeasonRecord()
-  const streak      = currentStreak(season.games)
+  const record       = getSeasonRecord()
+  const streak       = currentStreak(season.games)
+  const achievements = computeAchievements(season)
   const sport       = profile?.sport ?? 'softball'
   const sportEmoji  = sport === 'baseball' ? '⚾' : '🥎'
   const isOther     = viewDate && viewDate !== todayStr
@@ -555,6 +558,8 @@ export default function AppPage() {
               onToggle={handleToggleSeasonGoal}
               onDelete={handleDeleteSeasonGoal}
             />
+
+            <Achievements achievements={achievements} />
 
             <DailyQuote quote={quote} />
 
