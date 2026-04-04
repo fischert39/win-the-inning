@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import type { Profile, Sport } from '@/types'
 
 interface Props {
@@ -16,9 +16,21 @@ interface Props {
 
 export default function AppHeader({ record, streak, sport, profile, onPastSeasons, onShareCard, onEndSeason, onSignOut }: Props) {
   const [menuOpen, setMenuOpen] = useState(false)
+  const [dark,     setDark]     = useState(false)
   const sportEmoji = sport === 'baseball' ? '⚾' : '🥎'
   const avatar = profile?.avatar_url
   const name   = profile?.display_name
+
+  useEffect(() => {
+    setDark(document.documentElement.classList.contains('dark'))
+  }, [])
+
+  function toggleDark() {
+    const next = !dark
+    setDark(next)
+    document.documentElement.classList.toggle('dark', next)
+    try { localStorage.setItem('wti_theme', next ? 'dark' : 'light') } catch(e) {}
+  }
 
   return (
     <header className="bg-brand-navy text-white sticky top-0 z-40 shadow-lg">
@@ -50,7 +62,15 @@ export default function AppHeader({ record, streak, sport, profile, onPastSeason
           )}
         </div>
 
-        {/* Right: avatar + menu */}
+        {/* Right: dark toggle + avatar + menu */}
+        <div className="flex items-center gap-2">
+        <button
+          onClick={toggleDark}
+          className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors text-base"
+          title={dark ? 'Switch to light mode' : 'Switch to dark mode'}
+        >
+          {dark ? '☀️' : '🌙'}
+        </button>
         <div className="relative">
           <button
             onClick={() => setMenuOpen(o => !o)}
@@ -68,7 +88,7 @@ export default function AppHeader({ record, streak, sport, profile, onPastSeason
           </button>
 
           {menuOpen && (
-            <div className="absolute right-0 top-10 w-48 bg-white rounded-xl shadow-2xl border border-slate-100 overflow-hidden z-50 animate-fade-in">
+            <div className="absolute right-0 top-10 w-48 bg-white rounded-xl shadow-2xl border border-slate-100 overflow-hidden z-50 animate-fade-in dark:bg-slate-800 dark:border-slate-700">
               {name && (
                 <div className="px-4 py-3 border-b border-slate-100">
                   <p className="text-brand-navy font-bold text-sm truncate">{name}</p>
@@ -101,6 +121,7 @@ export default function AppHeader({ record, streak, sport, profile, onPastSeason
               </button>
             </div>
           )}
+        </div>
         </div>
       </div>
     </header>

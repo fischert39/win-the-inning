@@ -13,3 +13,141 @@
   .scrollbar-hide::-webkit-scrollbar { display: none; }
   .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
 }
+
+/* ============================================================
+   Dark mode overrides — applied when <html class="dark">
+   ============================================================ */
+
+/* Page background */
+html.dark body {
+  background-color: #0d1117;
+}
+html.dark .bg-gradient-to-br {
+  background-image: none !important;
+  background-color: #0d1117 !important;
+}
+
+/* Cards / surfaces */
+html.dark .bg-white {
+  background-color: #161b22 !important;
+}
+html.dark .bg-slate-50 {
+  background-color: #1c2128 !important;
+}
+html.dark .bg-slate-100 {
+  background-color: #21262d !important;
+}
+
+/* Borders */
+html.dark .border-slate-100 {
+  border-color: #30363d !important;
+}
+html.dark .border-slate-200 {
+  border-color: #30363d !important;
+}
+html.dark .border-dashed.border-slate-200 {
+  border-color: #30363d !important;
+}
+
+/* Primary text */
+html.dark .text-brand-navy {
+  color: #e6edf3 !important;
+}
+html.dark .text-slate-600 {
+  color: #8b949e !important;
+}
+html.dark .text-slate-500 {
+  color: #8b949e !important;
+}
+html.dark .text-slate-400 {
+  color: #6e7681 !important;
+}
+html.dark .text-slate-300 {
+  color: #484f58 !important;
+}
+
+/* Inputs */
+html.dark input,
+html.dark textarea {
+  color: #e6edf3 !important;
+  caret-color: #e6edf3;
+}
+html.dark input::placeholder,
+html.dark textarea::placeholder {
+  color: #484f58 !important;
+}
+
+/* Scoring hint bar */
+html.dark .bg-slate-50.rounded-lg {
+  background-color: #21262d !important;
+  color: #8b949e !important;
+}
+html.dark .bg-slate-50.rounded-lg strong {
+  color: #adbac7 !important;
+}
+
+/* Goal rows */
+html.dark .bg-slate-50.rounded-xl {
+  background-color: #1c2128 !important;
+}
+html.dark .bg-white.shadow-sm {
+  background-color: #21262d !important;
+}
+
+/* Defense icon badge in non-completed state */
+html.dark .bg-white.shadow-sm.border {
+  background-color: #21262d !important;
+  border-color: #30363d !important;
+}
+
+/* Toast */
+html.dark .bg-brand-navy {
+  background-color: #1c2128;
+}
+
+/* Amber banner (viewing other date) */
+html.dark .bg-amber-50 {
+  background-color: #2d2006 !important;
+}
+html.dark .border-amber-200 {
+  border-color: #5a3e05 !important;
+}
+html.dark .text-amber-800 {
+  color: #d4a017 !important;
+}
+html.dark .text-amber-700 {
+  color: #c49010 !important;
+}
+
+/* Green completed rows */
+html.dark .bg-green-50 {
+  background-color: #0d2615 !important;
+}
+html.dark .border-green-200 {
+  border-color: #1a4a2a !important;
+}
+
+/* Hover states */
+html.dark .hover\:bg-slate-100:hover {
+  background-color: #21262d !important;
+}
+html.dark .hover\:bg-slate-50:hover {
+  background-color: #1c2128 !important;
+}
+
+/* Hit type selector buttons in dark */
+html.dark .bg-white.text-slate-400 {
+  background-color: #21262d !important;
+  color: #6e7681 !important;
+}
+
+/* Transition for smooth toggle */
+html, html * {
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.15s ease;
+}
+/* But don't transition things that shouldn't (animations) */
+html .animate-pop,
+html .animate-celebration,
+html .animate-bounce-slow {
+  transition: none !important;
+}

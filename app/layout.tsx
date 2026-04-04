@@ -31,16 +31,24 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="apple-touch-icon" href="/icon.svg" />
       </head>
       <body className={inter.className}>
-        {children}
+        {/* Anti-flash: apply saved theme before first paint */}
         <script dangerouslySetInnerHTML={{
           __html: `
+            (function() {
+              try {
+                if (localStorage.getItem('wti_theme') === 'dark') {
+                  document.documentElement.classList.add('dark');
+                }
+              } catch(e) {}
+            })();
             if ('serviceWorker' in navigator) {
               window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/sw.js').catch(() => {})
-              })
+                navigator.serviceWorker.register('/sw.js').catch(() => {});
+              });
             }
           `
         }} />
+        {children}
       </body>
     </html>
   )
