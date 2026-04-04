@@ -22,6 +22,7 @@ import DefenseSection from '@/components/DefenseSection'
 import OffenseSection from '@/components/OffenseSection'
 import EndOfDay        from '@/components/EndOfDay'
 import Achievements   from '@/components/Achievements'
+import WeeklyWrapUp   from '@/components/WeeklyWrapUp'
 
 export default function AppPage() {
   const [user,      setUser]      = useState<User | null>(null)
@@ -483,6 +484,19 @@ export default function AppPage() {
   const record       = getSeasonRecord()
   const streak       = currentStreak(season.games)
   const achievements = computeAchievements(season)
+
+  // Weekly wrap-up: show on the first day of a new week when last week had activity
+  const currentWeekStart = getWeekStart(todayStr)
+  const prevWeekGame = (() => {
+    if (vDate !== todayStr) return null  // only show on today's view
+    const prevWeekStart = (() => {
+      const d = new Date(currentWeekStart + 'T12:00:00')
+      d.setDate(d.getDate() - 7)
+      return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
+    })()
+    const g = season.games.find(g => g.week_start === prevWeekStart)
+    return g && g.innings.some(i => i.status === 'CLOSED') ? g : null
+  })()
   const sport       = profile?.sport ?? 'softball'
   const sportEmoji  = sport === 'baseball' ? '⚾' : '🥎'
   const isOther     = viewDate && viewDate !== todayStr
@@ -503,6 +517,14 @@ export default function AppPage() {
       />
 
       <div className="max-w-2xl mx-auto px-4 pb-20 pt-4">
+        {prevWeekGame && (
+          <WeeklyWrapUp
+            game={prevWeekGame}
+            weekStart={currentWeekStart}
+            sport={sport}
+          />
+        )}
+
         <Scoreboard
           games={season.games}
           todayStr={todayStr}
