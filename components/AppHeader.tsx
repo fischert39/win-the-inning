@@ -9,11 +9,12 @@ interface Props {
   sport:           Sport
   profile:         Profile | null
   onPastSeasons:   () => void
+  onShareCard:     () => void
   onEndSeason:     () => void
   onSignOut:       () => void
 }
 
-export default function AppHeader({ record, streak, sport, profile, onPastSeasons, onEndSeason, onSignOut }: Props) {
+export default function AppHeader({ record, streak, sport, profile, onPastSeasons, onShareCard, onEndSeason, onSignOut }: Props) {
   const [menuOpen, setMenuOpen] = useState(false)
   const sportEmoji = sport === 'baseball' ? '⚾' : '🥎'
   const avatar = profile?.avatar_url
@@ -79,6 +80,12 @@ export default function AppHeader({ record, streak, sport, profile, onPastSeason
                 className="w-full text-left px-4 py-2.5 text-sm text-slate-600 hover:bg-slate-50 transition-colors font-medium"
               >
                 📋 Past Seasons
+              </button>
+              <button
+                onClick={() => { setMenuOpen(false); onShareCard() }}
+                className="w-full text-left px-4 py-2.5 text-sm text-slate-600 hover:bg-slate-50 transition-colors font-medium"
+              >
+                📤 Share Scorecard
               </button>
               <button
                 onClick={() => { setMenuOpen(false); onEndSeason() }}

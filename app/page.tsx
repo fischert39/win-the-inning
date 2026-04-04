@@ -25,6 +25,7 @@ import Achievements   from '@/components/Achievements'
 import SeasonTrends      from '@/components/SeasonTrends'
 import WeeklyWrapUp      from '@/components/WeeklyWrapUp'
 import FriendComparison  from '@/components/FriendComparison'
+import ShareCard         from '@/components/ShareCard'
 
 export default function AppPage() {
   const [user,      setUser]      = useState<User | null>(null)
@@ -33,9 +34,10 @@ export default function AppPage() {
   const [viewDate,  setViewDate]  = useState<string | null>(null)
   const [loading,   setLoading]   = useState(true)
   const [toast,     setToast]     = useState<string | null>(null)
-  const [recapSeason,      setRecapSeason]      = useState<FullSeason | null>(null)
-  const [showPastSeasons,  setShowPastSeasons]  = useState(false)
+  const [recapSeason,        setRecapSeason]        = useState<FullSeason | null>(null)
+  const [showPastSeasons,    setShowPastSeasons]    = useState(false)
   const [showWinCelebration, setShowWinCelebration] = useState(false)
+  const [showShareCard,      setShowShareCard]      = useState(false)
   const router  = useRouter()
   const supabase = createClient()
 
@@ -549,6 +551,7 @@ export default function AppPage() {
         sport={sport}
         profile={profile}
         onPastSeasons={() => setShowPastSeasons(true)}
+        onShareCard={() => setShowShareCard(true)}
         onEndSeason={handleEndSeason}
         onSignOut={handleSignOut}
       />
@@ -672,6 +675,16 @@ export default function AppPage() {
 
       {showWinCelebration && (
         <WinCelebration onDismiss={() => setShowWinCelebration(false)} />
+      )}
+
+      {showShareCard && (
+        <ShareCard
+          game={viewGame}
+          record={record}
+          streak={streak}
+          sport={sport}
+          onClose={() => setShowShareCard(false)}
+        />
       )}
 
       {/* Toast */}
