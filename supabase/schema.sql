@@ -5,13 +5,21 @@
 
 -- Profiles (extends auth.users, auto-created on Google sign-in)
 create table if not exists public.profiles (
-  id           uuid references auth.users(id) on delete cascade primary key,
-  display_name text,
-  avatar_url   text,
-  sport        text default 'softball' check (sport in ('softball', 'baseball')),
-  created_at   timestamptz default now(),
-  updated_at   timestamptz default now()
+  id                   uuid references auth.users(id) on delete cascade primary key,
+  display_name         text,
+  avatar_url           text,
+  sport                text default 'softball' check (sport in ('softball', 'baseball')),
+  default_mind_task    text default '',
+  default_spirit_task  text default '',
+  default_body_task    text default '',
+  created_at           timestamptz default now(),
+  updated_at           timestamptz default now()
 );
+
+-- Migration: add default task columns if table already exists
+alter table public.profiles add column if not exists default_mind_task   text default '';
+alter table public.profiles add column if not exists default_spirit_task text default '';
+alter table public.profiles add column if not exists default_body_task   text default '';
 
 -- Seasons
 create table if not exists public.seasons (

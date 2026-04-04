@@ -4,11 +4,14 @@ export type GameResult = 'WIN' | 'LOSS' | 'TIE' | 'IN_PROGRESS'
 export type HitType    = 'single' | 'double' | 'triple' | 'homer'
 
 export interface Profile {
-  id:           string
-  display_name: string | null
-  avatar_url:   string | null
-  sport:        Sport
-  created_at:   string
+  id:                  string
+  display_name:        string | null
+  avatar_url:          string | null
+  sport:               Sport
+  created_at:          string
+  default_mind_task:   string | null
+  default_spirit_task: string | null
+  default_body_task:   string | null
 }
 
 export interface SeasonGoal {

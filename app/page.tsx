@@ -231,9 +231,12 @@ export default function AppPage() {
         .insert({
           id: iid, user_id: user.id, game_id: game.id, date,
           inning_number: inningNumber(date), target_goals: 5,
-          mind_task: '', mind_completed: false,
-          spirit_task: '', spirit_completed: false,
-          body_task: '', body_completed: false,
+          mind_task:   profile?.default_mind_task   ?? '',
+          mind_completed: false,
+          spirit_task: profile?.default_spirit_task ?? '',
+          spirit_completed: false,
+          body_task:   profile?.default_body_task   ?? '',
+          body_completed: false,
           reflection: '', future_goals: '',
           status: 'IN_PROGRESS', result: 'IN_PROGRESS',
         })
@@ -294,6 +297,16 @@ export default function AppPage() {
     const key = `${cat}_task` as 'mind_task' | 'spirit_task' | 'body_task'
     updateInning(viewInning.id, { [key]: val })
     await supabase.from('innings').update({ [key]: val }).eq('id', viewInning.id)
+  }
+
+  async function handleSaveDefaultTask(cat: 'mind' | 'spirit' | 'body') {
+    if (!viewInning || !user) return
+    const taskKey    = `${cat}_task`    as 'mind_task' | 'spirit_task' | 'body_task'
+    const defaultKey = `default_${cat}_task` as 'default_mind_task' | 'default_spirit_task' | 'default_body_task'
+    const val = viewInning[taskKey]
+    setProfile(prev => prev ? { ...prev, [defaultKey]: val } : prev)
+    await supabase.from('profiles').update({ [defaultKey]: val }).eq('id', user.id)
+    showToast(`📌 Saved as your default ${cat} task!`)
   }
 
   // ===== OFFENSE ACTIONS =====
@@ -547,8 +560,14 @@ export default function AppPage() {
 
             <DefenseSection
               inning={viewInning}
+              defaultTasks={{
+                mind:   profile?.default_mind_task   ?? '',
+                spirit: profile?.default_spirit_task ?? '',
+                body:   profile?.default_body_task   ?? '',
+              }}
               onToggle={handleToggleDefense}
               onSaveTask={handleSaveDefenseTask}
+              onSaveDefault={handleSaveDefaultTask}
             />
 
             <OffenseSection

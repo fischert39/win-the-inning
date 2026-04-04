@@ -4,9 +4,11 @@ import type { FullInning } from '@/types'
 import { countOuts } from '@/lib/game-logic'
 
 interface Props {
-  inning:      FullInning
-  onToggle:    (cat: 'mind' | 'spirit' | 'body') => void
-  onSaveTask:  (cat: 'mind' | 'spirit' | 'body', val: string) => void
+  inning:          FullInning
+  defaultTasks:    { mind: string; spirit: string; body: string }
+  onToggle:        (cat: 'mind' | 'spirit' | 'body') => void
+  onSaveTask:      (cat: 'mind' | 'spirit' | 'body', val: string) => void
+  onSaveDefault:   (cat: 'mind' | 'spirit' | 'body') => void
 }
 
 const CATS = [
@@ -15,7 +17,7 @@ const CATS = [
   { key: 'body'   as const, label: 'Body',   icon: '💪', color: 'brand-teal',   ring: 'focus:ring-teal-300',   placeholder: 'Your physical health task…' },
 ]
 
-export default function DefenseSection({ inning, onToggle, onSaveTask }: Props) {
+export default function DefenseSection({ inning, defaultTasks, onToggle, onSaveTask, onSaveDefault }: Props) {
   const outs = countOuts(inning)
 
   return (
@@ -48,8 +50,10 @@ export default function DefenseSection({ inning, onToggle, onSaveTask }: Props) 
       {/* Category rows */}
       <div className="px-5 pb-5 space-y-3">
         {CATS.map(cat => {
-          const completed = inning[`${cat.key}_completed`]
-          const task      = inning[`${cat.key}_task`]
+          const completed   = inning[`${cat.key}_completed`]
+          const task        = inning[`${cat.key}_task`]
+          const isDefault   = task === defaultTasks[cat.key] && task !== ''
+          const hasSaveable = task !== '' && !isDefault
 
           return (
             <div
@@ -82,6 +86,26 @@ export default function DefenseSection({ inning, onToggle, onSaveTask }: Props) 
                   }`}
                 />
               </div>
+
+              {/* Pin / save-as-default button */}
+              {hasSaveable && (
+                <button
+                  onClick={() => onSaveDefault(cat.key)}
+                  title="Save as my default task"
+                  className="flex-shrink-0 text-slate-300 hover:text-brand-orange transition-colors"
+                >
+                  <svg className="w-4 h-4" viewBox="0 0 16 16" fill="currentColor">
+                    <path d="M9.5 1a.5.5 0 0 1 .5.5v1h1.5A1.5 1.5 0 0 1 13 4v.5a.5.5 0 0 1-.5.5H10v3.17l1.45 1.45a.5.5 0 0 1-.7.7L9.5 8.58 8.25 9.82a.5.5 0 0 1-.7-.7L9 7.67V5H5v2.67L6.45 9.12a.5.5 0 0 1-.7.7L4.5 8.58 3.25 9.82a.5.5 0 0 1-.7-.7L4 7.67V5H3.5a.5.5 0 0 1-.5-.5V4A1.5 1.5 0 0 1 4.5 2.5H6v-1a.5.5 0 0 1 1 0v1h2v-1a.5.5 0 0 1 .5-.5zM7.5 10v4.5a.5.5 0 0 1-1 0V10h1z"/>
+                  </svg>
+                </button>
+              )}
+              {isDefault && (
+                <span title="This is your saved default" className="flex-shrink-0 text-brand-orange">
+                  <svg className="w-4 h-4" viewBox="0 0 16 16" fill="currentColor">
+                    <path d="M9.5 1a.5.5 0 0 1 .5.5v1h1.5A1.5 1.5 0 0 1 13 4v.5a.5.5 0 0 1-.5.5H10v3.17l1.45 1.45a.5.5 0 0 1-.7.7L9.5 8.58 8.25 9.82a.5.5 0 0 1-.7-.7L9 7.67V5H5v2.67L6.45 9.12a.5.5 0 0 1-.7.7L4.5 8.58 3.25 9.82a.5.5 0 0 1-.7-.7L4 7.67V5H3.5a.5.5 0 0 1-.5-.5V4A1.5 1.5 0 0 1 4.5 2.5H6v-1a.5.5 0 0 1 1 0v1h2v-1a.5.5 0 0 1 .5-.5zM7.5 10v4.5a.5.5 0 0 1-1 0V10h1z"/>
+                  </svg>
+                </span>
+              )}
 
               {/* Checkbox */}
               <button
