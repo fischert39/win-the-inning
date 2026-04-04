@@ -49,13 +49,14 @@ export function getBaseState(goals: Pick<OffenseGoal, 'completed' | 'hit_type'>[
   return bases
 }
 
-export function inningResult(inning: Pick<FullInning, 'status' | 'mind_completed' | 'spirit_completed' | 'body_completed' | 'offense_goals'>): GameResult {
+export function inningResult(inning: Pick<FullInning, 'status' | 'is_rain_delay' | 'mind_completed' | 'spirit_completed' | 'body_completed' | 'offense_goals'>): GameResult {
   if (inning.status !== 'CLOSED') return 'IN_PROGRESS'
+  if (inning.is_rain_delay) return 'IN_PROGRESS'
   if (countOuts(inning) < 3) return 'LOSS'
   return simulateRuns(inning.offense_goals) > 0 ? 'WIN' : 'TIE'
 }
 
-export function gameResult(innings: Pick<FullInning, 'status' | 'mind_completed' | 'spirit_completed' | 'body_completed' | 'offense_goals'>[]): GameResult {
+export function gameResult(innings: Pick<FullInning, 'status' | 'is_rain_delay' | 'mind_completed' | 'spirit_completed' | 'body_completed' | 'offense_goals'>[]): GameResult {
   const wins      = innings.filter(i => inningResult(i) === 'WIN').length
   const losses    = innings.filter(i => inningResult(i) === 'LOSS').length
   const closed    = innings.filter(i => i.status === 'CLOSED').length
@@ -65,7 +66,7 @@ export function gameResult(innings: Pick<FullInning, 'status' | 'mind_completed'
   return 'IN_PROGRESS'
 }
 
-export function currentStreak(games: { innings: Pick<FullInning, 'status' | 'date' | 'mind_completed' | 'spirit_completed' | 'body_completed' | 'offense_goals'>[] }[]): { type: 'WIN' | 'LOSS' | null; count: number } {
+export function currentStreak(games: { innings: Pick<FullInning, 'status' | 'is_rain_delay' | 'date' | 'mind_completed' | 'spirit_completed' | 'body_completed' | 'offense_goals'>[] }[]): { type: 'WIN' | 'LOSS' | null; count: number } {
   const closed = games
     .flatMap(g => g.innings)
     .filter(i => i.status === 'CLOSED')

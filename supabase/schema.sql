@@ -21,7 +21,8 @@ alter table public.profiles add column if not exists default_mind_task    text d
 alter table public.profiles add column if not exists default_spirit_task  text default '';
 alter table public.profiles add column if not exists default_body_task    text default '';
 alter table public.profiles add column if not exists default_offense_goals text default '[]';
-alter table public.profiles add column if not exists username             text unique;
+alter table public.profiles add column if not exists username              text unique;
+alter table public.innings  add column if not exists is_rain_delay         boolean default false;
 
 -- ============================================================
 -- Friend comparison: privacy-safe public stats lookup by username

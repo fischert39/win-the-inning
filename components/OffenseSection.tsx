@@ -15,6 +15,8 @@ interface Props {
   onCloseInning:     () => void
   onLoadTemplates:   () => void
   onSaveTemplates:   () => void
+  canRainDelay:      boolean
+  onRainDelay:       () => void
 }
 
 const HIT_TYPES: { key: HitType; label: string; title: string; color: string }[] = [
@@ -46,7 +48,7 @@ function BaseDiamond({ goals }: { goals: OffenseGoal[] }) {
 export default function OffenseSection({
   inning, sportEmoji, templates,
   onAddGoal, onSaveGoalText, onToggleGoal, onSetHitType, onDeleteGoal, onCloseInning,
-  onLoadTemplates, onSaveTemplates,
+  onLoadTemplates, onSaveTemplates, canRainDelay, onRainDelay,
 }: Props) {
   const closed      = inning.status === 'CLOSED'
   const goals       = inning.offense_goals
@@ -136,6 +138,15 @@ export default function OffenseSection({
             }`}
           >
             {matchesTmpl ? '📌 Saved as my templates' : '📌 Save these goals as templates'}
+          </button>
+        )}
+
+        {canRainDelay && !closed && (
+          <button
+            onClick={onRainDelay}
+            className="w-full py-2.5 rounded-xl font-bold text-sm transition-all border border-sky-200 bg-sky-50 text-sky-700 hover:bg-sky-100 active:scale-[0.98]"
+          >
+            ☔ Rain Delay — skip today (1 per week)
           </button>
         )}
 

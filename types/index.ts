@@ -53,6 +53,7 @@ export interface FullInning {
   future_goals:     string
   closed_at:        string | null
   result:           GameResult
+  is_rain_delay:    boolean
   offense_goals:    OffenseGoal[]
 }
 

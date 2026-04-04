@@ -109,10 +109,12 @@ export default function Scoreboard({ games, todayStr, viewDate, seasonStartDate,
           const runs      = inn ? simulateRuns(inn.offense_goals) : 0
           const outs      = inn ? countOuts(inn) : 0
 
+          const isRainDelay = inn?.is_rain_delay ?? false
           let cellBg = 'bg-white/5 hover:bg-white/10'
-          if (res === 'WIN')  cellBg = 'bg-brand-green/20 hover:bg-brand-green/30'
-          if (res === 'TIE')  cellBg = 'bg-yellow-500/20  hover:bg-yellow-500/30'
-          if (res === 'LOSS') cellBg = 'bg-brand-red/20   hover:bg-brand-red/30'
+          if (isRainDelay)    cellBg = 'bg-sky-500/15    hover:bg-sky-500/25'
+          else if (res === 'WIN')  cellBg = 'bg-brand-green/20 hover:bg-brand-green/30'
+          else if (res === 'TIE')  cellBg = 'bg-yellow-500/20  hover:bg-yellow-500/30'
+          else if (res === 'LOSS') cellBg = 'bg-brand-red/20   hover:bg-brand-red/30'
           if (isViewing)      cellBg += ' ring-2 ring-brand-orange'
           if (isToday && !isViewing) cellBg += ' ring-2 ring-white/30'
 
@@ -128,6 +130,8 @@ export default function Scoreboard({ games, todayStr, viewDate, seasonStartDate,
               </span>
               {!inn ? (
                 <span className="text-white/20 text-xs">–</span>
+              ) : isRainDelay ? (
+                <span className="text-sky-400 text-xs">☔</span>
               ) : res === 'WIN' ? (
                 <span className="text-brand-green text-xs font-black">W</span>
               ) : res === 'TIE' ? (

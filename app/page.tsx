@@ -189,7 +189,7 @@ export default function AppPage() {
       spirit_task: '', spirit_completed: false,
       body_task: '', body_completed: false,
       reflection: '', future_goals: '',
-      status: 'IN_PROGRESS', result: 'IN_PROGRESS',
+      status: 'IN_PROGRESS', result: 'IN_PROGRESS', is_rain_delay: false,
     })
     setProfile(prev => prev ? { ...prev, sport } : prev)
     await loadData()
@@ -245,7 +245,7 @@ export default function AppPage() {
           body_task:   profile?.default_body_task   ?? '',
           body_completed: false,
           reflection: '', future_goals: '',
-          status: 'IN_PROGRESS', result: 'IN_PROGRESS',
+          status: 'IN_PROGRESS', result: 'IN_PROGRESS', is_rain_delay: false,
         })
         .select().single()
       if (!newInning) return
@@ -362,6 +362,19 @@ export default function AppPage() {
     if (!viewInning) return
     removeGoal(viewInning.id, goalId)
     await supabase.from('offense_goals').delete().eq('id', goalId)
+  }
+
+  async function handleRainDelay() {
+    if (!viewInning || !viewGame) return
+    if (!confirm('Use your Rain Delay? This skips today without a loss — 1 per week.')) return
+    const updates = { status: 'CLOSED' as Status, is_rain_delay: true, result: 'IN_PROGRESS' as GameResult, closed_at: new Date().toISOString() }
+    updateInning(viewInning.id, updates)
+    await supabase.from('innings').update(updates).eq('id', viewInning.id)
+    const updatedInnings = viewGame.innings.map(i => i.id === viewInning.id ? { ...i, ...updates } : i)
+    const gr = gameResult(updatedInnings)
+    await supabase.from('games').update({ result: gr }).eq('id', viewGame.id)
+    updateGame(viewGame.id, { result: gr })
+    showToast('☔ Rain Delay used — day skipped, no loss!')
   }
 
   async function handleSaveTemplates() {
@@ -654,6 +667,7 @@ export default function AppPage() {
               inning={viewInning}
               sportEmoji={sportEmoji}
               templates={JSON.parse(profile?.default_offense_goals ?? '[]')}
+              canRainDelay={!!viewGame && !viewGame.innings.some(i => i.is_rain_delay)}
               onAddGoal={handleAddGoal}
               onSaveGoalText={handleSaveGoalText}
               onToggleGoal={handleToggleGoal}
@@ -662,6 +676,7 @@ export default function AppPage() {
               onCloseInning={handleCloseInning}
               onLoadTemplates={handleLoadTemplates}
               onSaveTemplates={handleSaveTemplates}
+              onRainDelay={handleRainDelay}
             />
 
             <EndOfDay
