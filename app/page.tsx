@@ -9,23 +9,21 @@ import {
   today, getWeekStart, getWeekEnd, inningNumber,
   countOuts, simulateRuns, inningResult, gameResult, getDailyQuote, currentStreak, getPrevDate,
 } from '@/lib/game-logic'
-import { computeAchievements } from '@/lib/achievements'
 import AppHeader      from '@/components/AppHeader'
-import SeasonGate     from '@/components/SeasonGate'
+import PreSeason      from '@/components/PreSeason'
 import SeasonRecap    from '@/components/SeasonRecap'
 import PastSeasons    from '@/components/PastSeasons'
 import WinCelebration from '@/components/WinCelebration'
-import Scoreboard   from '@/components/Scoreboard'
-import SeasonGoals  from '@/components/SeasonGoals'
-import DailyQuote   from '@/components/DailyQuote'
+import Scoreboard     from '@/components/Scoreboard'
+import SeasonGoals    from '@/components/SeasonGoals'
+import DailyQuote     from '@/components/DailyQuote'
 import DefenseSection from '@/components/DefenseSection'
 import OffenseSection from '@/components/OffenseSection'
-import EndOfDay        from '@/components/EndOfDay'
-import Achievements   from '@/components/Achievements'
-import SeasonTrends      from '@/components/SeasonTrends'
-import WeeklyWrapUp      from '@/components/WeeklyWrapUp'
-import FriendComparison  from '@/components/FriendComparison'
-import ShareCard         from '@/components/ShareCard'
+import EndOfDay       from '@/components/EndOfDay'
+import WeeklyWrapUp   from '@/components/WeeklyWrapUp'
+import ShareCard      from '@/components/ShareCard'
+import StatsPage      from '@/components/StatsPage'
+import BottomNav      from '@/components/BottomNav'
 
 export default function AppPage() {
   const [user,      setUser]      = useState<User | null>(null)
@@ -38,6 +36,7 @@ export default function AppPage() {
   const [showPastSeasons,    setShowPastSeasons]    = useState(false)
   const [showWinCelebration, setShowWinCelebration] = useState(false)
   const [showShareCard,      setShowShareCard]      = useState(false)
+  const [activeTab,          setActiveTab]          = useState<'today' | 'stats'>('today')
   const router  = useRouter()
   const supabase = createClient()
 
@@ -169,7 +168,7 @@ export default function AppPage() {
   }
 
   // ===== SEASON ACTIONS =====
-  async function handleStartSeason(sport: Sport) {
+  async function handleStartSeason(sport: Sport, initialGoals: string[] = []) {
     if (!user) return
     const t   = todayStr
     const sid = 's_' + t + '_' + Date.now()
@@ -185,12 +184,24 @@ export default function AppPage() {
     await supabase.from('innings').insert({
       id: iid, user_id: user.id, game_id: gid, date: t,
       inning_number: inningNumber(t), target_goals: 5,
-      mind_task: '', mind_completed: false,
-      spirit_task: '', spirit_completed: false,
-      body_task: '', body_completed: false,
+      mind_task:   profile?.default_mind_task   ?? '',
+      mind_completed: false,
+      spirit_task: profile?.default_spirit_task ?? '',
+      spirit_completed: false,
+      body_task:   profile?.default_body_task   ?? '',
+      body_completed: false,
       reflection: '', future_goals: '',
       status: 'IN_PROGRESS', result: 'IN_PROGRESS', is_rain_delay: false,
     })
+    if (initialGoals.length > 0) {
+      await supabase.from('season_goals').insert(
+        initialGoals.map((text, idx) => ({
+          id: 'sg_' + Date.now() + '_' + idx,
+          user_id: user.id, season_id: sid,
+          text, completed: false, sort_order: idx,
+        }))
+      )
+    }
     setProfile(prev => prev ? { ...prev, sport } : prev)
     await loadData()
   }
@@ -524,7 +535,7 @@ export default function AppPage() {
 
   if (!season) {
     return (
-      <SeasonGate
+      <PreSeason
         sport={profile?.sport ?? 'softball'}
         displayName={profile?.display_name ?? user?.user_metadata?.full_name ?? 'Player'}
         onStart={handleStartSeason}
@@ -533,9 +544,11 @@ export default function AppPage() {
     )
   }
 
-  const record       = getSeasonRecord()
-  const streak       = currentStreak(season.games)
-  const achievements = computeAchievements(season)
+  const record           = getSeasonRecord()
+  const streak           = currentStreak(season.games)
+  const allClosedInnings = season.games.flatMap(g => g.innings).filter(i => i.status === 'CLOSED' && !i.is_rain_delay)
+  const inningsWon       = allClosedInnings.filter(i => inningResult(i) === 'WIN').length
+  const inningsPlayed    = allClosedInnings.length
 
   // Weekly wrap-up: show on the first day of a new week when last week had activity
   const currentWeekStart = getWeekStart(todayStr)
@@ -569,7 +582,23 @@ export default function AppPage() {
         onSignOut={handleSignOut}
       />
 
-      <div className="max-w-2xl mx-auto px-4 pb-20 pt-4">
+      <div className="max-w-2xl mx-auto px-4 pb-24 pt-4">
+
+        {/* Stats tab */}
+        {activeTab === 'stats' && (
+          <StatsPage
+            season={season}
+            record={record}
+            profile={profile}
+            inningsWon={inningsWon}
+            inningsPlayed={inningsPlayed}
+            onPastSeasons={() => setShowPastSeasons(true)}
+            onSetUsername={handleSetUsername}
+          />
+        )}
+
+        {/* Today tab */}
+        {activeTab === 'today' && (<>
         {prevWeekGame && (
           <WeeklyWrapUp
             game={prevWeekGame}
@@ -634,21 +663,6 @@ export default function AppPage() {
               onDelete={handleDeleteSeasonGoal}
             />
 
-            <Achievements achievements={achievements} />
-
-            <SeasonTrends games={season.games} />
-
-            <FriendComparison
-              myUsername={profile?.username ?? null}
-              myStats={{
-                gameWins:      record.wins,
-                gameLosses:    record.losses,
-                inningsWon:    season.games.flatMap(g => g.innings).filter(i => i.status === 'CLOSED' && inningResult(i) === 'WIN').length,
-                inningsPlayed: season.games.flatMap(g => g.innings).filter(i => i.status === 'CLOSED').length,
-              }}
-              onSetUsername={handleSetUsername}
-            />
-
             <DailyQuote quote={quote} />
 
             <DefenseSection
@@ -686,7 +700,10 @@ export default function AppPage() {
             />
           </div>
         )}
+        </>)}
       </div>
+
+      <BottomNav tab={activeTab} onChange={setActiveTab} />
 
       {showWinCelebration && (
         <WinCelebration onDismiss={() => setShowWinCelebration(false)} />
