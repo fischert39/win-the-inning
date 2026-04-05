@@ -656,7 +656,6 @@ export default function AppPage() {
         onShareCard={() => setShowShareCard(true)}
         onEditTeam={() => setShowTeamSettings(true)}
         onEndSeason={handleEndSeason}
-        onClearData={handleClearAllData}
         onSignOut={handleSignOut}
       />
 
@@ -672,6 +671,7 @@ export default function AppPage() {
             inningsPlayed={inningsPlayed}
             onPastSeasons={() => setShowPastSeasons(true)}
             onSetUsername={handleSetUsername}
+            onClearData={handleClearAllData}
           />
         )}
 

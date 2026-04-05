@@ -14,11 +14,12 @@ interface Props {
   inningsPlayed:   number
   onPastSeasons:   () => void
   onSetUsername:   (u: string) => Promise<void>
+  onClearData:     () => void
 }
 
 export default function StatsPage({
   season, record, profile, inningsWon, inningsPlayed,
-  onPastSeasons, onSetUsername,
+  onPastSeasons, onSetUsername, onClearData,
 }: Props) {
   const achievements = computeAchievements(season)
   const unlocked     = achievements.filter(a => a.unlocked).length
@@ -70,6 +71,21 @@ export default function StatsPage({
           </div>
         </div>
         <span className="text-slate-300 text-lg">›</span>
+      </button>
+
+      {/* Clear All Data */}
+      <button
+        onClick={onClearData}
+        className="w-full bg-white rounded-2xl shadow-sm border border-red-100 px-5 py-4 flex items-center justify-between hover:bg-red-50 transition-colors"
+      >
+        <div className="flex items-center gap-3">
+          <span className="text-xl">🗑️</span>
+          <div className="text-left">
+            <p className="font-black text-base text-red-500">Clear All Data</p>
+            <p className="text-slate-400 text-xs mt-0.5">Permanently delete all seasons &amp; stats</p>
+          </div>
+        </div>
+        <span className="text-red-300 text-lg">›</span>
       </button>
     </div>
   )
