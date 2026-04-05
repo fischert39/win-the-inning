@@ -4,11 +4,13 @@ import type { FullInning } from '@/types'
 import { countOuts } from '@/lib/game-logic'
 
 interface Props {
-  inning:          FullInning
-  defaultTasks:    { mind: string; spirit: string; body: string }
-  onToggle:        (cat: 'mind' | 'spirit' | 'body') => void
-  onSaveTask:      (cat: 'mind' | 'spirit' | 'body', val: string) => void
-  onSaveDefault:   (cat: 'mind' | 'spirit' | 'body') => void
+  inning:               FullInning
+  defaultTasks:         { mind: string; spirit: string; body: string }
+  pinchHitterTokens:    number
+  onToggle:             (cat: 'mind' | 'spirit' | 'body') => void
+  onSaveTask:           (cat: 'mind' | 'spirit' | 'body', val: string) => void
+  onSaveDefault:        (cat: 'mind' | 'spirit' | 'body') => void
+  onUsePinchHitter:     () => void
 }
 
 const CATS = [
@@ -17,8 +19,9 @@ const CATS = [
   { key: 'body'   as const, label: 'Body',   icon: '💪', color: 'brand-teal',   ring: 'focus:ring-teal-300',   placeholder: 'Your physical health task…' },
 ]
 
-export default function DefenseSection({ inning, defaultTasks, onToggle, onSaveTask, onSaveDefault }: Props) {
+export default function DefenseSection({ inning, defaultTasks, pinchHitterTokens, onToggle, onSaveTask, onSaveDefault, onUsePinchHitter }: Props) {
   const outs = countOuts(inning)
+  const canUsePinchHitter = pinchHitterTokens > 0 && outs < 3 && !inning.pinch_hit_used && inning.status !== 'CLOSED'
 
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
@@ -47,8 +50,16 @@ export default function DefenseSection({ inning, defaultTasks, onToggle, onSaveT
         </div>
       </div>
 
+      {/* Pinch Hitter token banner */}
+      {inning.pinch_hit_used && (
+        <div className="mx-5 mb-1 px-3 py-2 bg-amber-50 border border-amber-200 rounded-xl flex items-center gap-2">
+          <span className="text-base">🎽</span>
+          <p className="text-amber-800 text-xs font-semibold">Pinch Hitter token used — +1 Out added to today&apos;s defense</p>
+        </div>
+      )}
+
       {/* Category rows */}
-      <div className="px-5 pb-5 space-y-3">
+      <div className={`px-5 space-y-3 ${canUsePinchHitter || inning.pinch_hit_used ? 'pb-3' : 'pb-5'}`}>
         {CATS.map(cat => {
           const completed   = inning[`${cat.key}_completed`]
           const task        = inning[`${cat.key}_task`]
@@ -126,6 +137,27 @@ export default function DefenseSection({ inning, defaultTasks, onToggle, onSaveT
           )
         })}
       </div>
+
+      {/* Pinch Hitter use button */}
+      {canUsePinchHitter && (
+        <div className="px-5 pb-5">
+          <button
+            onClick={onUsePinchHitter}
+            className="w-full flex items-center justify-between bg-amber-50 border border-amber-200 hover:bg-amber-100 transition-colors rounded-xl px-4 py-3"
+          >
+            <div className="flex items-center gap-2">
+              <span className="text-xl">🎽</span>
+              <div className="text-left">
+                <p className="text-amber-900 font-black text-sm">Use Pinch Hitter</p>
+                <p className="text-amber-700 text-xs">Add +1 Out on a tough day</p>
+              </div>
+            </div>
+            <span className="bg-amber-200 text-amber-900 text-xs font-black px-2.5 py-1 rounded-full">
+              {pinchHitterTokens} token{pinchHitterTokens !== 1 ? 's' : ''}
+            </span>
+          </button>
+        </div>
+      )}
     </div>
   )
 }

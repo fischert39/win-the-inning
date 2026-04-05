@@ -7,10 +7,11 @@ import { createClient } from '@/lib/supabase/client'
 import type { Profile, FullSeason, FullGame, FullInning, OffenseGoal, SeasonGoal, Sport, HitType, GameResult, Status } from '@/types'
 import {
   today, getWeekStart, getWeekEnd, inningNumber,
-  countOuts, simulateRuns, inningResult, gameResult, getDailyQuote, currentStreak, getPrevDate,
+  countOuts, simulateRuns, inningResult, gameResult, getDailyQuote, getDailyVerse, currentStreak, getPrevDate,
 } from '@/lib/game-logic'
 import AppHeader      from '@/components/AppHeader'
 import PreSeason      from '@/components/PreSeason'
+import TeamSettings   from '@/components/TeamSettings'
 import SeasonRecap    from '@/components/SeasonRecap'
 import PastSeasons    from '@/components/PastSeasons'
 import WinCelebration from '@/components/WinCelebration'
@@ -36,6 +37,7 @@ export default function AppPage() {
   const [showPastSeasons,    setShowPastSeasons]    = useState(false)
   const [showWinCelebration, setShowWinCelebration] = useState(false)
   const [showShareCard,      setShowShareCard]      = useState(false)
+  const [showTeamSettings,   setShowTeamSettings]   = useState(false)
   const [activeTab,          setActiveTab]          = useState<'today' | 'stats'>('today')
   const router  = useRouter()
   const supabase = createClient()
@@ -167,8 +169,37 @@ export default function AppPage() {
     })
   }
 
+  // ===== TEAM ACTIONS =====
+  async function handleSaveTeam(teamName: string, mascot: string) {
+    if (!user) return
+    setProfile(prev => prev ? { ...prev, team_name: teamName || null, mascot } : prev)
+    await supabase.from('profiles').update({ team_name: teamName || null, mascot }).eq('id', user.id)
+    showToast(`🏟️ Team updated!`)
+  }
+
+  // ===== PINCH HITTER =====
+  async function handleUsePinchHitter() {
+    if (!viewInning || !user) return
+    if (!confirm('Use a Pinch Hitter token? This adds +1 Out to today\'s defense.')) return
+    const newTokens = Math.max(0, (profile?.pinch_hitter_tokens ?? 0) - 1)
+    updateInning(viewInning.id, { pinch_hit_used: true })
+    setProfile(prev => prev ? { ...prev, pinch_hitter_tokens: newTokens } : prev)
+    await supabase.from('innings').update({ pinch_hit_used: true }).eq('id', viewInning.id)
+    await supabase.from('profiles').update({ pinch_hitter_tokens: newTokens }).eq('id', user.id)
+    if (viewGame) {
+      const updatedInnings = viewGame.innings.map(i => i.id === viewInning.id ? { ...i, pinch_hit_used: true } : i)
+      const gr = gameResult(updatedInnings)
+      await supabase.from('games').update({ result: gr }).eq('id', viewGame.id)
+      updateGame(viewGame.id, { result: gr })
+    }
+    showToast('🎽 Pinch Hitter used — +1 Out added!')
+  }
+
   // ===== SEASON ACTIONS =====
-  async function handleStartSeason(sport: Sport, initialGoals: string[] = []) {
+  async function handleStartSeason(sport: Sport, initialGoals: string[] = [], opts?: {
+    teamName: string; mascot: string; lengthWeeks: number
+    successDefinition: string; obstacle: string; dailyBibleVerse: boolean
+  }) {
     if (!user) return
     const t   = todayStr
     const sid = 's_' + t + '_' + Date.now()
@@ -178,8 +209,22 @@ export default function AppPage() {
     const iid = 'i_' + t  + '_' + Date.now()
 
     await supabase.from('seasons').update({ is_current: false }).eq('user_id', user.id).eq('is_current', true)
-    await supabase.from('seasons').insert({ id: sid, user_id: user.id, start_date: t, is_current: true })
-    await supabase.from('profiles').update({ sport }).eq('id', user.id)
+    await supabase.from('seasons').insert({
+      id: sid, user_id: user.id, start_date: t, is_current: true,
+      ...(opts ? {
+        success_definition: opts.successDefinition || null,
+        obstacle:           opts.obstacle || null,
+        length_weeks:       opts.lengthWeeks,
+      } : {}),
+    })
+    await supabase.from('profiles').update({
+      sport,
+      ...(opts ? {
+        team_name:          opts.teamName || null,
+        mascot:             opts.mascot,
+        daily_bible_verse:  opts.dailyBibleVerse,
+      } : {}),
+    }).eq('id', user.id)
     await supabase.from('games').insert({ id: gid, user_id: user.id, season_id: sid, week_start: ws, week_end: we })
     await supabase.from('innings').insert({
       id: iid, user_id: user.id, game_id: gid, date: t,
@@ -191,7 +236,7 @@ export default function AppPage() {
       body_task:   profile?.default_body_task   ?? '',
       body_completed: false,
       reflection: '', future_goals: '',
-      status: 'IN_PROGRESS', result: 'IN_PROGRESS', is_rain_delay: false,
+      status: 'IN_PROGRESS', result: 'IN_PROGRESS', is_rain_delay: false, pinch_hit_used: false,
     })
     if (initialGoals.length > 0) {
       await supabase.from('season_goals').insert(
@@ -202,7 +247,14 @@ export default function AppPage() {
         }))
       )
     }
-    setProfile(prev => prev ? { ...prev, sport } : prev)
+    setProfile(prev => prev ? {
+      ...prev, sport,
+      ...(opts ? {
+        team_name: opts.teamName || null,
+        mascot: opts.mascot,
+        daily_bible_verse: opts.dailyBibleVerse,
+      } : {}),
+    } : prev)
     await loadData()
   }
 
@@ -256,7 +308,7 @@ export default function AppPage() {
           body_task:   profile?.default_body_task   ?? '',
           body_completed: false,
           reflection: '', future_goals: '',
-          status: 'IN_PROGRESS', result: 'IN_PROGRESS', is_rain_delay: false,
+          status: 'IN_PROGRESS', result: 'IN_PROGRESS', is_rain_delay: false, pinch_hit_used: false,
         })
         .select().single()
       if (!newInning) return
@@ -446,6 +498,17 @@ export default function AppPage() {
     }
 
     if (result === 'WIN' && !isUpdate) {
+      // Check for perfect week (7 non-rain-delay WINs in the current game)
+      if (viewGame) {
+        const updatedInn = viewGame.innings.map(i => i.id === viewInning.id ? { ...i, ...dbUpdates } : i)
+        const nonRainClosed = updatedInn.filter(i => i.status === 'CLOSED' && !i.is_rain_delay)
+        if (nonRainClosed.length === 7 && nonRainClosed.every(i => inningResult(i) === 'WIN')) {
+          const newTokens = (profile?.pinch_hitter_tokens ?? 0) + 1
+          setProfile(prev => prev ? { ...prev, pinch_hitter_tokens: newTokens } : prev)
+          await supabase.from('profiles').update({ pinch_hitter_tokens: newTokens }).eq('id', user!.id)
+          showToast('🎯 PERFECT WEEK! +1 Pinch Hitter token earned!')
+        }
+      }
       setShowWinCelebration(true)
     } else if (result === 'WIN') {
       showToast('🏆 Inning updated — still a WIN!')
@@ -538,7 +601,7 @@ export default function AppPage() {
       <PreSeason
         sport={profile?.sport ?? 'softball'}
         displayName={profile?.display_name ?? user?.user_metadata?.full_name ?? 'Player'}
-        onStart={handleStartSeason}
+        onStart={(sport, goals, opts) => handleStartSeason(sport, goals, opts)}
         onSignOut={handleSignOut}
       />
     )
@@ -578,6 +641,7 @@ export default function AppPage() {
         profile={profile}
         onPastSeasons={() => setShowPastSeasons(true)}
         onShareCard={() => setShowShareCard(true)}
+        onEditTeam={() => setShowTeamSettings(true)}
         onEndSeason={handleEndSeason}
         onSignOut={handleSignOut}
       />
@@ -663,7 +727,7 @@ export default function AppPage() {
               onDelete={handleDeleteSeasonGoal}
             />
 
-            <DailyQuote quote={quote} />
+            <DailyQuote quote={quote} verse={profile?.daily_bible_verse ? getDailyVerse() : null} />
 
             <DefenseSection
               inning={viewInning}
@@ -672,9 +736,11 @@ export default function AppPage() {
                 spirit: profile?.default_spirit_task ?? '',
                 body:   profile?.default_body_task   ?? '',
               }}
+              pinchHitterTokens={profile?.pinch_hitter_tokens ?? 0}
               onToggle={handleToggleDefense}
               onSaveTask={handleSaveDefenseTask}
               onSaveDefault={handleSaveDefaultTask}
+              onUsePinchHitter={handleUsePinchHitter}
             />
 
             <OffenseSection
@@ -704,6 +770,15 @@ export default function AppPage() {
       </div>
 
       <BottomNav tab={activeTab} onChange={setActiveTab} />
+
+      {showTeamSettings && (
+        <TeamSettings
+          currentTeamName={profile?.team_name ?? null}
+          currentMascot={profile?.mascot ?? null}
+          onSave={handleSaveTeam}
+          onClose={() => setShowTeamSettings(false)}
+        />
+      )}
 
       {showWinCelebration && (
         <WinCelebration onDismiss={() => setShowWinCelebration(false)} />

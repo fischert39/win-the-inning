@@ -2,45 +2,90 @@
 
 import { useState, useEffect } from 'react'
 import type { Sport } from '@/types'
+import { MASCOTS } from '@/components/TeamSettings'
+
+interface SeasonOptions {
+  teamName:          string
+  mascot:            string
+  lengthWeeks:       number
+  successDefinition: string
+  obstacle:          string
+  dailyBibleVerse:   boolean
+}
 
 interface Props {
   sport:       Sport
   displayName: string
-  onStart:     (sport: Sport, goals: string[]) => Promise<void>
+  onStart:     (sport: Sport, goals: string[], opts: SeasonOptions) => Promise<void>
   onSignOut:   () => void
 }
 
-const STEPS = 5
+const INTRO_STEPS = 4
+const TOTAL_STEPS = 6  // 4 intro + step 5 (team) + step 6 (goals/vision)
+
+const GOAL_PRESETS: { category: string; goals: string[] }[] = [
+  { category: 'Fitness',      goals: ['Run or walk 30 min', 'Work out for 45 min', 'Do 20 push-ups', 'Stretch or yoga 15 min'] },
+  { category: 'Mind',         goals: ['Read for 20 min', 'No phone for first hour', 'Complete a course lesson', 'Journal 5 min'] },
+  { category: 'Faith',        goals: ['Morning prayer/devotional', 'Read a scripture passage', 'Journal gratitude to God'] },
+  { category: 'Productivity', goals: ['Complete my top 3 tasks', 'Deep work block 90 min', 'Review tomorrow\'s plan', 'Inbox zero'] },
+  { category: 'Health',       goals: ['Drink 8 glasses of water', 'Eat a healthy meal', 'Sleep 8 hours', 'Meal prep for the week'] },
+]
+
+const WEEK_OPTIONS = [4, 8, 12, 16, 26]
 
 export default function PreSeason({ sport: initialSport, displayName, onStart, onSignOut }: Props) {
-  const [step,     setStep]     = useState(0)        // 0 = detect, set in useEffect
+  const [step,     setStep]     = useState(0)
   const [ready,    setReady]    = useState(false)
-  const [sport,    setSport]    = useState<Sport>(initialSport)
-  const [goals,    setGoals]    = useState(['', '', ''])
   const [starting, setStarting] = useState(false)
+
+  // Step 5: Team setup
+  const [sport,    setSport]    = useState<Sport>(initialSport)
+  const [teamName, setTeamName] = useState('')
+  const [mascot,   setMascot]   = useState(MASCOTS[0].emoji)
+
+  // Step 6: Season vision
+  const [lengthWeeks,        setLengthWeeks]        = useState(12)
+  const [goals,              setGoals]              = useState(['', '', ''])
+  const [successDefinition,  setSuccessDefinition]  = useState('')
+  const [obstacle,           setObstacle]           = useState('')
+  const [dailyBibleVerse,    setDailyBibleVerse]    = useState(false)
 
   useEffect(() => {
     const seen = localStorage.getItem('wti_seen_intro')
-    setStep(seen ? 4 : 1)   // skip to setup if returning user
+    setStep(seen ? 5 : 1)
     setReady(true)
   }, [])
 
-  function next() { setStep(s => Math.min(s + 1, STEPS)) }
+  function next() { setStep(s => Math.min(s + 1, TOTAL_STEPS)) }
   function back() { setStep(s => Math.max(s - 1, 1)) }
 
   function setGoal(idx: number, val: string) {
     setGoals(prev => prev.map((g, i) => i === idx ? val : g))
   }
-
-  function addGoalRow() {
-    setGoals(prev => [...prev, ''])
+  function addGoalRow() { setGoals(prev => [...prev, '']) }
+  function togglePresetGoal(text: string) {
+    if (goals.includes(text)) {
+      setGoals(prev => prev.filter(g => g !== text))
+    } else {
+      const empties = goals.filter(g => g.trim() === '')
+      if (empties.length > 0) {
+        setGoals(prev => {
+          const copy = [...prev]
+          const idx  = copy.findIndex(g => g.trim() === '')
+          copy[idx]  = text
+          return copy
+        })
+      } else {
+        setGoals(prev => [...prev, text])
+      }
+    }
   }
 
   async function handleStart() {
     setStarting(true)
     localStorage.setItem('wti_seen_intro', '1')
     const filtered = goals.map(g => g.trim()).filter(Boolean)
-    await onStart(sport, filtered)
+    await onStart(sport, filtered, { teamName: teamName.trim(), mascot, lengthWeeks, successDefinition: successDefinition.trim(), obstacle: obstacle.trim(), dailyBibleVerse })
   }
 
   if (!ready) return null
@@ -169,64 +214,229 @@ export default function PreSeason({ sport: initialSport, displayName, onStart, o
           ))}
         </div>
 
-        <div className="bg-brand-green/10 border border-brand-green/20 rounded-xl p-4 text-center">
-          <p className="text-white/80 text-sm">
-            You can use a <span className="text-sky-400 font-bold">☔ Rain Delay</span> once per week to skip a day without a loss. Life happens.
-          </p>
+        <div className="space-y-2">
+          <div className="bg-brand-green/10 border border-brand-green/20 rounded-xl p-4 text-center">
+            <p className="text-white/80 text-sm">
+              You can use a <span className="text-sky-400 font-bold">☔ Rain Delay</span> once per week to skip a day without a loss.
+            </p>
+          </div>
+          <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4 text-center">
+            <p className="text-white/80 text-sm">
+              Win all 7 innings for a <span className="text-amber-400 font-bold">🎽 Perfect Week</span> and earn a Pinch Hitter token — use it on a tough day to add an automatic Out.
+            </p>
+          </div>
         </div>
       </div>
       <NavRow onNext={next} onBack={back} step={step} />
     </Screen>
   )
 
-  // ── Step 5: Season Setup ──────────────────────────────────────
-  return (
+  // ── Step 5: Team Setup ────────────────────────────────────────
+  if (step === 5) return (
     <Screen>
-      <div className="flex-1 overflow-y-auto">
-        <h2 className="text-2xl font-black text-white mb-1">⚡ Start Your Season</h2>
-        <p className="text-white/50 text-sm mb-6">Hey {displayName}! Set up your season before we begin.</p>
+      <div className="flex-1 overflow-y-auto space-y-6">
+        <div>
+          <h2 className="text-2xl font-black text-white mb-1">🏟️ Build Your Team</h2>
+          <p className="text-white/50 text-sm">Hey {displayName}! Let&apos;s set up your team first.</p>
+        </div>
 
         {/* Sport */}
-        <p className="text-white/40 text-xs font-black uppercase tracking-widest mb-2">Choose your sport</p>
-        <div className="flex gap-3 mb-6">
-          {(['softball', 'baseball'] as Sport[]).map(s => (
-            <button
-              key={s}
-              onClick={() => setSport(s)}
-              className={`flex-1 py-4 rounded-xl border-2 font-bold text-sm transition-all ${
-                sport === s
-                  ? 'bg-brand-orange/20 border-brand-orange text-white'
-                  : 'bg-white/5 border-white/15 text-white/70 hover:border-white/30'
-              }`}
-            >
-              <span className="text-3xl block mb-1">{s === 'baseball' ? '⚾' : '🥎'}</span>
-              {s.charAt(0).toUpperCase() + s.slice(1)}
-            </button>
-          ))}
+        <div>
+          <p className="text-white/40 text-xs font-black uppercase tracking-widest mb-2">Choose your sport</p>
+          <div className="flex gap-3">
+            {(['softball', 'baseball'] as Sport[]).map(s => (
+              <button
+                key={s}
+                onClick={() => setSport(s)}
+                className={`flex-1 py-4 rounded-xl border-2 font-bold text-sm transition-all ${
+                  sport === s
+                    ? 'bg-brand-orange/20 border-brand-orange text-white'
+                    : 'bg-white/5 border-white/15 text-white/70 hover:border-white/30'
+                }`}
+              >
+                <span className="text-3xl block mb-1">{s === 'baseball' ? '⚾' : '🥎'}</span>
+                {s.charAt(0).toUpperCase() + s.slice(1)}
+              </button>
+            ))}
+          </div>
         </div>
 
-        {/* Season goals */}
-        <p className="text-white/40 text-xs font-black uppercase tracking-widest mb-2">Season Goals <span className="normal-case font-normal text-white/30">(optional)</span></p>
-        <div className="space-y-2 mb-3">
-          {goals.map((g, i) => (
-            <input
-              key={i}
-              type="text"
-              value={g}
-              onChange={e => setGoal(i, e.target.value)}
-              placeholder={`Goal ${i + 1}… e.g. "Run a 5K"`}
-              className="w-full bg-white/10 border border-white/15 rounded-xl px-4 py-3 text-sm text-white placeholder:text-white/30 outline-none focus:border-brand-orange/50"
-            />
-          ))}
+        {/* Team Name */}
+        <div>
+          <p className="text-white/40 text-xs font-black uppercase tracking-widest mb-2">
+            Team Name <span className="normal-case font-normal text-white/30">(optional)</span>
+          </p>
+          <input
+            type="text"
+            value={teamName}
+            onChange={e => setTeamName(e.target.value)}
+            placeholder={`e.g. The ${sport === 'baseball' ? 'Thunder Hawks' : 'Fire Foxes'}`}
+            maxLength={30}
+            className="w-full bg-white/10 border border-white/15 rounded-xl px-4 py-3 text-sm text-white placeholder:text-white/30 outline-none focus:border-brand-orange/50"
+          />
         </div>
-        {goals.length < 7 && (
-          <button
-            onClick={addGoalRow}
-            className="text-white/40 hover:text-white/70 text-sm font-semibold mb-6 transition-colors"
-          >
-            + Add another goal
-          </button>
-        )}
+
+        {/* Mascot */}
+        <div>
+          <p className="text-white/40 text-xs font-black uppercase tracking-widest mb-2">Mascot</p>
+          <div className="grid grid-cols-4 gap-2">
+            {MASCOTS.map(m => (
+              <button
+                key={m.emoji}
+                onClick={() => setMascot(m.emoji)}
+                className={`flex flex-col items-center py-3 rounded-xl border-2 transition-all ${
+                  mascot === m.emoji
+                    ? 'border-brand-orange bg-brand-orange/10 text-white'
+                    : 'border-white/10 bg-white/5 text-white/70 hover:border-white/20'
+                }`}
+              >
+                <span className="text-2xl leading-none">{m.emoji}</span>
+                <span className="text-[9px] mt-1 font-semibold leading-none">{m.name}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+      <NavRow onNext={next} onBack={back} step={step} isSetup />
+    </Screen>
+  )
+
+  // ── Step 6: Season Vision ─────────────────────────────────────
+  return (
+    <Screen>
+      <div className="flex-1 overflow-y-auto space-y-5">
+        <div>
+          <h2 className="text-2xl font-black text-white mb-1">⚡ Season Vision</h2>
+          <p className="text-white/50 text-sm">Define your goals and set yourself up to win.</p>
+        </div>
+
+        {/* Season length */}
+        <div>
+          <p className="text-white/40 text-xs font-black uppercase tracking-widest mb-2">How many weeks?</p>
+          <div className="flex gap-2">
+            {WEEK_OPTIONS.map(w => (
+              <button
+                key={w}
+                onClick={() => setLengthWeeks(w)}
+                className={`flex-1 py-2.5 rounded-xl border-2 font-black text-sm transition-all ${
+                  lengthWeeks === w
+                    ? 'border-brand-orange bg-brand-orange/20 text-white'
+                    : 'border-white/10 bg-white/5 text-white/60 hover:border-white/20'
+                }`}
+              >
+                {w}
+              </button>
+            ))}
+          </div>
+          <p className="text-white/30 text-xs mt-1.5 text-center">{lengthWeeks} weeks = {lengthWeeks} games</p>
+        </div>
+
+        {/* Season goals with preset library */}
+        <div>
+          <p className="text-white/40 text-xs font-black uppercase tracking-widest mb-2">
+            Season Goals <span className="normal-case font-normal text-white/30">(optional)</span>
+          </p>
+          <div className="space-y-1.5 mb-3">
+            {goals.map((g, i) => (
+              <input
+                key={i}
+                type="text"
+                value={g}
+                onChange={e => setGoal(i, e.target.value)}
+                placeholder={`Goal ${i + 1}… e.g. "Run a 5K"`}
+                className="w-full bg-white/10 border border-white/15 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-white/30 outline-none focus:border-brand-orange/50"
+              />
+            ))}
+          </div>
+          {goals.length < 7 && (
+            <button
+              onClick={addGoalRow}
+              className="text-white/40 hover:text-white/70 text-sm font-semibold mb-3 transition-colors"
+            >
+              + Add goal
+            </button>
+          )}
+
+          {/* Preset library */}
+          <div className="space-y-2">
+            {GOAL_PRESETS.map(cat => (
+              <div key={cat.category}>
+                <p className="text-white/30 text-[10px] font-black uppercase tracking-wider mb-1.5">{cat.category}</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {cat.goals.map(g => {
+                    const selected = goals.includes(g)
+                    return (
+                      <button
+                        key={g}
+                        onClick={() => togglePresetGoal(g)}
+                        className={`text-xs px-3 py-1.5 rounded-full border font-semibold transition-all ${
+                          selected
+                            ? 'bg-brand-orange/20 border-brand-orange text-white'
+                            : 'bg-white/5 border-white/15 text-white/60 hover:border-white/30'
+                        }`}
+                      >
+                        {selected ? '✓ ' : ''}{g}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Define success */}
+        <div>
+          <p className="text-white/40 text-xs font-black uppercase tracking-widest mb-2">
+            What does success look like? <span className="normal-case font-normal text-white/30">(optional)</span>
+          </p>
+          <textarea
+            value={successDefinition}
+            onChange={e => setSuccessDefinition(e.target.value)}
+            placeholder="At the end of this season, I will have…"
+            rows={2}
+            className="w-full bg-white/10 border border-white/15 rounded-xl px-4 py-3 text-sm text-white placeholder:text-white/30 outline-none focus:border-brand-orange/50 resize-none"
+          />
+        </div>
+
+        {/* Define obstacles */}
+        <div>
+          <p className="text-white/40 text-xs font-black uppercase tracking-widest mb-2">
+            What might stop you? <span className="normal-case font-normal text-white/30">(optional)</span>
+          </p>
+          <textarea
+            value={obstacle}
+            onChange={e => setObstacle(e.target.value)}
+            placeholder="My biggest challenge will be… and I will overcome it by…"
+            rows={2}
+            className="w-full bg-white/10 border border-white/15 rounded-xl px-4 py-3 text-sm text-white placeholder:text-white/30 outline-none focus:border-brand-orange/50 resize-none"
+          />
+        </div>
+
+        {/* Bible verse toggle */}
+        <button
+          onClick={() => setDailyBibleVerse(v => !v)}
+          className={`w-full flex items-center gap-4 p-4 rounded-xl border-2 transition-all text-left ${
+            dailyBibleVerse
+              ? 'border-indigo-500 bg-indigo-500/10'
+              : 'border-white/10 bg-white/5'
+          }`}
+        >
+          <span className="text-2xl flex-shrink-0">✝️</span>
+          <div className="flex-1 min-w-0">
+            <p className="text-white font-bold text-sm">Daily Bible Verse</p>
+            <p className="text-white/50 text-xs">Show a verse of encouragement each day</p>
+          </div>
+          <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
+            dailyBibleVerse ? 'border-indigo-400 bg-indigo-400' : 'border-white/30'
+          }`}>
+            {dailyBibleVerse && (
+              <svg className="w-3 h-3 text-white" viewBox="0 0 12 12" fill="none">
+                <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            )}
+          </div>
+        </button>
       </div>
 
       <div className="pt-4 space-y-3">
@@ -237,8 +447,8 @@ export default function PreSeason({ sport: initialSport, displayName, onStart, o
         >
           {starting ? 'Starting…' : `⚡ Start the Season`}
         </button>
-        <button onClick={onSignOut} className="w-full text-white/30 text-sm hover:text-white/50 transition-colors py-1">
-          Sign out
+        <button onClick={() => setStep(5)} className="w-full text-white/30 text-sm hover:text-white/50 transition-colors py-1">
+          ← Back
         </button>
       </div>
     </Screen>
@@ -258,12 +468,13 @@ function Screen({ children }: { children: React.ReactNode }) {
 }
 
 function NavRow({
-  onNext, onBack, step, showBack = true,
+  onNext, onBack, step, showBack = true, isSetup = false,
 }: {
   onNext: () => void
   onBack?: () => void
   step: number
   showBack?: boolean
+  isSetup?: boolean
 }) {
   return (
     <div className="pt-6 flex items-center justify-between">
@@ -282,7 +493,7 @@ function NavRow({
           onClick={onNext}
           className="bg-brand-orange text-white font-black text-sm px-8 py-3 rounded-xl hover:opacity-90 active:scale-[0.98] transition-all"
         >
-          Next →
+          {isSetup ? 'Next: Goals →' : 'Next →'}
         </button>
       </div>
     </div>

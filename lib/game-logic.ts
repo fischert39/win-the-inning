@@ -2,8 +2,9 @@ import type { FullInning, OffenseGoal, GameResult } from '@/types'
 
 // ===== GAME CALCULATIONS =====
 
-export function countOuts(inning: Pick<FullInning, 'mind_completed' | 'spirit_completed' | 'body_completed'>): number {
-  return [inning.mind_completed, inning.spirit_completed, inning.body_completed].filter(Boolean).length
+export function countOuts(inning: Pick<FullInning, 'mind_completed' | 'spirit_completed' | 'body_completed' | 'pinch_hit_used'>): number {
+  const base = [inning.mind_completed, inning.spirit_completed, inning.body_completed].filter(Boolean).length
+  return Math.min(3, base + (inning.pinch_hit_used ? 1 : 0))
 }
 
 export function simulateRuns(goals: Pick<OffenseGoal, 'completed' | 'hit_type'>[]): number {
@@ -49,14 +50,14 @@ export function getBaseState(goals: Pick<OffenseGoal, 'completed' | 'hit_type'>[
   return bases
 }
 
-export function inningResult(inning: Pick<FullInning, 'status' | 'is_rain_delay' | 'mind_completed' | 'spirit_completed' | 'body_completed' | 'offense_goals'>): GameResult {
+export function inningResult(inning: Pick<FullInning, 'status' | 'is_rain_delay' | 'pinch_hit_used' | 'mind_completed' | 'spirit_completed' | 'body_completed' | 'offense_goals'>): GameResult {
   if (inning.status !== 'CLOSED') return 'IN_PROGRESS'
   if (inning.is_rain_delay) return 'IN_PROGRESS'
   if (countOuts(inning) < 3) return 'LOSS'
   return simulateRuns(inning.offense_goals) > 0 ? 'WIN' : 'TIE'
 }
 
-export function gameResult(innings: Pick<FullInning, 'status' | 'is_rain_delay' | 'mind_completed' | 'spirit_completed' | 'body_completed' | 'offense_goals'>[]): GameResult {
+export function gameResult(innings: Pick<FullInning, 'status' | 'is_rain_delay' | 'pinch_hit_used' | 'mind_completed' | 'spirit_completed' | 'body_completed' | 'offense_goals'>[]): GameResult {
   const wins      = innings.filter(i => inningResult(i) === 'WIN').length
   const losses    = innings.filter(i => inningResult(i) === 'LOSS').length
   const closed    = innings.filter(i => i.status === 'CLOSED').length
@@ -66,7 +67,7 @@ export function gameResult(innings: Pick<FullInning, 'status' | 'is_rain_delay' 
   return 'IN_PROGRESS'
 }
 
-export function currentStreak(games: { innings: Pick<FullInning, 'status' | 'is_rain_delay' | 'date' | 'mind_completed' | 'spirit_completed' | 'body_completed' | 'offense_goals'>[] }[]): { type: 'WIN' | 'LOSS' | null; count: number } {
+export function currentStreak(games: { innings: Pick<FullInning, 'status' | 'is_rain_delay' | 'pinch_hit_used' | 'date' | 'mind_completed' | 'spirit_completed' | 'body_completed' | 'offense_goals'>[] }[]): { type: 'WIN' | 'LOSS' | null; count: number } {
   const closed = games
     .flatMap(g => g.innings)
     .filter(i => i.status === 'CLOSED')
@@ -84,7 +85,7 @@ export function currentStreak(games: { innings: Pick<FullInning, 'status' | 'is_
   return { type, count }
 }
 
-export function seasonRecord(games: { innings: Pick<FullInning, 'status' | 'is_rain_delay' | 'mind_completed' | 'spirit_completed' | 'body_completed' | 'offense_goals'>[] }[]): { wins: number; losses: number } {
+export function seasonRecord(games: { innings: Pick<FullInning, 'status' | 'is_rain_delay' | 'pinch_hit_used' | 'mind_completed' | 'spirit_completed' | 'body_completed' | 'offense_goals'>[] }[]): { wins: number; losses: number } {
   let wins = 0, losses = 0
   for (const g of games) {
     const r = gameResult(g.innings)
@@ -188,4 +189,37 @@ export function getDailyQuote(): { text: string; author: string } {
   const start = new Date(d.getFullYear(), 0, 0)
   const dayOfYear = Math.floor((d.getTime() - start.getTime()) / 86400000)
   return QUOTES[dayOfYear % QUOTES.length]
+}
+
+// ===== DAILY BIBLE VERSE =====
+
+const VERSES = [
+  { text: 'I can do all things through Christ who strengthens me.', ref: 'Philippians 4:13' },
+  { text: 'For I know the plans I have for you — plans to prosper you and not to harm you, plans to give you hope and a future.', ref: 'Jeremiah 29:11' },
+  { text: 'Trust in the LORD with all your heart and lean not on your own understanding; in all your ways submit to him, and he will make your paths straight.', ref: 'Proverbs 3:5–6' },
+  { text: 'But those who hope in the LORD will renew their strength. They will soar on wings like eagles; they will run and not grow weary, they will walk and not be faint.', ref: 'Isaiah 40:31' },
+  { text: 'Have I not commanded you? Be strong and courageous. Do not be afraid; do not be discouraged, for the LORD your God will be with you wherever you go.', ref: 'Joshua 1:9' },
+  { text: 'Let us not become weary in doing good, for at the proper time we will reap a harvest if we do not give up.', ref: 'Galatians 6:9' },
+  { text: 'Whatever you do, work at it with all your heart, as working for the Lord, not for human masters.', ref: 'Colossians 3:23' },
+  { text: 'Commit to the LORD whatever you do, and he will establish your plans.', ref: 'Proverbs 16:3' },
+  { text: 'And we know that in all things God works for the good of those who love him, who have been called according to his purpose.', ref: 'Romans 8:28' },
+  { text: 'Be strong and courageous, because you will lead these people to inherit the land I swore to their ancestors.', ref: 'Joshua 1:6' },
+  { text: 'The LORD is my strength and my shield; my heart trusts in him, and he helps me.', ref: 'Psalm 28:7' },
+  { text: 'With man this is impossible, but with God all things are possible.', ref: 'Matthew 19:26' },
+  { text: 'No discipline seems pleasant at the time, but painful. Later on, however, it produces a harvest of righteousness and peace for those who have been trained by it.', ref: 'Hebrews 12:11' },
+  { text: 'Do not be anxious about anything, but in every situation, by prayer and petition, with thanksgiving, present your requests to God.', ref: 'Philippians 4:6' },
+  { text: 'The LORD your God is with you, the Mighty Warrior who saves. He will take great delight in you; in his love he will no longer rebuke you, but will rejoice over you with singing.', ref: 'Zephaniah 3:17' },
+  { text: 'For the Spirit God gave us does not make us timid, but gives us power, love and self-discipline.', ref: '2 Timothy 1:7' },
+  { text: 'But seek first his kingdom and his righteousness, and all these things will be given to you as well.', ref: 'Matthew 6:33' },
+  { text: 'I have told you these things, so that in me you may have peace. In this world you will have trouble. But take heart! I have overcome the world.', ref: 'John 16:33' },
+  { text: 'Therefore do not worry about tomorrow, for tomorrow will worry about itself. Each day has enough trouble of its own.', ref: 'Matthew 6:34' },
+  { text: 'The LORD is my shepherd, I lack nothing.', ref: 'Psalm 23:1' },
+  { text: 'Be still, and know that I am God.', ref: 'Psalm 46:10' },
+]
+
+export function getDailyVerse(): { text: string; ref: string } {
+  const d = new Date()
+  const start = new Date(d.getFullYear(), 0, 0)
+  const dayOfYear = Math.floor((d.getTime() - start.getTime()) / 86400000)
+  return VERSES[dayOfYear % VERSES.length]
 }

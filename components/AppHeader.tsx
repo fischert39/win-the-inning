@@ -10,16 +10,19 @@ interface Props {
   profile:         Profile | null
   onPastSeasons:   () => void
   onShareCard:     () => void
+  onEditTeam:      () => void
   onEndSeason:     () => void
   onSignOut:       () => void
 }
 
-export default function AppHeader({ record, streak, sport, profile, onPastSeasons, onShareCard, onEndSeason, onSignOut }: Props) {
+export default function AppHeader({ record, streak, sport, profile, onPastSeasons, onShareCard, onEditTeam, onEndSeason, onSignOut }: Props) {
   const [menuOpen, setMenuOpen] = useState(false)
   const [dark,     setDark]     = useState(false)
   const sportEmoji = sport === 'baseball' ? '⚾' : '🥎'
-  const avatar = profile?.avatar_url
-  const name   = profile?.display_name
+  const avatar     = profile?.avatar_url
+  const name       = profile?.display_name
+  const teamName   = profile?.team_name
+  const mascot     = profile?.mascot
 
   useEffect(() => {
     setDark(document.documentElement.classList.contains('dark'))
@@ -35,12 +38,19 @@ export default function AppHeader({ record, streak, sport, profile, onPastSeason
   return (
     <header className="bg-brand-navy text-white sticky top-0 z-40 shadow-lg">
       <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">
-        {/* Left: logo + title */}
+        {/* Left: mascot + team name */}
         <div className="flex items-center gap-2 min-w-0">
-          <span className="text-xl">{sportEmoji}</span>
-          <span className="font-black text-sm leading-tight hidden sm:block">
-            Win the Inning
-          </span>
+          <span className="text-xl">{mascot ?? sportEmoji}</span>
+          <div className="min-w-0">
+            {teamName ? (
+              <>
+                <p className="font-black text-sm leading-tight truncate max-w-[120px]">{teamName}</p>
+                <p className="text-white/40 text-[10px] leading-tight">Win the Inning</p>
+              </>
+            ) : (
+              <span className="font-black text-sm leading-tight hidden sm:block">Win the Inning</span>
+            )}
+          </div>
         </div>
 
         {/* Center: season record + streak */}
@@ -95,6 +105,12 @@ export default function AppHeader({ record, streak, sport, profile, onPastSeason
                   <p className="text-slate-400 text-xs">Season in progress</p>
                 </div>
               )}
+              <button
+                onClick={() => { setMenuOpen(false); onEditTeam() }}
+                className="w-full text-left px-4 py-2.5 text-sm text-slate-600 hover:bg-slate-50 transition-colors font-medium"
+              >
+                🏟️ Edit Team
+              </button>
               <button
                 onClick={() => { setMenuOpen(false); onPastSeasons() }}
                 className="w-full text-left px-4 py-2.5 text-sm text-slate-600 hover:bg-slate-50 transition-colors font-medium"

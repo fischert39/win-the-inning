@@ -4,16 +4,20 @@ export type GameResult = 'WIN' | 'LOSS' | 'TIE' | 'IN_PROGRESS'
 export type HitType    = 'single' | 'double' | 'triple' | 'homer'
 
 export interface Profile {
-  id:                  string
-  display_name:        string | null
-  avatar_url:          string | null
-  sport:               Sport
-  created_at:          string
-  default_mind_task:    string | null
-  default_spirit_task:  string | null
-  default_body_task:    string | null
+  id:                    string
+  display_name:          string | null
+  avatar_url:            string | null
+  sport:                 Sport
+  created_at:            string
+  default_mind_task:     string | null
+  default_spirit_task:   string | null
+  default_body_task:     string | null
   default_offense_goals: string | null  // JSON array of goal strings
-  username:             string | null
+  username:              string | null
+  team_name:             string | null
+  mascot:                string | null
+  pinch_hitter_tokens:   number
+  daily_bible_verse:     boolean
 }
 
 export interface SeasonGoal {
@@ -54,6 +58,7 @@ export interface FullInning {
   closed_at:        string | null
   result:           GameResult
   is_rain_delay:    boolean
+  pinch_hit_used:   boolean
   offense_goals:    OffenseGoal[]
 }
 
@@ -68,12 +73,15 @@ export interface FullGame {
 }
 
 export interface FullSeason {
-  id:           string
-  user_id:      string
-  start_date:   string
-  end_date:     string | null
-  is_current:   boolean
-  created_at:   string
-  season_goals: SeasonGoal[]
-  games:        FullGame[]
+  id:                   string
+  user_id:              string
+  start_date:           string
+  end_date:             string | null
+  is_current:           boolean
+  created_at:           string
+  success_definition:   string | null
+  obstacle:             string | null
+  length_weeks:         number | null
+  season_goals:         SeasonGoal[]
+  games:                FullGame[]
 }

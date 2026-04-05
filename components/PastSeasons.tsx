@@ -21,7 +21,7 @@ export default function PastSeasons({ userId, sport, onBack }: Props) {
     async function load() {
       const { data } = await supabase
         .from('seasons')
-        .select('*, season_goals(*), games(*, innings(id, date, status, result, is_rain_delay, mind_completed, spirit_completed, body_completed, offense_goals(*)))')
+        .select('*, season_goals(*), games(*, innings(id, date, status, result, is_rain_delay, pinch_hit_used, mind_completed, spirit_completed, body_completed, offense_goals(*)))')
         .eq('user_id', userId)
         .eq('is_current', false)
         .order('created_at', { ascending: false })

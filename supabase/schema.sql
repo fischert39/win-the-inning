@@ -23,6 +23,15 @@ alter table public.profiles add column if not exists default_body_task    text d
 alter table public.profiles add column if not exists default_offense_goals text default '[]';
 alter table public.profiles add column if not exists username              text unique;
 alter table public.innings  add column if not exists is_rain_delay         boolean default false;
+-- v3 migrations: team, pinch hitter, season vision
+alter table public.profiles add column if not exists team_name             text;
+alter table public.profiles add column if not exists mascot                text;
+alter table public.profiles add column if not exists pinch_hitter_tokens   integer default 0;
+alter table public.profiles add column if not exists daily_bible_verse     boolean default false;
+alter table public.innings  add column if not exists pinch_hit_used        boolean default false;
+alter table public.seasons  add column if not exists success_definition    text;
+alter table public.seasons  add column if not exists obstacle              text;
+alter table public.seasons  add column if not exists length_weeks          integer default 12;
 
 -- ============================================================
 -- Friend comparison: privacy-safe public stats lookup by username
