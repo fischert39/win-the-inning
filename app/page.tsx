@@ -6,7 +6,7 @@ import type { User } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/client'
 import type { Profile, FullSeason, FullGame, FullInning, OffenseGoal, SeasonGoal, Sport, HitType, GameResult, Status } from '@/types'
 import {
-  today, getWeekStart, getWeekEnd, inningNumber,
+  today, getWeekStart, getWeekEnd, inningNumber, displayDate,
   countOuts, simulateRuns, inningResult, gameResult, getDailyQuote, getDailyVerse, currentStreak, getPrevDate,
 } from '@/lib/game-logic'
 import AppHeader      from '@/components/AppHeader'
@@ -697,7 +697,7 @@ export default function AppPage() {
           <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 mb-4 flex items-center justify-between animate-fade-in">
             <span className="text-amber-800 text-sm font-semibold">
               {viewDate! < todayStr ? '📅' : '🔮'}&nbsp;
-              Viewing {viewDate} — {viewDate! < todayStr ? 'editing past inning' : 'setting up future inning'}
+              Viewing {displayDate(viewDate!)} — {viewDate! < todayStr ? 'editing past inning' : 'setting up future inning'}
             </span>
             <button
               onClick={() => setViewDate(null)}
