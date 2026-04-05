@@ -21,8 +21,9 @@ export default function Scoreboard({ games, todayStr, viewDate, seasonStartDate,
 
   const todayWeekStart   = getWeekStart(todayStr)
   const seasonWeekStart  = getWeekStart(seasonStartDate)
+  const nextWeekStart    = toDateKey(new Date(new Date(todayWeekStart + 'T12:00:00').setDate(new Date(todayWeekStart + 'T12:00:00').getDate() + 7)))
   const canGoPrev        = displayWeekStart > seasonWeekStart
-  const canGoNext        = displayWeekStart < todayWeekStart
+  const canGoNext        = displayWeekStart < nextWeekStart
 
   function shiftWeek(delta: number) {
     const d = new Date(displayWeekStart + 'T12:00:00')
