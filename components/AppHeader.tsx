@@ -12,10 +12,11 @@ interface Props {
   onShareCard:     () => void
   onEditTeam:      () => void
   onEndSeason:     () => void
+  onClearData:     () => void
   onSignOut:       () => void
 }
 
-export default function AppHeader({ record, streak, sport, profile, onPastSeasons, onShareCard, onEditTeam, onEndSeason, onSignOut }: Props) {
+export default function AppHeader({ record, streak, sport, profile, onPastSeasons, onShareCard, onEditTeam, onEndSeason, onClearData, onSignOut }: Props) {
   const [menuOpen, setMenuOpen] = useState(false)
   const [dark,     setDark]     = useState(false)
   const sportEmoji = sport === 'baseball' ? '⚾' : '🥎'
@@ -128,6 +129,12 @@ export default function AppHeader({ record, streak, sport, profile, onPastSeason
                 className="w-full text-left px-4 py-2.5 text-sm text-slate-600 hover:bg-slate-50 transition-colors font-medium"
               >
                 🏁 End Season
+              </button>
+              <button
+                onClick={() => { setMenuOpen(false); onClearData() }}
+                className="w-full text-left px-4 py-2.5 text-sm text-slate-600 hover:bg-slate-50 transition-colors font-medium border-t border-slate-100 mt-1"
+              >
+                🗑️ Clear All Data
               </button>
               <button
                 onClick={() => { setMenuOpen(false); onSignOut() }}

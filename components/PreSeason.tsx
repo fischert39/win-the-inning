@@ -51,8 +51,7 @@ export default function PreSeason({ sport: initialSport, displayName, onStart, o
   const [dailyBibleVerse,    setDailyBibleVerse]    = useState(false)
 
   useEffect(() => {
-    const seen = localStorage.getItem('wti_seen_intro')
-    setStep(seen ? 5 : 1)
+    setStep(1)
     setReady(true)
   }, [])
 
@@ -83,7 +82,6 @@ export default function PreSeason({ sport: initialSport, displayName, onStart, o
 
   async function handleStart() {
     setStarting(true)
-    localStorage.setItem('wti_seen_intro', '1')
     const filtered = goals.map(g => g.trim()).filter(Boolean)
     await onStart(sport, filtered, { teamName: teamName.trim(), mascot, lengthWeeks, successDefinition: successDefinition.trim(), obstacle: obstacle.trim(), dailyBibleVerse })
   }

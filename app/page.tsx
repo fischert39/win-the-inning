@@ -266,6 +266,19 @@ export default function AppPage() {
     setSeason(null)
   }
 
+  async function handleClearAllData() {
+    if (!user) return
+    if (!confirm('This will permanently delete ALL your seasons, games, innings, and stats. This cannot be undone.')) return
+    if (!confirm('Are you absolutely sure? Every record will be gone forever.')) return
+    await supabase.from('seasons').delete().eq('user_id', user.id)
+    await supabase.from('profiles').update({ pinch_hitter_tokens: 0 }).eq('id', user.id)
+    setProfile(prev => prev ? { ...prev, pinch_hitter_tokens: 0 } : prev)
+    setSeason(null)
+    setRecapSeason(null)
+    setViewDate(null)
+    showToast('🗑️ All data cleared — ready for a fresh start!')
+  }
+
   async function handleSignOut() {
     await supabase.auth.signOut()
     router.push('/login')
@@ -643,6 +656,7 @@ export default function AppPage() {
         onShareCard={() => setShowShareCard(true)}
         onEditTeam={() => setShowTeamSettings(true)}
         onEndSeason={handleEndSeason}
+        onClearData={handleClearAllData}
         onSignOut={handleSignOut}
       />
 
