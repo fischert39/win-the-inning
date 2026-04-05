@@ -152,7 +152,11 @@ export function dayFull(dateStr: string): string {
 }
 
 export function displayDate(dateStr: string): string {
-  return new Date(dateStr + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  const d = new Date(dateStr + 'T12:00:00')
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  const y = d.getFullYear()
+  return `${m}/${day}/${y}`
 }
 
 // ===== DAILY QUOTE =====

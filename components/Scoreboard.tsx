@@ -54,7 +54,7 @@ export default function Scoreboard({ games, todayStr, viewDate, seasonStartDate,
             ‹
           </button>
           <span className="text-white/40 text-xs font-bold uppercase tracking-widest">
-            Week of {new Date(displayWeekStart + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+            Week of {(() => { const d = new Date(displayWeekStart + 'T12:00:00'); return `${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}/${d.getFullYear()}` })()}
           </span>
           <button
             onClick={() => shiftWeek(1)}
