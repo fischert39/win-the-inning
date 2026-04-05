@@ -1,12 +1,12 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import type { User } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/client'
 import type { Profile, FullSeason, FullGame, FullInning, OffenseGoal, SeasonGoal, Sport, HitType, GameResult, Status } from '@/types'
 import {
-  today, getWeekStart, getWeekEnd, inningNumber, displayDate,
+  today, getWeekStart, getWeekEnd, inningNumber, displayDate, toDateKey, getNextDate,
   countOuts, simulateRuns, inningResult, gameResult, getDailyQuote, getDailyVerse, currentStreak, getPrevDate,
 } from '@/lib/game-logic'
 import AppHeader      from '@/components/AppHeader'
@@ -25,6 +25,7 @@ import WeeklyWrapUp   from '@/components/WeeklyWrapUp'
 import ShareCard      from '@/components/ShareCard'
 import StatsPage      from '@/components/StatsPage'
 import BottomNav      from '@/components/BottomNav'
+import UndoToast, { type UndoAction } from '@/components/UndoToast'
 
 export default function AppPage() {
   const [user,      setUser]      = useState<User | null>(null)
@@ -39,6 +40,10 @@ export default function AppPage() {
   const [showShareCard,      setShowShareCard]      = useState(false)
   const [showTeamSettings,   setShowTeamSettings]   = useState(false)
   const [activeTab,          setActiveTab]          = useState<'today' | 'stats'>('today')
+  const [undoAction,         setUndoAction]         = useState<UndoAction | null>(null)
+  const undoIdRef   = useRef(0)
+  const touchStartX = useRef(0)
+  const touchStartY = useRef(0)
   const router  = useRouter()
   const supabase = createClient()
 
@@ -49,6 +54,29 @@ export default function AppPage() {
     setToast(msg)
     setTimeout(() => setToast(null), 3000)
   }, [])
+
+  // ===== UNDO =====
+  function registerUndo(label: string, revert: () => void, dbRevert: () => Promise<void>) {
+    undoIdRef.current += 1
+    setUndoAction({ id: undoIdRef.current, label, revert, dbRevert })
+  }
+
+  // ===== SWIPE =====
+  function handleTouchStart(e: React.TouchEvent) {
+    touchStartX.current = e.touches[0].clientX
+    touchStartY.current = e.touches[0].clientY
+  }
+
+  function handleTouchEnd(e: React.TouchEvent) {
+    const dx = e.changedTouches[0].clientX - touchStartX.current
+    const dy = e.changedTouches[0].clientY - touchStartY.current
+    if (Math.abs(dx) < 50 || Math.abs(dx) < Math.abs(dy)) return
+    const newDate = dx < 0 ? getNextDate(vDate) : getPrevDate(vDate)
+    if (!season || newDate < season.start_date) return
+    const maxDate = toDateKey(new Date(new Date(getWeekStart(todayStr) + 'T12:00:00').setDate(new Date(getWeekStart(todayStr) + 'T12:00:00').getDate() + 13)))
+    if (newDate > maxDate) return
+    handleViewDate(newDate)
+  }
 
   // ===== LOAD =====
   const loadData = useCallback(async () => {
@@ -362,17 +390,37 @@ export default function AppPage() {
   async function handleToggleDefense(cat: 'mind' | 'spirit' | 'body') {
     if (!viewInning) return
     const key     = `${cat}_completed` as 'mind_completed' | 'spirit_completed' | 'body_completed'
-    const newVal  = !viewInning[key]
-    updateInning(viewInning.id, { [key]: newVal })
-    await supabase.from('innings').update({ [key]: newVal }).eq('id', viewInning.id)
-    // Recalc game result
-    if (viewGame) {
-      const updatedInnings = viewGame.innings.map(i =>
-        i.id === viewInning.id ? { ...i, [key]: newVal } : i)
+    const prevVal = viewInning[key]
+    const newVal  = !prevVal
+    const inningId = viewInning.id
+    const capturedGame = viewGame
+
+    updateInning(inningId, { [key]: newVal })
+    await supabase.from('innings').update({ [key]: newVal }).eq('id', inningId)
+    if (capturedGame) {
+      const updatedInnings = capturedGame.innings.map(i => i.id === inningId ? { ...i, [key]: newVal } : i)
       const gr = gameResult(updatedInnings)
-      await supabase.from('games').update({ result: gr }).eq('id', viewGame.id)
-      updateGame(viewGame.id, { result: gr })
+      await supabase.from('games').update({ result: gr }).eq('id', capturedGame.id)
+      updateGame(capturedGame.id, { result: gr })
     }
+
+    registerUndo(
+      `${cat.charAt(0).toUpperCase() + cat.slice(1)} task ${newVal ? 'checked' : 'unchecked'}`,
+      () => {
+        updateInning(inningId, { [key]: prevVal })
+        if (capturedGame) {
+          const reverted = capturedGame.innings.map(i => i.id === inningId ? { ...i, [key]: prevVal } : i)
+          updateGame(capturedGame.id, { result: gameResult(reverted) })
+        }
+      },
+      async () => {
+        await supabase.from('innings').update({ [key]: prevVal }).eq('id', inningId)
+        if (capturedGame) {
+          const reverted = capturedGame.innings.map(i => i.id === inningId ? { ...i, [key]: prevVal } : i)
+          await supabase.from('games').update({ result: gameResult(reverted) }).eq('id', capturedGame.id)
+        }
+      }
+    )
   }
 
   async function handleSaveDefenseTask(cat: 'mind' | 'spirit' | 'body', val: string) {
@@ -423,9 +471,18 @@ export default function AppPage() {
     if (!viewInning) return
     const g = viewInning.offense_goals.find(og => og.id === goalId)
     if (!g) return
-    const newVal = !g.completed
-    patchGoal(viewInning.id, goalId, { completed: newVal })
+    const prevVal  = g.completed
+    const newVal   = !prevVal
+    const inningId = viewInning.id
+
+    patchGoal(inningId, goalId, { completed: newVal })
     await supabase.from('offense_goals').update({ completed: newVal }).eq('id', goalId)
+
+    registerUndo(
+      `Goal ${newVal ? 'completed' : 'uncompleted'}`,
+      () => patchGoal(inningId, goalId, { completed: prevVal }),
+      async () => { await supabase.from('offense_goals').update({ completed: prevVal }).eq('id', goalId) }
+    )
   }
 
   async function handleSetHitType(goalId: string, type: HitType) {
@@ -494,6 +551,8 @@ export default function AppPage() {
     const runs      = simulateRuns(viewInning.offense_goals)
     const result    = (outs === 3 ? (runs > 0 ? 'WIN' : 'TIE') : 'LOSS') as GameResult
     const isUpdate  = viewInning.status === 'CLOSED'
+    const inningId  = viewInning.id
+    const capturedGame = viewGame
 
     const dbUpdates = isUpdate
       ? { result }
@@ -508,6 +567,27 @@ export default function AppPage() {
       const gr = gameResult(updatedInnings)
       await supabase.from('games').update({ result: gr }).eq('id', viewGame.id)
       updateGame(viewGame.id, { result: gr })
+    }
+
+    if (!isUpdate) {
+      registerUndo(
+        `Inning ${result === 'WIN' ? 'won 🏆' : result === 'TIE' ? 'tied 🤝' : 'closed'}`,
+        () => {
+          updateInning(inningId, { status: 'IN_PROGRESS', closed_at: null, result: 'IN_PROGRESS' })
+          if (capturedGame) {
+            const reverted = capturedGame.innings.map(i => i.id === inningId ? { ...i, status: 'IN_PROGRESS' as Status, closed_at: null, result: 'IN_PROGRESS' as GameResult } : i)
+            updateGame(capturedGame.id, { result: gameResult(reverted) })
+          }
+          if (result === 'WIN') setShowWinCelebration(false)
+        },
+        async () => {
+          await supabase.from('innings').update({ status: 'IN_PROGRESS', closed_at: null, result: 'IN_PROGRESS' }).eq('id', inningId)
+          if (capturedGame) {
+            const reverted = capturedGame.innings.map(i => i.id === inningId ? { ...i, status: 'IN_PROGRESS' as Status, closed_at: null, result: 'IN_PROGRESS' as GameResult } : i)
+            await supabase.from('games').update({ result: gameResult(reverted) }).eq('id', capturedGame.id)
+          }
+        }
+      )
     }
 
     if (result === 'WIN' && !isUpdate) {
@@ -659,7 +739,11 @@ export default function AppPage() {
         onSignOut={handleSignOut}
       />
 
-      <div className="max-w-2xl mx-auto px-4 pb-24 pt-4">
+      <div
+        className="max-w-2xl mx-auto px-4 pb-24 pt-4"
+        onTouchStart={activeTab === 'today' ? handleTouchStart : undefined}
+        onTouchEnd={activeTab === 'today' ? handleTouchEnd : undefined}
+      >
 
         {/* Stats tab */}
         {activeTab === 'stats' && (
@@ -784,6 +868,13 @@ export default function AppPage() {
       </div>
 
       <BottomNav tab={activeTab} onChange={setActiveTab} />
+
+      {undoAction && (
+        <UndoToast
+          action={undoAction}
+          onDismiss={() => setUndoAction(null)}
+        />
+      )}
 
       {showTeamSettings && (
         <TeamSettings

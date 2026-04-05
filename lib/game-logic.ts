@@ -103,6 +103,12 @@ export function getPrevDate(dateStr: string): string {
   return toDateKey(d)
 }
 
+export function getNextDate(dateStr: string): string {
+  const d = new Date(dateStr + 'T12:00:00')
+  d.setDate(d.getDate() + 1)
+  return toDateKey(d)
+}
+
 export function toDateKey(date: Date): string {
   const y = date.getFullYear()
   const m = String(date.getMonth() + 1).padStart(2, '0')

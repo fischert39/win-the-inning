@@ -78,6 +78,66 @@ $$;
 
 grant execute on function public.get_friend_stats(text) to authenticated;
 
+-- ============================================================
+-- Public profile: shareable stats card for /u/[username]
+-- ============================================================
+create or replace function public.get_public_profile(p_username text)
+returns json
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_uid    uuid;
+  v_result json;
+begin
+  select id into v_uid
+  from public.profiles
+  where lower(username) = lower(p_username);
+
+  if v_uid is null then return null; end if;
+
+  select json_build_object(
+    'username',       lower(p_username),
+    'display_name',   p.display_name,
+    'team_name',      p.team_name,
+    'mascot',         p.mascot,
+    'sport',          p.sport,
+    'game_wins',      (select count(*) from public.games g
+                       join public.seasons s on g.season_id = s.id
+                       where g.user_id = v_uid and s.is_current = true and g.result = 'WIN'),
+    'game_losses',    (select count(*) from public.games g
+                       join public.seasons s on g.season_id = s.id
+                       where g.user_id = v_uid and s.is_current = true and g.result = 'LOSS'),
+    'innings_won',    (select count(*) from public.innings i
+                       join public.games g on i.game_id = g.id
+                       join public.seasons s on g.season_id = s.id
+                       where i.user_id = v_uid and s.is_current = true
+                         and i.status = 'CLOSED' and i.result = 'WIN'),
+    'innings_played', (select count(*) from public.innings i
+                       join public.games g on i.game_id = g.id
+                       join public.seasons s on g.season_id = s.id
+                       where i.user_id = v_uid and s.is_current = true
+                         and i.status = 'CLOSED' and not coalesce(i.is_rain_delay, false)),
+    'recent_games',   (select json_agg(sub.result order by sub.week_start desc)
+                       from (select g.result, g.week_start
+                             from public.games g
+                             join public.seasons s on g.season_id = s.id
+                             where g.user_id = v_uid and s.is_current = true
+                               and g.result != 'IN_PROGRESS'
+                             order by g.week_start desc
+                             limit 6) sub)
+  ) into v_result
+  from public.profiles p
+  where p.id = v_uid;
+
+  return v_result;
+end;
+$$;
+
+grant execute on function public.get_public_profile(text) to anon;
+grant execute on function public.get_public_profile(text) to authenticated;
+
 -- Seasons
 create table if not exists public.seasons (
   id          text primary key,
