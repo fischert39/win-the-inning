@@ -49,6 +49,7 @@ export default function PreSeason({ sport: initialSport, displayName, onStart, o
   const [successDefinition,  setSuccessDefinition]  = useState('')
   const [obstacle,           setObstacle]           = useState('')
   const [dailyBibleVerse,    setDailyBibleVerse]    = useState(false)
+  const [autoCarryTasks,     setAutoCarryTasks]     = useState(false)
 
   useEffect(() => {
     setStep(1)
@@ -83,7 +84,7 @@ export default function PreSeason({ sport: initialSport, displayName, onStart, o
   async function handleStart() {
     setStarting(true)
     const filtered = goals.map(g => g.trim()).filter(Boolean)
-    await onStart(sport, filtered, { teamName: teamName.trim(), mascot, lengthWeeks, successDefinition: successDefinition.trim(), obstacle: obstacle.trim(), dailyBibleVerse })
+    await onStart(sport, filtered, { teamName: teamName.trim(), mascot, lengthWeeks, successDefinition: successDefinition.trim(), obstacle: obstacle.trim(), dailyBibleVerse, autoCarryTasks })
   }
 
   if (!ready) return null
@@ -410,6 +411,31 @@ export default function PreSeason({ sport: initialSport, displayName, onStart, o
             className="w-full bg-white/10 border border-white/15 rounded-xl px-4 py-3 text-sm text-white placeholder:text-white/30 outline-none focus:border-brand-orange/50 resize-none"
           />
         </div>
+
+        {/* Auto-carry incomplete tasks */}
+        <button
+          onClick={() => setAutoCarryTasks(v => !v)}
+          className={`w-full flex items-center gap-4 p-4 rounded-xl border-2 transition-all text-left ${
+            autoCarryTasks
+              ? 'border-brand-orange bg-brand-orange/10'
+              : 'border-white/10 bg-white/5'
+          }`}
+        >
+          <span className="text-2xl flex-shrink-0">🔄</span>
+          <div className="flex-1 min-w-0">
+            <p className="text-white font-bold text-sm">Auto-carry incomplete tasks</p>
+            <p className="text-white/50 text-xs">Unfinished goals roll forward to the next day automatically</p>
+          </div>
+          <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
+            autoCarryTasks ? 'border-brand-orange bg-brand-orange' : 'border-white/30'
+          }`}>
+            {autoCarryTasks && (
+              <svg className="w-3 h-3 text-white" viewBox="0 0 12 12" fill="none">
+                <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            )}
+          </div>
+        </button>
 
         {/* Bible verse toggle */}
         <button

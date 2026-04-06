@@ -32,6 +32,7 @@ alter table public.innings  add column if not exists pinch_hit_used        boole
 alter table public.seasons  add column if not exists success_definition    text;
 alter table public.seasons  add column if not exists obstacle              text;
 alter table public.seasons  add column if not exists length_weeks          integer default 12;
+alter table public.profiles add column if not exists auto_carry_tasks      boolean default false;
 
 -- ============================================================
 -- Friend comparison: privacy-safe public stats lookup by username

@@ -226,7 +226,7 @@ export default function AppPage() {
   // ===== SEASON ACTIONS =====
   async function handleStartSeason(sport: Sport, initialGoals: string[] = [], opts?: {
     teamName: string; mascot: string; lengthWeeks: number
-    successDefinition: string; obstacle: string; dailyBibleVerse: boolean
+    successDefinition: string; obstacle: string; dailyBibleVerse: boolean; autoCarryTasks: boolean
   }) {
     if (!user) return
     const t   = todayStr
@@ -251,6 +251,7 @@ export default function AppPage() {
         team_name:          opts.teamName || null,
         mascot:             opts.mascot,
         daily_bible_verse:  opts.dailyBibleVerse,
+        auto_carry_tasks:   opts.autoCarryTasks,
       } : {}),
     }).eq('id', user.id)
     await supabase.from('games').insert({ id: gid, user_id: user.id, season_id: sid, week_start: ws, week_end: we })
@@ -281,6 +282,7 @@ export default function AppPage() {
         team_name: opts.teamName || null,
         mascot: opts.mascot,
         daily_bible_verse: opts.dailyBibleVerse,
+        auto_carry_tasks: opts.autoCarryTasks,
       } : {}),
     } : prev)
     await loadData()
@@ -355,10 +357,27 @@ export default function AppPage() {
       if (!newInning) return
       let offenseGoals: OffenseGoal[] = []
 
-      // Auto-populate from previous day's future_goals
-      const prevDate    = getPrevDate(date)
-      const prevInning  = season.games.flatMap(g => g.innings).find(i => i.date === prevDate)
-      if (prevInning?.future_goals?.trim()) {
+      const prevDate   = getPrevDate(date)
+      const prevInning = season.games.flatMap(g => g.innings).find(i => i.date === prevDate)
+
+      if (profile?.auto_carry_tasks && prevInning) {
+        // Carry forward incomplete offense goals from the previous day
+        const incomplete = prevInning.offense_goals.filter(og => !og.completed && og.goal.trim())
+        if (incomplete.length > 0) {
+          const inserts = incomplete.map((og, idx) => ({
+            id: 'r_' + Date.now() + '_c' + idx,
+            user_id: user.id,
+            inning_id: iid,
+            goal: og.goal,
+            completed: false,
+            hit_type: og.hit_type,
+            sort_order: idx,
+          }))
+          const { data: inserted } = await supabase.from('offense_goals').insert(inserts).select()
+          if (inserted) offenseGoals = inserted
+        }
+      } else if (prevInning?.future_goals?.trim()) {
+        // Fall back to manual future_goals text
         const lines = prevInning.future_goals.split('\n').map((l: string) => l.trim()).filter(Boolean)
         const inserts = lines.map((text: string, idx: number) => ({
           id: 'r_' + Date.now() + '_' + idx,

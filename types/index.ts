@@ -18,6 +18,7 @@ export interface Profile {
   mascot:                string | null
   pinch_hitter_tokens:   number
   daily_bible_verse:     boolean
+  auto_carry_tasks:      boolean
 }
 
 export interface SeasonGoal {
