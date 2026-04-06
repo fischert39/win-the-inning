@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback, useRef } from 'react'
+import { useEffect, useState, useCallback, useRef, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import type { User } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/client'
@@ -467,14 +467,14 @@ export default function AppPage() {
   }
 
   // ===== OFFENSE ACTIONS =====
-  async function handleAddGoal() {
+  async function handleAddGoal(text = '') {
     if (!viewInning || !user) return
     const sortOrder = viewInning.offense_goals.length
     const { data: goal } = await supabase
       .from('offense_goals')
       .insert({
         id: 'r_' + Date.now(), user_id: user.id, inning_id: viewInning.id,
-        goal: '', completed: false, hit_type: 'single', sort_order: sortOrder,
+        goal: text, completed: false, hit_type: 'single', sort_order: sortOrder,
       })
       .select().single()
     if (goal) addGoal(viewInning.id, goal)
@@ -721,6 +721,24 @@ export default function AppPage() {
 
   const record           = getSeasonRecord()
   const streak           = currentStreak(season.games)
+
+  // Recent unique goals from past innings (most recent first, up to 20)
+  const recentGoals = useMemo(() => {
+    const seen = new Set<string>()
+    const result: string[] = []
+    const pastInnings = season.games
+      .flatMap(g => g.innings)
+      .filter(i => i.date < vDate)
+      .reverse() // innings are pre-sorted ascending; reverse is O(n) vs sort O(n log n)
+    for (const i of pastInnings) {
+      for (const og of i.offense_goals) {
+        const t = og.goal.trim()
+        if (t && !seen.has(t)) { seen.add(t); result.push(t) }
+        if (result.length >= 20) return result
+      }
+    }
+    return result
+  }, [season, vDate])
   const allClosedInnings = season.games.flatMap(g => g.innings).filter(i => i.status === 'CLOSED' && !i.is_rain_delay)
   const inningsWon       = allClosedInnings.filter(i => inningResult(i) === 'WIN').length
   const inningsPlayed    = allClosedInnings.length
@@ -864,8 +882,10 @@ export default function AppPage() {
               inning={viewInning}
               sportEmoji={sportEmoji}
               templates={JSON.parse(profile?.default_offense_goals ?? '[]')}
+              recentGoals={recentGoals}
               canRainDelay={!!viewGame && !viewGame.innings.some(i => i.is_rain_delay)}
               onAddGoal={handleAddGoal}
+              onAddGoalWithText={text => handleAddGoal(text)}
               onSaveGoalText={handleSaveGoalText}
               onToggleGoal={handleToggleGoal}
               onSetHitType={handleSetHitType}

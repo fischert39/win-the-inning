@@ -1,22 +1,26 @@
 'use client'
 
+import { useState } from 'react'
 import type { FullInning, OffenseGoal, HitType } from '@/types'
 import { simulateRuns, getBaseState } from '@/lib/game-logic'
+import { GOAL_PRESETS } from '@/lib/presets'
 
 interface Props {
-  inning:            FullInning
-  sportEmoji:        string
-  templates:         string[]
-  onAddGoal:         () => void
-  onSaveGoalText:    (id: string, val: string) => void
-  onToggleGoal:      (id: string) => void
-  onSetHitType:      (id: string, type: HitType) => void
-  onDeleteGoal:      (id: string) => void
-  onCloseInning:     () => void
-  onLoadTemplates:   () => void
-  onSaveTemplates:   () => void
-  canRainDelay:      boolean
-  onRainDelay:       () => void
+  inning:             FullInning
+  sportEmoji:         string
+  templates:          string[]
+  recentGoals:        string[]
+  onAddGoal:          () => void
+  onAddGoalWithText:  (text: string) => void
+  onSaveGoalText:     (id: string, val: string) => void
+  onToggleGoal:       (id: string) => void
+  onSetHitType:       (id: string, type: HitType) => void
+  onDeleteGoal:       (id: string) => void
+  onCloseInning:      () => void
+  onLoadTemplates:    () => void
+  onSaveTemplates:    () => void
+  canRainDelay:       boolean
+  onRainDelay:        () => void
 }
 
 const HIT_TYPES: { key: HitType; label: string; title: string; color: string }[] = [
@@ -46,10 +50,13 @@ function BaseDiamond({ goals }: { goals: OffenseGoal[] }) {
 }
 
 export default function OffenseSection({
-  inning, sportEmoji, templates,
-  onAddGoal, onSaveGoalText, onToggleGoal, onSetHitType, onDeleteGoal, onCloseInning,
+  inning, sportEmoji, templates, recentGoals,
+  onAddGoal, onAddGoalWithText, onSaveGoalText, onToggleGoal, onSetHitType, onDeleteGoal, onCloseInning,
   onLoadTemplates, onSaveTemplates, canRainDelay, onRainDelay,
 }: Props) {
+  const [showRecent,  setShowRecent]  = useState(false)
+  const [showPresets, setShowPresets] = useState(false)
+
   const closed      = inning.status === 'CLOSED'
   const goals       = inning.offense_goals
   const runs        = simulateRuns(goals)
@@ -59,6 +66,9 @@ export default function OffenseSection({
   const matchesTmpl = templates.length > 0 &&
     goalTexts.length === templates.length &&
     goalTexts.every((t, i) => t === templates[i])
+
+  // Chips already added to today's inning (to show as "selected")
+  const currentGoalTexts = new Set(goalTexts)
 
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
@@ -116,6 +126,38 @@ export default function OffenseSection({
           </div>
         )}
       </div>
+
+      {/* Quick-add panels (only when not closed) */}
+      {!closed && (
+        <div className="px-5 space-y-2 pb-3">
+          {/* Recent Goals */}
+          {recentGoals.length > 0 && (
+            <CollapsiblePanel label="🕐 Recent Goals" open={showRecent} onToggle={() => setShowRecent(v => !v)}>
+              <div className="flex flex-wrap gap-1.5">
+                {recentGoals.map(text => (
+                  <QuickAddChip key={text} text={text} already={currentGoalTexts.has(text)} onAdd={onAddGoalWithText} />
+                ))}
+              </div>
+            </CollapsiblePanel>
+          )}
+
+          {/* Preset Library */}
+          <CollapsiblePanel label="⚡ Goal Presets" open={showPresets} onToggle={() => setShowPresets(v => !v)}>
+            <div className="space-y-3">
+              {GOAL_PRESETS.map(cat => (
+                <div key={cat.category}>
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1.5">{cat.category}</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {cat.goals.map(text => (
+                      <QuickAddChip key={text} text={text} already={currentGoalTexts.has(text)} onAdd={onAddGoalWithText} />
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CollapsiblePanel>
+        </div>
+      )}
 
       {/* Footer */}
       <div className="px-5 pb-5 space-y-3">
@@ -225,5 +267,44 @@ function GoalRow({
         ))}
       </div>
     </div>
+  )
+}
+
+function CollapsiblePanel({ label, open, onToggle, children }: {
+  label:    string
+  open:     boolean
+  onToggle: () => void
+  children: React.ReactNode
+}) {
+  return (
+    <div className="border border-slate-100 rounded-xl overflow-hidden">
+      <button
+        onClick={onToggle}
+        className="w-full flex items-center justify-between px-3.5 py-2.5 text-left hover:bg-slate-50 transition-colors"
+      >
+        <span className="text-xs font-black text-slate-500 uppercase tracking-wider">{label}</span>
+        <span className="text-slate-300 text-sm">{open ? '▲' : '▼'}</span>
+      </button>
+      {open && <div className="px-3.5 pb-3">{children}</div>}
+    </div>
+  )
+}
+
+function QuickAddChip({ text, already, onAdd }: {
+  text:    string
+  already: boolean
+  onAdd:   (text: string) => void
+}) {
+  return (
+    <button
+      onClick={() => { if (!already) onAdd(text) }}
+      className={`text-xs px-3 py-1.5 rounded-full border font-semibold transition-all ${
+        already
+          ? 'bg-green-50 border-green-200 text-green-600 cursor-default'
+          : 'bg-slate-50 border-slate-200 text-slate-600 hover:border-brand-orange hover:text-brand-orange active:scale-95'
+      }`}
+    >
+      {already ? '✓ ' : '+ '}{text}
+    </button>
   )
 }
