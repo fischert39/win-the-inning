@@ -11,6 +11,7 @@ interface SeasonOptions {
   successDefinition: string
   obstacle:          string
   dailyBibleVerse:   boolean
+  autoCarryTasks:    boolean
 }
 
 interface Props {
