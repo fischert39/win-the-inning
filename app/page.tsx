@@ -198,10 +198,10 @@ export default function AppPage() {
   }
 
   // ===== TEAM ACTIONS =====
-  async function handleSaveTeam(teamName: string, mascot: string) {
+  async function handleSaveTeam(teamName: string, mascot: string, autoCarryTasks: boolean) {
     if (!user) return
-    setProfile(prev => prev ? { ...prev, team_name: teamName || null, mascot } : prev)
-    await supabase.from('profiles').update({ team_name: teamName || null, mascot }).eq('id', user.id)
+    setProfile(prev => prev ? { ...prev, team_name: teamName || null, mascot, auto_carry_tasks: autoCarryTasks } : prev)
+    await supabase.from('profiles').update({ team_name: teamName || null, mascot, auto_carry_tasks: autoCarryTasks }).eq('id', user.id)
     showToast(`🏟️ Team updated!`)
   }
 
@@ -899,6 +899,7 @@ export default function AppPage() {
         <TeamSettings
           currentTeamName={profile?.team_name ?? null}
           currentMascot={profile?.mascot ?? null}
+          currentAutoCarry={profile?.auto_carry_tasks ?? false}
           onSave={handleSaveTeam}
           onClose={() => setShowTeamSettings(false)}
         />
