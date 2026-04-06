@@ -854,15 +854,7 @@ export default function AppPage() {
               </div>
             )}
 
-            <SeasonGoals
-              goals={season.season_goals}
-              onAdd={handleAddSeasonGoal}
-              onSave={handleSaveSeasonGoal}
-              onToggle={handleToggleSeasonGoal}
-              onDelete={handleDeleteSeasonGoal}
-            />
-
-            <DailyQuote quote={quote} verse={profile?.daily_bible_verse ? getDailyVerse() : null} />
+            <DailyQuote quote={quote} />
 
             <DefenseSection
               inning={viewInning}
@@ -894,6 +886,27 @@ export default function AppPage() {
               onLoadTemplates={handleLoadTemplates}
               onSaveTemplates={handleSaveTemplates}
               onRainDelay={handleRainDelay}
+            />
+
+            {profile?.daily_bible_verse && (() => {
+              const v = getDailyVerse()
+              return (
+                <div className="bg-gradient-to-r from-indigo-900 to-indigo-800 rounded-2xl p-5 flex gap-4 items-start">
+                  <span className="text-2xl flex-shrink-0">✝️</span>
+                  <div>
+                    <p className="text-white text-sm font-medium leading-relaxed italic">&ldquo;{v.text}&rdquo;</p>
+                    <p className="text-white/50 text-xs mt-1.5 font-semibold">— {v.ref}</p>
+                  </div>
+                </div>
+              )
+            })()}
+
+            <SeasonGoals
+              goals={season.season_goals}
+              onAdd={handleAddSeasonGoal}
+              onSave={handleSaveSeasonGoal}
+              onToggle={handleToggleSeasonGoal}
+              onDelete={handleDeleteSeasonGoal}
             />
 
             <EndOfDay
