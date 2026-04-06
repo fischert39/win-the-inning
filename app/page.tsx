@@ -48,6 +48,26 @@ export default function AppPage() {
   const supabase = createClient()
 
   const todayStr = today()
+  const vDateEarly = viewDate || todayStr
+
+  // Must be above all early returns to satisfy Rules of Hooks
+  const recentGoals = useMemo(() => {
+    if (!season) return []
+    const seen = new Set<string>()
+    const result: string[] = []
+    const pastInnings = season.games
+      .flatMap(g => g.innings)
+      .filter(i => i.date < vDateEarly)
+      .reverse()
+    for (const i of pastInnings) {
+      for (const og of i.offense_goals) {
+        const t = og.goal.trim()
+        if (t && !seen.has(t)) { seen.add(t); result.push(t) }
+        if (result.length >= 20) return result
+      }
+    }
+    return result
+  }, [season, vDateEarly])
 
   // ===== TOAST =====
   const showToast = useCallback((msg: string) => {
@@ -722,23 +742,6 @@ export default function AppPage() {
   const record           = getSeasonRecord()
   const streak           = currentStreak(season.games)
 
-  // Recent unique goals from past innings (most recent first, up to 20)
-  const recentGoals = useMemo(() => {
-    const seen = new Set<string>()
-    const result: string[] = []
-    const pastInnings = season.games
-      .flatMap(g => g.innings)
-      .filter(i => i.date < vDate)
-      .reverse() // innings are pre-sorted ascending; reverse is O(n) vs sort O(n log n)
-    for (const i of pastInnings) {
-      for (const og of i.offense_goals) {
-        const t = og.goal.trim()
-        if (t && !seen.has(t)) { seen.add(t); result.push(t) }
-        if (result.length >= 20) return result
-      }
-    }
-    return result
-  }, [season, vDate])
   const allClosedInnings = season.games.flatMap(g => g.innings).filter(i => i.status === 'CLOSED' && !i.is_rain_delay)
   const inningsWon       = allClosedInnings.filter(i => inningResult(i) === 'WIN').length
   const inningsPlayed    = allClosedInnings.length
