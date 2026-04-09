@@ -2,24 +2,22 @@
 
 import type { FullSeason, Profile } from '@/types'
 import { computeAchievements } from '@/lib/achievements'
-import SeasonTrends     from '@/components/SeasonTrends'
-import Achievements     from '@/components/Achievements'
-import FriendComparison from '@/components/FriendComparison'
+import SeasonTrends from '@/components/SeasonTrends'
+import Achievements  from '@/components/Achievements'
 
 interface Props {
-  season:          FullSeason
-  record:          { wins: number; losses: number }
-  profile:         Profile | null
-  inningsWon:      number
-  inningsPlayed:   number
-  onPastSeasons:   () => void
-  onSetUsername:   (u: string) => Promise<void>
-  onClearData:     () => void
+  season:        FullSeason
+  record:        { wins: number; losses: number }
+  profile:       Profile | null
+  inningsWon:    number
+  inningsPlayed: number
+  onPastSeasons: () => void
+  onClearData:   () => void
 }
 
 export default function StatsPage({
   season, record, profile, inningsWon, inningsPlayed,
-  onPastSeasons, onSetUsername, onClearData,
+  onPastSeasons, onClearData,
 }: Props) {
   const achievements = computeAchievements(season)
   const unlocked     = achievements.filter(a => a.unlocked).length
@@ -50,13 +48,6 @@ export default function StatsPage({
 
       {/* Season Trends */}
       <SeasonTrends games={season.games} />
-
-      {/* Friend Comparison */}
-      <FriendComparison
-        myUsername={profile?.username ?? null}
-        myStats={{ gameWins: record.wins, gameLosses: record.losses, inningsWon, inningsPlayed }}
-        onSetUsername={onSetUsername}
-      />
 
       {/* Past Seasons */}
       <button

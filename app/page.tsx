@@ -806,7 +806,6 @@ export default function AppPage() {
             inningsWon={inningsWon}
             inningsPlayed={inningsPlayed}
             onPastSeasons={() => setShowPastSeasons(true)}
-            onSetUsername={handleSetUsername}
             onClearData={handleClearAllData}
           />
         )}
@@ -815,7 +814,11 @@ export default function AppPage() {
           <SocialPage
             profile={profile}
             record={record}
+            inningsWon={inningsWon}
+            inningsPlayed={inningsPlayed}
             onShare={() => { setShareContext('season'); setShowShareSheet(true) }}
+            onShareCard={() => setShowShareCard(true)}
+            onSetUsername={handleSetUsername}
             onOpenSettings={() => setShowTeamSettings(true)}
           />
         )}

@@ -1,16 +1,24 @@
 'use client'
 
 import type { Profile } from '@/types'
-import FindFriends from '@/components/FindFriends'
+import FindFriends      from '@/components/FindFriends'
+import FriendComparison from '@/components/FriendComparison'
 
 interface Props {
   profile:        Profile | null
   record:         { wins: number; losses: number }
+  inningsWon:     number
+  inningsPlayed:  number
   onShare:        () => void
+  onShareCard:    () => void
+  onSetUsername:  (u: string) => Promise<void>
   onOpenSettings: () => void
 }
 
-export default function SocialPage({ profile, record, onShare, onOpenSettings }: Props) {
+export default function SocialPage({
+  profile, record, inningsWon, inningsPlayed,
+  onShare, onShareCard, onSetUsername, onOpenSettings,
+}: Props) {
   return (
     <div className="space-y-4 animate-slide-up">
       {/* Header */}
@@ -48,8 +56,24 @@ export default function SocialPage({ profile, record, onShare, onOpenSettings }:
             </svg>
             Share to Instagram
           </button>
+
+          {/* Share Scorecard */}
+          <button
+            onClick={onShareCard}
+            className="w-full flex items-center gap-3 bg-slate-100 text-slate-700 font-bold text-sm py-3.5 px-5 rounded-xl hover:bg-slate-200 active:scale-[0.98] transition-all"
+          >
+            <span className="text-lg">🃏</span>
+            Share Scorecard
+          </button>
         </div>
       </div>
+
+      {/* Friend Comparison */}
+      <FriendComparison
+        myUsername={profile?.username ?? null}
+        myStats={{ gameWins: record.wins, gameLosses: record.losses, inningsWon, inningsPlayed }}
+        onSetUsername={onSetUsername}
+      />
 
       {/* Find Friends */}
       <FindFriends
@@ -68,7 +92,7 @@ export default function SocialPage({ profile, record, onShare, onOpenSettings }:
             </div>
           </div>
           <button
-            onClick={() => navigator.clipboard.writeText(`${window.location.origin}/u/${profile.username}`)}
+            onClick={() => navigator.clipboard.writeText(`${window.location.origin}/u/${profile.username!}`)}
             className="text-xs text-brand-orange font-black hover:underline flex-shrink-0"
           >
             Copy
