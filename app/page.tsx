@@ -225,15 +225,19 @@ export default function AppPage() {
   async function handleSaveTeam(teamName: string, mascot: string, autoCarryTasks: boolean, discoverable: boolean, publicEmail: string) {
     if (!user) return
     const updates = {
-      team_name:       teamName || null,
+      team_name:        teamName || null,
       mascot,
       auto_carry_tasks: autoCarryTasks,
       is_discoverable:  discoverable,
       public_email:     publicEmail || null,
     }
     setProfile(prev => prev ? { ...prev, ...updates } : prev)
-    await supabase.from('profiles').update(updates).eq('id', user.id)
-    showToast(`🏟️ Team updated!`)
+    const { error } = await supabase.from('profiles').update(updates).eq('id', user.id)
+    if (error) {
+      showToast(`❌ Save failed: ${error.message}`)
+    } else {
+      showToast(`🏟️ Team updated!`)
+    }
   }
 
   // ===== PINCH HITTER =====
