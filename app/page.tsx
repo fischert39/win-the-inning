@@ -906,7 +906,7 @@ export default function AppPage() {
               templates={JSON.parse(profile?.default_offense_goals ?? '[]')}
               recentGoals={recentGoals}
               canRainDelay={!!viewGame && !viewGame.innings.some(i => i.is_rain_delay)}
-              onAddGoal={handleAddGoal}
+              onAddGoal={() => handleAddGoal()}
               onAddGoalWithText={text => handleAddGoal(text)}
               onSaveGoalText={handleSaveGoalText}
               onToggleGoal={handleToggleGoal}
