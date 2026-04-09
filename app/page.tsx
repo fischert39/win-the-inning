@@ -24,6 +24,7 @@ import EndOfDay       from '@/components/EndOfDay'
 import WeeklyWrapUp   from '@/components/WeeklyWrapUp'
 import ShareCard      from '@/components/ShareCard'
 import ShareSheet     from '@/components/ShareSheet'
+import SocialPage     from '@/components/SocialPage'
 import StatsPage      from '@/components/StatsPage'
 import BottomNav      from '@/components/BottomNav'
 import UndoToast, { type UndoAction } from '@/components/UndoToast'
@@ -42,7 +43,7 @@ export default function AppPage() {
   const [showTeamSettings,   setShowTeamSettings]   = useState(false)
   const [showShareSheet,     setShowShareSheet]     = useState(false)
   const [shareContext,       setShareContext]        = useState<'inning' | 'season'>('season')
-  const [activeTab,          setActiveTab]          = useState<'today' | 'stats'>('today')
+  const [activeTab,          setActiveTab]          = useState<'today' | 'stats' | 'social'>('today')
   const [undoAction,         setUndoAction]         = useState<UndoAction | null>(null)
   const undoIdRef   = useRef(0)
   const touchStartX = useRef(0)
@@ -807,6 +808,13 @@ export default function AppPage() {
             onPastSeasons={() => setShowPastSeasons(true)}
             onSetUsername={handleSetUsername}
             onClearData={handleClearAllData}
+          />
+        )}
+
+        {activeTab === 'social' && (
+          <SocialPage
+            profile={profile}
+            record={record}
             onShare={() => { setShareContext('season'); setShowShareSheet(true) }}
             onOpenSettings={() => setShowTeamSettings(true)}
           />

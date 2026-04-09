@@ -5,7 +5,6 @@ import { computeAchievements } from '@/lib/achievements'
 import SeasonTrends     from '@/components/SeasonTrends'
 import Achievements     from '@/components/Achievements'
 import FriendComparison from '@/components/FriendComparison'
-import FindFriends      from '@/components/FindFriends'
 
 interface Props {
   season:          FullSeason
@@ -16,13 +15,11 @@ interface Props {
   onPastSeasons:   () => void
   onSetUsername:   (u: string) => Promise<void>
   onClearData:     () => void
-  onShare:         () => void
-  onOpenSettings:  () => void
 }
 
 export default function StatsPage({
   season, record, profile, inningsWon, inningsPlayed,
-  onPastSeasons, onSetUsername, onClearData, onShare, onOpenSettings,
+  onPastSeasons, onSetUsername, onClearData,
 }: Props) {
   const achievements = computeAchievements(season)
   const unlocked     = achievements.filter(a => a.unlocked).length
@@ -53,27 +50,6 @@ export default function StatsPage({
 
       {/* Season Trends */}
       <SeasonTrends games={season.games} />
-
-      {/* Share season */}
-      <button
-        onClick={onShare}
-        className="w-full bg-gradient-to-r from-brand-orange to-[#FF4500] text-white rounded-2xl px-5 py-4 flex items-center justify-between hover:opacity-90 active:scale-[0.98] transition-all shadow-sm"
-      >
-        <div className="flex items-center gap-3">
-          <span className="text-xl">📤</span>
-          <div className="text-left">
-            <p className="font-black text-base">Share My Season</p>
-            <p className="text-white/70 text-xs mt-0.5">Post to Facebook or Instagram</p>
-          </div>
-        </div>
-        <span className="text-white/70 text-lg">›</span>
-      </button>
-
-      {/* Find Friends */}
-      <FindFriends
-        isDiscoverable={profile?.is_discoverable ?? false}
-        onOpenSettings={onOpenSettings}
-      />
 
       {/* Friend Comparison */}
       <FriendComparison
