@@ -18,29 +18,36 @@ export const MASCOTS = [
 ]
 
 interface Props {
-  currentTeamName:    string | null
-  currentMascot:      string | null
-  currentAutoCarry:   boolean
-  onSave:             (teamName: string, mascot: string, autoCarry: boolean) => Promise<void>
-  onClose:            () => void
+  currentTeamName:      string | null
+  currentMascot:        string | null
+  currentAutoCarry:     boolean
+  currentDiscoverable:  boolean
+  currentPublicEmail:   string | null
+  onSave:               (teamName: string, mascot: string, autoCarry: boolean, discoverable: boolean, publicEmail: string) => Promise<void>
+  onClose:              () => void
 }
 
-export default function TeamSettings({ currentTeamName, currentMascot, currentAutoCarry, onSave, onClose }: Props) {
-  const [teamName,   setTeamName]   = useState(currentTeamName ?? '')
-  const [mascot,     setMascot]     = useState(currentMascot ?? MASCOTS[0].emoji)
-  const [autoCarry,  setAutoCarry]  = useState(currentAutoCarry)
-  const [saving,     setSaving]     = useState(false)
+export default function TeamSettings({
+  currentTeamName, currentMascot, currentAutoCarry,
+  currentDiscoverable, currentPublicEmail, onSave, onClose,
+}: Props) {
+  const [teamName,      setTeamName]      = useState(currentTeamName ?? '')
+  const [mascot,        setMascot]        = useState(currentMascot ?? MASCOTS[0].emoji)
+  const [autoCarry,     setAutoCarry]     = useState(currentAutoCarry)
+  const [discoverable,  setDiscoverable]  = useState(currentDiscoverable)
+  const [publicEmail,   setPublicEmail]   = useState(currentPublicEmail ?? '')
+  const [saving,        setSaving]        = useState(false)
 
   async function handleSave() {
     setSaving(true)
-    await onSave(teamName.trim(), mascot, autoCarry)
+    await onSave(teamName.trim(), mascot, autoCarry, discoverable, publicEmail.trim())
     onClose()
   }
 
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center p-4" onClick={onClose}>
       <div
-        className="bg-white rounded-2xl w-full max-w-sm p-6 animate-slide-up"
+        className="bg-white rounded-2xl w-full max-w-sm p-6 animate-slide-up max-h-[90vh] overflow-y-auto"
         onClick={e => e.stopPropagation()}
       >
         <h2 className="font-black text-brand-navy text-lg mb-4">🏟️ Your Team</h2>
@@ -78,31 +85,45 @@ export default function TeamSettings({ currentTeamName, currentMascot, currentAu
         </div>
 
         {/* Auto-carry toggle */}
-        <button
-          onClick={() => setAutoCarry(v => !v)}
-          className={`w-full flex items-center gap-3 p-3.5 rounded-xl border-2 transition-all text-left mb-5 ${
-            autoCarry
-              ? 'border-brand-orange bg-brand-orange/5'
-              : 'border-slate-100 hover:border-slate-200'
-          }`}
-        >
-          <span className="text-xl flex-shrink-0">🔄</span>
-          <div className="flex-1 min-w-0">
-            <p className="text-brand-navy font-bold text-sm">Auto-carry incomplete tasks</p>
-            <p className="text-slate-400 text-xs">Unfinished goals roll to the next day</p>
-          </div>
-          <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
-            autoCarry ? 'border-brand-orange bg-brand-orange' : 'border-slate-300'
-          }`}>
-            {autoCarry && (
-              <svg className="w-3 h-3 text-white" viewBox="0 0 12 12" fill="none">
-                <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            )}
-          </div>
-        </button>
+        <Toggle
+          icon="🔄"
+          title="Auto-carry incomplete tasks"
+          desc="Unfinished goals roll to the next day"
+          active={autoCarry}
+          onToggle={() => setAutoCarry(v => !v)}
+          color="orange"
+          className="mb-3"
+        />
 
-        <div className="flex gap-3">
+        {/* Discoverable toggle */}
+        <Toggle
+          icon="🔍"
+          title="Make me findable"
+          desc="Others can search for you by name or email"
+          active={discoverable}
+          onToggle={() => setDiscoverable(v => !v)}
+          color="teal"
+          className="mb-3"
+        />
+
+        {/* Public email for search */}
+        {discoverable && (
+          <div className="mb-5">
+            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1.5">
+              Email for search <span className="normal-case font-normal">(optional)</span>
+            </label>
+            <input
+              type="email"
+              value={publicEmail}
+              onChange={e => setPublicEmail(e.target.value)}
+              placeholder="e.g. coach@email.com"
+              className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm text-brand-navy outline-none focus:border-brand-orange"
+            />
+            <p className="text-slate-400 text-xs mt-1.5">Only used so teammates can find you — never shown publicly.</p>
+          </div>
+        )}
+
+        <div className="flex gap-3 mt-2">
           <button
             onClick={onClose}
             className="flex-1 py-3 rounded-xl border border-slate-200 text-slate-600 font-semibold text-sm hover:bg-slate-50 transition-colors"
@@ -119,5 +140,42 @@ export default function TeamSettings({ currentTeamName, currentMascot, currentAu
         </div>
       </div>
     </div>
+  )
+}
+
+function Toggle({ icon, title, desc, active, onToggle, color, className = '' }: {
+  icon:      string
+  title:     string
+  desc:      string
+  active:    boolean
+  onToggle:  () => void
+  color:     'orange' | 'teal'
+  className?: string
+}) {
+  const ring = color === 'teal'
+    ? active ? 'border-teal-500 bg-teal-50' : 'border-slate-100 hover:border-slate-200'
+    : active ? 'border-brand-orange bg-brand-orange/5' : 'border-slate-100 hover:border-slate-200'
+  const dot = color === 'teal'
+    ? active ? 'border-teal-500 bg-teal-500' : 'border-slate-300'
+    : active ? 'border-brand-orange bg-brand-orange' : 'border-slate-300'
+
+  return (
+    <button
+      onClick={onToggle}
+      className={`w-full flex items-center gap-3 p-3.5 rounded-xl border-2 transition-all text-left ${ring} ${className}`}
+    >
+      <span className="text-xl flex-shrink-0">{icon}</span>
+      <div className="flex-1 min-w-0">
+        <p className="text-brand-navy font-bold text-sm">{title}</p>
+        <p className="text-slate-400 text-xs">{desc}</p>
+      </div>
+      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors ${dot}`}>
+        {active && (
+          <svg className="w-3 h-3 text-white" viewBox="0 0 12 12" fill="none">
+            <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        )}
+      </div>
+    </button>
   )
 }

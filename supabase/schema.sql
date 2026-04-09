@@ -33,6 +33,42 @@ alter table public.seasons  add column if not exists success_definition    text;
 alter table public.seasons  add column if not exists obstacle              text;
 alter table public.seasons  add column if not exists length_weeks          integer default 12;
 alter table public.profiles add column if not exists auto_carry_tasks      boolean default false;
+-- v4 migrations: discoverability + social sharing
+alter table public.profiles add column if not exists is_discoverable       boolean default false;
+alter table public.profiles add column if not exists public_email          text;
+
+-- ============================================================
+-- User search: find discoverable players by name, username, or email
+-- ============================================================
+create or replace function public.search_users(p_query text)
+returns json
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  return coalesce((
+    select json_agg(json_build_object(
+      'username',     p.username,
+      'display_name', p.display_name,
+      'mascot',       p.mascot,
+      'team_name',    p.team_name,
+      'sport',        p.sport
+    ))
+    from public.profiles p
+    where p.is_discoverable = true
+      and p.username is not null
+      and (
+        lower(p.display_name) ilike '%' || lower(p_query) || '%'
+        or lower(p.username)  ilike '%' || lower(p_query) || '%'
+        or (p.public_email is not null and lower(p.public_email) ilike '%' || lower(p_query) || '%')
+      )
+    limit 20
+  ), '[]'::json);
+end;
+$$;
+
+grant execute on function public.search_users(text) to authenticated;
 
 -- ============================================================
 -- Friend comparison: privacy-safe public stats lookup by username

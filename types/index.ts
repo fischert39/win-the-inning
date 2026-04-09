@@ -19,6 +19,8 @@ export interface Profile {
   pinch_hitter_tokens:   number
   daily_bible_verse:     boolean
   auto_carry_tasks:      boolean
+  is_discoverable:       boolean
+  public_email:          string | null
 }
 
 export interface SeasonGoal {

@@ -23,6 +23,7 @@ import OffenseSection from '@/components/OffenseSection'
 import EndOfDay       from '@/components/EndOfDay'
 import WeeklyWrapUp   from '@/components/WeeklyWrapUp'
 import ShareCard      from '@/components/ShareCard'
+import ShareSheet     from '@/components/ShareSheet'
 import StatsPage      from '@/components/StatsPage'
 import BottomNav      from '@/components/BottomNav'
 import UndoToast, { type UndoAction } from '@/components/UndoToast'
@@ -39,6 +40,8 @@ export default function AppPage() {
   const [showWinCelebration, setShowWinCelebration] = useState(false)
   const [showShareCard,      setShowShareCard]      = useState(false)
   const [showTeamSettings,   setShowTeamSettings]   = useState(false)
+  const [showShareSheet,     setShowShareSheet]     = useState(false)
+  const [shareContext,       setShareContext]        = useState<'inning' | 'season'>('season')
   const [activeTab,          setActiveTab]          = useState<'today' | 'stats'>('today')
   const [undoAction,         setUndoAction]         = useState<UndoAction | null>(null)
   const undoIdRef   = useRef(0)
@@ -218,10 +221,17 @@ export default function AppPage() {
   }
 
   // ===== TEAM ACTIONS =====
-  async function handleSaveTeam(teamName: string, mascot: string, autoCarryTasks: boolean) {
+  async function handleSaveTeam(teamName: string, mascot: string, autoCarryTasks: boolean, discoverable: boolean, publicEmail: string) {
     if (!user) return
-    setProfile(prev => prev ? { ...prev, team_name: teamName || null, mascot, auto_carry_tasks: autoCarryTasks } : prev)
-    await supabase.from('profiles').update({ team_name: teamName || null, mascot, auto_carry_tasks: autoCarryTasks }).eq('id', user.id)
+    const updates = {
+      team_name:       teamName || null,
+      mascot,
+      auto_carry_tasks: autoCarryTasks,
+      is_discoverable:  discoverable,
+      public_email:     publicEmail || null,
+    }
+    setProfile(prev => prev ? { ...prev, ...updates } : prev)
+    await supabase.from('profiles').update(updates).eq('id', user.id)
     showToast(`🏟️ Team updated!`)
   }
 
@@ -797,6 +807,8 @@ export default function AppPage() {
             onPastSeasons={() => setShowPastSeasons(true)}
             onSetUsername={handleSetUsername}
             onClearData={handleClearAllData}
+            onShare={() => { setShareContext('season'); setShowShareSheet(true) }}
+            onOpenSettings={() => setShowTeamSettings(true)}
           />
         )}
 
@@ -934,13 +946,30 @@ export default function AppPage() {
           currentTeamName={profile?.team_name ?? null}
           currentMascot={profile?.mascot ?? null}
           currentAutoCarry={profile?.auto_carry_tasks ?? false}
+          currentDiscoverable={profile?.is_discoverable ?? false}
+          currentPublicEmail={profile?.public_email ?? null}
           onSave={handleSaveTeam}
           onClose={() => setShowTeamSettings(false)}
         />
       )}
 
       {showWinCelebration && (
-        <WinCelebration onDismiss={() => setShowWinCelebration(false)} />
+        <WinCelebration
+          onDismiss={() => setShowWinCelebration(false)}
+          onShare={() => { setShowWinCelebration(false); setShareContext('inning'); setShowShareSheet(true) }}
+        />
+      )}
+
+      {showShareSheet && (
+        <ShareSheet
+          username={profile?.username ?? null}
+          displayName={profile?.display_name ?? null}
+          mascot={profile?.mascot ?? null}
+          teamName={profile?.team_name ?? null}
+          record={record}
+          context={shareContext}
+          onClose={() => setShowShareSheet(false)}
+        />
       )}
 
       {showShareCard && (
