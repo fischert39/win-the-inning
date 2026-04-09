@@ -789,7 +789,6 @@ export default function AppPage() {
         sport={sport}
         profile={profile}
         onPastSeasons={() => setShowPastSeasons(true)}
-        onShareCard={() => setShowShareCard(true)}
         onEditTeam={() => setShowTeamSettings(true)}
         onEndSeason={handleEndSeason}
         onSignOut={handleSignOut}
