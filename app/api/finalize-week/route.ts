@@ -49,7 +49,7 @@ export async function GET(request: Request) {
 
   // Recalculate result for each affected game
   let gamesUpdated = 0
-  for (const gameId of gameIds) {
+  for (const gameId of Array.from(gameIds)) {
     const { data: gameInnings } = await supabase
       .from('innings')
       .select('*, offense_goals(*)')
