@@ -24,14 +24,14 @@ export default function DefenseSection({ inning, defaultTasks, pinchHitterTokens
   const canUsePinchHitter = pinchHitterTokens > 0 && outs < 3 && !inning.pinch_hit_used && inning.status !== 'CLOSED'
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+    <div className="bg-white rounded-2xl shadow-sm overflow-hidden border-l-4 border-brand-purple">
       {/* Header */}
-      <div className={`px-5 pt-5 pb-3 flex items-center justify-between transition-colors ${outs === 3 ? 'bg-green-50' : ''}`}>
+      <div className={`px-5 pt-5 pb-3 flex items-center justify-between transition-colors ${outs === 3 ? 'bg-brand-orange/5' : ''}`}>
         <div>
           <div className="flex items-center gap-2">
             <h2 className="font-bold text-brand-navy text-base">Defense</h2>
             {outs === 3 && (
-              <span className="text-[11px] font-semibold bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
+              <span className="text-[11px] font-semibold bg-brand-orange/10 text-brand-orange px-2 py-0.5 rounded-full">
                 Complete!
               </span>
             )}
@@ -49,7 +49,7 @@ export default function DefenseSection({ inning, defaultTasks, pinchHitterTokens
               />
             ))}
           </div>
-          <span className={`text-xs font-semibold transition-colors ${outs === 3 ? 'text-brand-green' : 'text-slate-400'}`}>
+          <span className={`text-xs font-semibold transition-colors ${outs === 3 ? 'text-brand-orange' : 'text-slate-400'}`}>
             {outs}/3 Outs
           </span>
         </div>
@@ -76,13 +76,13 @@ export default function DefenseSection({ inning, defaultTasks, pinchHitterTokens
               key={cat.key}
               className={`flex items-center gap-3 p-3 rounded-xl border transition-all ${
                 completed
-                  ? 'bg-green-50 border-green-200'
+                  ? 'bg-brand-orange/5 border-brand-orange/20'
                   : 'bg-slate-50 border-slate-100 hover:border-slate-200'
               }`}
             >
               {/* Icon badge */}
               <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 text-lg ${
-                completed ? 'bg-brand-green/20' : 'bg-white shadow-sm border border-slate-100'
+                completed ? 'bg-brand-orange/15' : 'bg-white shadow-sm border border-slate-100'
               }`}>
                 {cat.icon}
               </div>

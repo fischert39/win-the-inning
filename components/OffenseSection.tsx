@@ -71,7 +71,7 @@ export default function OffenseSection({
   const currentGoalTexts = new Set(goalTexts)
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+    <div className="bg-white rounded-2xl shadow-sm overflow-hidden border-l-4 border-brand-orange">
       {/* Header */}
       <div className="px-5 pt-5 pb-3">
         <div className="flex items-start justify-between mb-1">
@@ -194,13 +194,13 @@ export default function OffenseSection({
 
         <button
           onClick={onCloseInning}
-          className={`w-full py-3.5 rounded-xl font-black text-sm transition-all text-white shadow-lg hover:opacity-90 active:scale-[0.98] ${
+          className={`w-full py-4 rounded-xl font-bold text-sm tracking-wide transition-all text-white active:scale-[0.98] ${
             closed
-              ? 'bg-gradient-to-r from-brand-blue to-[#005fa3]'
-              : 'bg-gradient-to-r from-brand-orange to-[#FF4500] animate-pulse'
+              ? 'bg-brand-blue hover:bg-[#005fa3] shadow-md shadow-brand-blue/20'
+              : 'bg-brand-orange hover:bg-brand-orange-dark shadow-md shadow-brand-orange/30'
           }`}
         >
-          {closed ? '✏️ Update Inning' : '🔒 Close the Inning'}
+          {closed ? 'Update Inning' : 'Close the Inning'}
         </button>
       </div>
     </div>
@@ -219,7 +219,7 @@ function GoalRow({
   onDelete:   () => void
 }) {
   return (
-    <div className={`rounded-xl border transition-all ${goal.completed ? 'bg-green-50 border-green-200' : 'bg-slate-50 border-slate-100'}`}>
+    <div className={`rounded-xl border transition-all ${goal.completed ? 'bg-brand-orange/5 border-brand-orange/20' : 'bg-slate-50 border-slate-100'}`}>
       <div className="flex items-center gap-2 px-3 pt-2.5 pb-1.5">
         <span className="text-base flex-shrink-0">{sportEmoji}</span>
         <input

@@ -127,31 +127,31 @@ export default function Scoreboard({ games, todayStr, viewDate, seasonStartDate,
             <button
               key={date}
               onClick={() => onViewDate(date)}
-              className={`${cellBg} rounded-xl px-3 py-2.5 flex flex-col items-center gap-1 transition-all min-w-[52px] cursor-pointer`}
+              className={`${cellBg} rounded-xl px-2.5 py-3 flex flex-col items-center gap-1.5 transition-all min-w-[48px] cursor-pointer`}
             >
-              <span className="text-white/40 text-[10px] font-bold">{idx + 1}</span>
-              <span className={`text-[11px] font-semibold ${isToday ? 'text-brand-orange' : 'text-white/60'}`}>
+              <span className={`text-[10px] font-semibold ${isToday ? 'text-brand-orange' : 'text-white/40'}`}>
                 {dayShort(date)}
               </span>
+              <span className="text-white/30 text-[9px]">{idx + 1}</span>
               {!inn ? (
-                <span className="text-white/20 text-xs">–</span>
+                <span className="text-white/20 text-sm font-light">·</span>
               ) : isRainDelay ? (
-                <span className="text-sky-400 text-xs">☔</span>
+                <span className="text-sky-400 text-sm">☔</span>
               ) : res === 'WIN' ? (
-                <span className="text-brand-green text-xs font-black">W</span>
+                <span className="text-brand-green text-sm font-bold">W</span>
               ) : res === 'TIE' ? (
-                <span className="text-yellow-400 text-xs font-black">T</span>
+                <span className="text-yellow-400 text-sm font-bold">T</span>
               ) : res === 'LOSS' ? (
-                <span className="text-brand-red text-xs font-black">L</span>
+                <span className="text-brand-red text-sm font-bold">L</span>
               ) : (
-                <div className="flex gap-0.5">
+                <div className="flex gap-0.5 py-0.5">
                   {[0, 1, 2].map(i => (
                     <span key={i} className={`w-1.5 h-1.5 rounded-full ${i < outs ? 'bg-brand-orange' : 'bg-white/20'}`} />
                   ))}
                 </div>
               )}
-              <span className="text-white/50 text-[10px] tabular-nums">
-                {inn ? `${runs}R` : isFuture ? '' : '–'}
+              <span className="text-white/40 text-[9px] tabular-nums font-medium">
+                {inn ? `${runs}R` : isFuture ? '' : ''}
               </span>
             </button>
           )
