@@ -4,7 +4,11 @@
 
 @layer base {
   html { scroll-behavior: smooth; }
-  body { -webkit-font-smoothing: antialiased; }
+  body {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    background-color: #f8fafc;
+  }
   input, textarea { outline: none; }
   textarea { resize: vertical; }
 }
@@ -12,6 +16,7 @@
 @layer utilities {
   .scrollbar-hide::-webkit-scrollbar { display: none; }
   .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+  .safe-area-pb { padding-bottom: max(0.75rem, env(safe-area-inset-bottom)); }
 }
 
 /* ============================================================
@@ -21,6 +26,9 @@
 /* Page background */
 html.dark body {
   background-color: #0d1117;
+}
+html.dark .bg-slate-50 {
+  background-color: #0d1117 !important;
 }
 html.dark .bg-gradient-to-br {
   background-image: none !important;
@@ -141,8 +149,10 @@ html.dark .bg-white.text-slate-400 {
   color: #6e7681 !important;
 }
 
-/* Transition for smooth toggle */
-html, html * {
+/* Transition for smooth dark toggle — scoped to avoid jank on all elements */
+html body, html .bg-white, html .bg-slate-50, html .bg-slate-100,
+html .bg-brand-navy, html .border-slate-100, html .border-slate-200,
+html .text-brand-navy, html .text-slate-600, html .text-slate-500, html .text-slate-400 {
   transition: background-color 0.2s ease, border-color 0.2s ease, color 0.15s ease;
 }
 /* But don't transition things that shouldn't (animations) */

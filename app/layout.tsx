@@ -1,8 +1,8 @@
 import type { Metadata, Viewport } from 'next'
-import { Inter } from 'next/font/google'
+import { Plus_Jakarta_Sans } from 'next/font/google'
 import './globals.css'
 
-const inter = Inter({ subsets: ['latin'] })
+const jakarta = Plus_Jakarta_Sans({ subsets: ['latin'], variable: '--font-sans', display: 'swap' })
 
 export const metadata: Metadata = {
   title: 'Win the Inning, Win the Day',
@@ -30,7 +30,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <head>
         <link rel="apple-touch-icon" href="/icon.svg" />
       </head>
-      <body className={inter.className}>
+      <body className={jakarta.variable + ' font-sans'}>
         {/* Anti-flash: apply saved theme before first paint */}
         <script dangerouslySetInnerHTML={{
           __html: `

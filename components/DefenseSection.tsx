@@ -24,14 +24,19 @@ export default function DefenseSection({ inning, defaultTasks, pinchHitterTokens
   const canUsePinchHitter = pinchHitterTokens > 0 && outs < 3 && !inning.pinch_hit_used && inning.status !== 'CLOSED'
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+    <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
       {/* Header */}
       <div className={`px-5 pt-5 pb-3 flex items-center justify-between transition-colors ${outs === 3 ? 'bg-green-50' : ''}`}>
         <div>
-          <h2 className={`font-black text-base transition-colors ${outs === 3 ? 'text-brand-green' : 'text-brand-navy'}`}>
-            🛡️ Defense — {outs === 3 ? '3 Outs! Great job!' : 'Get 3 Outs'}
-          </h2>
-          <p className="text-slate-400 text-xs mt-0.5">Complete your Mind, Spirit &amp; Body tasks</p>
+          <div className="flex items-center gap-2">
+            <h2 className="font-bold text-brand-navy text-base">Defense</h2>
+            {outs === 3 && (
+              <span className="text-[11px] font-semibold bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
+                Complete!
+              </span>
+            )}
+          </div>
+          <p className="text-slate-400 text-xs mt-0.5">Mind · Spirit · Body</p>
         </div>
         <div className="flex flex-col items-end gap-1">
           <div className="flex gap-1.5">
@@ -44,7 +49,7 @@ export default function DefenseSection({ inning, defaultTasks, pinchHitterTokens
               />
             ))}
           </div>
-          <span className={`text-xs font-bold transition-colors ${outs === 3 ? 'text-brand-green' : 'text-slate-500'}`}>
+          <span className={`text-xs font-semibold transition-colors ${outs === 3 ? 'text-brand-green' : 'text-slate-400'}`}>
             {outs}/3 Outs
           </span>
         </div>
@@ -84,7 +89,7 @@ export default function DefenseSection({ inning, defaultTasks, pinchHitterTokens
 
               {/* Task input */}
               <div className="flex-1 min-w-0">
-                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">
+                <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide mb-0.5">
                   {cat.label}
                 </div>
                 <input

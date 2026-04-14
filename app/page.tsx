@@ -136,6 +136,30 @@ export default function AppPage() {
                 .sort((a: OffenseGoal, b: OffenseGoal) => a.sort_order - b.sort_order),
             })),
         }))
+
+      // Auto-finalize any IN_PROGRESS innings from past weeks
+      const currentWeekStart = getWeekStart(today())
+      const now = new Date().toISOString()
+      for (const game of raw.games) {
+        if (game.week_end >= currentWeekStart) continue
+        let gameChanged = false
+        for (const inning of game.innings) {
+          if (inning.status !== 'IN_PROGRESS') continue
+          const outs = countOuts(inning)
+          const runs = simulateRuns(inning.offense_goals)
+          const result: GameResult = outs < 3 ? 'LOSS' : runs > 0 ? 'WIN' : 'TIE'
+          await supabase.from('innings').update({ status: 'CLOSED', result, closed_at: now }).eq('id', inning.id)
+          inning.status = 'CLOSED'
+          inning.result = result
+          inning.closed_at = now
+          gameChanged = true
+        }
+        if (gameChanged) {
+          const newResult = gameResult(game.innings)
+          await supabase.from('games').update({ result: newResult }).eq('id', game.id)
+          game.result = newResult
+        }
+      }
     }
     setSeason(raw)
     setLoading(false)
@@ -714,7 +738,7 @@ export default function AppPage() {
   // ===== RENDER =====
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center">
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
         <div className="text-center animate-fade-in">
           <span className="text-6xl block mb-4 animate-bounce-slow">🥎</span>
           <p className="text-brand-navy font-bold text-lg">Loading your season…</p>
@@ -782,7 +806,7 @@ export default function AppPage() {
   const verse       = profile?.daily_bible_verse ? getDailyVerse() : null
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-100 via-blue-50 to-indigo-100">
+    <div className="min-h-screen bg-slate-50">
       <AppHeader
         record={record}
         streak={streak}

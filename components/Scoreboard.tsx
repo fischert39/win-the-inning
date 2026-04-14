@@ -42,35 +42,39 @@ export default function Scoreboard({ games, todayStr, viewDate, seasonStartDate,
   const winsNeeded = 4 // mathematical lock-in: win > loss + remaining means you need 4 wins typically
 
   return (
-    <div className="bg-brand-navy rounded-2xl p-4 mb-4 shadow-xl overflow-x-auto scrollbar-hide">
+    <div className="bg-brand-navy rounded-2xl p-4 mb-4 shadow-sm overflow-x-auto scrollbar-hide">
       {/* Week label + navigation */}
       <div className="flex items-center justify-between mb-3 px-1">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5">
           <button
             onClick={() => shiftWeek(-1)}
             disabled={!canGoPrev}
-            className="text-white/40 hover:text-white disabled:opacity-20 transition-colors font-bold text-sm px-1"
+            className="w-6 h-6 flex items-center justify-center text-white/40 hover:text-white disabled:opacity-20 transition-colors"
           >
-            ‹
+            <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M11.78 5.22a.75.75 0 0 1 0 1.06L8.06 10l3.72 3.72a.75.75 0 1 1-1.06 1.06l-4.25-4.25a.75.75 0 0 1 0-1.06l4.25-4.25a.75.75 0 0 1 1.06 0Z" clipRule="evenodd" />
+            </svg>
           </button>
-          <span className="text-white/40 text-xs font-bold uppercase tracking-widest">
-            Week of {(() => { const d = new Date(displayWeekStart + 'T12:00:00'); return `${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}/${d.getFullYear()}` })()}
+          <span className="text-white/50 text-xs font-medium">
+            Week of {(() => { const d = new Date(displayWeekStart + 'T12:00:00'); return `${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}` })()}
           </span>
           <button
             onClick={() => shiftWeek(1)}
             disabled={!canGoNext}
-            className="text-white/40 hover:text-white disabled:opacity-20 transition-colors font-bold text-sm px-1"
+            className="w-6 h-6 flex items-center justify-center text-white/40 hover:text-white disabled:opacity-20 transition-colors"
           >
-            ›
+            <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M8.22 5.22a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.75.75 0 0 1-1.06-1.06L11.94 10 8.22 6.28a.75.75 0 0 1 0-1.06Z" clipRule="evenodd" />
+            </svg>
           </button>
         </div>
         {gResult && gResult !== 'IN_PROGRESS' && (
-          <span className={`text-xs font-black px-2 py-0.5 rounded-full ${
+          <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${
             gResult === 'WIN'  ? 'bg-brand-green/20 text-brand-green' :
             gResult === 'TIE'  ? 'bg-yellow-500/20 text-yellow-400'   :
                                  'bg-brand-red/20 text-brand-red'
           }`}>
-            {gResult === 'WIN' ? '🏆 GAME WIN' : gResult === 'TIE' ? '🤝 GAME TIE' : '❌ GAME L'}
+            {gResult === 'WIN' ? 'Game Win' : gResult === 'TIE' ? 'Game Tie' : 'Game Loss'}
           </span>
         )}
       </div>
@@ -79,12 +83,12 @@ export default function Scoreboard({ games, todayStr, viewDate, seasonStartDate,
       {gResult === 'IN_PROGRESS' && activeGame && (
         <div className="mb-3 px-1">
           <div className="flex items-center justify-between mb-1.5">
-            <span className="text-white/50 text-[10px] font-semibold">
+            <span className="text-white/50 text-[10px] font-medium">
               {inningWins >= winsNeeded
                 ? 'Game secured!'
                 : `${winsNeeded - inningWins} more win${winsNeeded - inningWins !== 1 ? 's' : ''} to lock up the game`}
             </span>
-            <span className="text-white/50 text-[10px] font-bold tabular-nums">{inningWins}/{winsNeeded}</span>
+            <span className="text-white/50 text-[10px] tabular-nums">{inningWins}/{winsNeeded}</span>
           </div>
           <div className="flex gap-1">
             {Array.from({ length: winsNeeded }).map((_, i) => (

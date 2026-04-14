@@ -71,13 +71,13 @@ export default function OffenseSection({
   const currentGoalTexts = new Set(goalTexts)
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+    <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
       {/* Header */}
       <div className="px-5 pt-5 pb-3">
         <div className="flex items-start justify-between mb-1">
           <div>
-            <h2 className="text-brand-navy font-black text-base">🏃 Offense — Score Runs</h2>
-            <p className="text-slate-400 text-xs mt-0.5">Set your goals — hits advance runners, runs score!</p>
+            <h2 className="text-brand-navy font-bold text-base">Offense</h2>
+            <p className="text-slate-400 text-xs mt-0.5">Complete goals to score runs</p>
           </div>
           <div className="flex items-center gap-3">
             <BaseDiamond goals={goals} />
@@ -89,11 +89,11 @@ export default function OffenseSection({
         </div>
 
         {/* Scoring hint */}
-        <div className="bg-slate-50 rounded-lg px-3 py-2 text-xs text-slate-500 flex flex-wrap gap-x-3 gap-y-1 mt-2">
-          <span>🔵 <strong>S</strong>=1 base</span>
-          <span>🌊 <strong>2B</strong>=2 bases</span>
-          <span>⭐ <strong>3B</strong>=3 bases</span>
-          <span>🔥 <strong>HR</strong>=score now!</span>
+        <div className="flex gap-4 mt-2.5 text-xs text-slate-400">
+          <span><strong className="text-slate-500 font-semibold">S</strong> · 1 base</span>
+          <span><strong className="text-slate-500 font-semibold">2B</strong> · 2 bases</span>
+          <span><strong className="text-slate-500 font-semibold">3B</strong> · 3 bases</span>
+          <span><strong className="text-brand-orange font-semibold">HR</strong> · scores!</span>
         </div>
       </div>
 
@@ -146,7 +146,7 @@ export default function OffenseSection({
             <div className="space-y-3">
               {GOAL_PRESETS.map(cat => (
                 <div key={cat.category}>
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1.5">{cat.category}</p>
+                  <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide mb-1.5">{cat.category}</p>
                   <div className="flex flex-wrap gap-1.5">
                     {cat.goals.map(text => (
                       <QuickAddChip key={text} text={text} already={currentGoalTexts.has(text)} onAdd={onAddGoalWithText} />
@@ -282,8 +282,10 @@ function CollapsiblePanel({ label, open, onToggle, children }: {
         onClick={onToggle}
         className="w-full flex items-center justify-between px-3.5 py-2.5 text-left hover:bg-slate-50 transition-colors"
       >
-        <span className="text-xs font-black text-slate-500 uppercase tracking-wider">{label}</span>
-        <span className="text-slate-300 text-sm">{open ? '▲' : '▼'}</span>
+        <span className="text-xs font-semibold text-slate-500">{label}</span>
+        <svg className={`w-3.5 h-3.5 text-slate-400 transition-transform ${open ? 'rotate-180' : ''}`} viewBox="0 0 20 20" fill="currentColor">
+          <path fillRule="evenodd" d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z" clipRule="evenodd" />
+        </svg>
       </button>
       {open && <div className="px-3.5 pb-3">{children}</div>}
     </div>
