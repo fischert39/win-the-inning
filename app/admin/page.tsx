@@ -43,10 +43,8 @@ export default async function AdminPage() {
     admin.from('profiles').select('*'),
     admin.from('seasons').select('id, user_id, is_current, created_at'),
     admin.from('games').select('id, user_id, result'),
-    admin.from('innings').select(
-      'id, user_id, status, result, is_rain_delay, pinch_hit_used, closed_at, ' +
-      'mind_task, mind_completed, spirit_task, spirit_completed, body_task, body_completed'
-    ),
+    // eslint-disable-next-line max-len
+    admin.from('innings').select('id, user_id, status, result, is_rain_delay, pinch_hit_used, closed_at, mind_task, mind_completed, spirit_task, spirit_completed, body_task, body_completed'),
     admin.from('offense_goals').select('id, user_id, completed, hit_type, created_at'),
   ])
 
