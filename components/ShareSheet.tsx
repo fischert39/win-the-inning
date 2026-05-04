@@ -50,7 +50,19 @@ export default function ShareSheet({ username, displayName, mascot, teamName, re
   }
 
   async function copyLink() {
-    await navigator.clipboard.writeText(getProfileUrl())
+    const url = getProfileUrl()
+    try {
+      await navigator.clipboard.writeText(url)
+    } catch {
+      // Fallback for browsers that block clipboard API
+      const el = document.createElement('textarea')
+      el.value = url
+      el.style.cssText = 'position:fixed;opacity:0;pointer-events:none'
+      document.body.appendChild(el)
+      el.select()
+      document.execCommand('copy')
+      document.body.removeChild(el)
+    }
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
   }

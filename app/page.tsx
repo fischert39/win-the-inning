@@ -29,6 +29,10 @@ import StatsPage      from '@/components/StatsPage'
 import BottomNav      from '@/components/BottomNav'
 import UndoToast, { type UndoAction } from '@/components/UndoToast'
 
+function safeParseGoals(json: string | null | undefined): string[] {
+  try { return JSON.parse(json ?? '[]') } catch { return [] }
+}
+
 export default function AppPage() {
   const [user,      setUser]      = useState<User | null>(null)
   const [profile,   setProfile]   = useState<Profile | null>(null)
@@ -45,9 +49,10 @@ export default function AppPage() {
   const [shareContext,       setShareContext]        = useState<'inning' | 'season'>('season')
   const [activeTab,          setActiveTab]          = useState<'today' | 'stats' | 'social'>('today')
   const [undoAction,         setUndoAction]         = useState<UndoAction | null>(null)
-  const undoIdRef   = useRef(0)
-  const touchStartX = useRef(0)
-  const touchStartY = useRef(0)
+  const undoIdRef            = useRef(0)
+  const touchStartX          = useRef(0)
+  const touchStartY          = useRef(0)
+  const viewDateInProgressRef = useRef(false)
   const router  = useRouter()
   const supabase = createClient()
 
@@ -95,9 +100,9 @@ export default function AppPage() {
     const dx = e.changedTouches[0].clientX - touchStartX.current
     const dy = e.changedTouches[0].clientY - touchStartY.current
     if (Math.abs(dx) < 50 || Math.abs(dx) < Math.abs(dy)) return
-    const newDate = dx < 0 ? getNextDate(vDate) : getPrevDate(vDate)
+    const newDate = dx < 0 ? getNextDate(vDateEarly) : getPrevDate(vDateEarly)
     if (!season || newDate < season.start_date) return
-    const maxDate = toDateKey(new Date(new Date(getWeekStart(todayStr) + 'T12:00:00').setDate(new Date(getWeekStart(todayStr) + 'T12:00:00').getDate() + 13)))
+    const maxDate = season.end_date ?? getWeekEnd(getWeekStart(todayStr))
     if (newDate > maxDate) return
     handleViewDate(newDate)
   }
@@ -350,8 +355,33 @@ export default function AppPage() {
   async function handleEndSeason() {
     if (!season) return
     if (!confirm('End this season? Your record will be saved.')) return
+
+    // Finalize any still-open innings so the recap shows accurate results
+    const now = new Date().toISOString()
+    const updatedGames = await Promise.all(season.games.map(async game => {
+      const updatedInnings = game.innings.map(inning => {
+        if (inning.status !== 'IN_PROGRESS') return inning
+        const outs = countOuts(inning)
+        const runs = simulateRuns(inning.offense_goals)
+        const result = (outs < 3 ? 'LOSS' : runs > 0 ? 'WIN' : 'TIE') as GameResult
+        return { ...inning, status: 'CLOSED' as Status, result, closed_at: now }
+      })
+      for (const inning of game.innings) {
+        if (inning.status !== 'IN_PROGRESS') continue
+        const outs = countOuts(inning)
+        const runs = simulateRuns(inning.offense_goals)
+        const result = (outs < 3 ? 'LOSS' : runs > 0 ? 'WIN' : 'TIE') as GameResult
+        await supabase.from('innings').update({ status: 'CLOSED', result, closed_at: now }).eq('id', inning.id)
+      }
+      const gr = gameResult(updatedInnings)
+      if (gr !== game.result) {
+        await supabase.from('games').update({ result: gr }).eq('id', game.id)
+      }
+      return { ...game, innings: updatedInnings, result: gr }
+    }))
+
     await supabase.from('seasons').update({ end_date: todayStr, is_current: false }).eq('id', season.id)
-    setRecapSeason({ ...season, end_date: todayStr })
+    setRecapSeason({ ...season, games: updatedGames, end_date: todayStr })
     setSeason(null)
   }
 
@@ -376,6 +406,11 @@ export default function AppPage() {
   // ===== VIEW DATE =====
   async function handleViewDate(date: string) {
     if (!season || !user) return
+    // Don't navigate past the season's end date
+    if (season.end_date && date > season.end_date) return
+    // Prevent concurrent calls from rapid swipes creating duplicate DB rows
+    if (viewDateInProgressRef.current) { setViewDate(date); return }
+    viewDateInProgressRef.current = true
     setViewDate(date)
 
     // Ensure game exists for this week
@@ -384,11 +419,15 @@ export default function AppPage() {
       const ws  = getWeekStart(date)
       const we  = getWeekEnd(ws)
       const gid = 'g_' + ws + '_' + Date.now()
-      const { data: newGame } = await supabase
+      const { data: newGame, error: gameError } = await supabase
         .from('games')
         .insert({ id: gid, user_id: user.id, season_id: season.id, week_start: ws, week_end: we })
         .select().single()
-      if (!newGame) return
+      if (!newGame || gameError) {
+        showToast('❌ Failed to load this week. Please try again.')
+        viewDateInProgressRef.current = false
+        return
+      }
       game = { ...newGame, innings: [] }
       setSeason(prev => prev ? { ...prev, games: [...prev.games, game!].sort((a, b) => a.week_start.localeCompare(b.week_start)) } : prev)
     }
@@ -462,6 +501,7 @@ export default function AppPage() {
             : g),
       })
     }
+    viewDateInProgressRef.current = false
   }
 
   // ===== DEFENSE ACTIONS =====
@@ -510,8 +550,16 @@ export default function AppPage() {
 
   async function handleSetUsername(username: string) {
     if (!user) return
+    const { error } = await supabase.from('profiles').update({ username }).eq('id', user.id)
+    if (error) {
+      if (error.code === '23505') {
+        showToast(`❌ @${username} is already taken — try another!`)
+      } else {
+        showToast(`❌ Couldn't save username: ${error.message}`)
+      }
+      return
+    }
     setProfile(prev => prev ? { ...prev, username } : prev)
-    await supabase.from('profiles').update({ username }).eq('id', user.id)
     showToast(`✅ Username set to @${username}`)
   }
 
@@ -599,7 +647,7 @@ export default function AppPage() {
 
   async function handleLoadTemplates() {
     if (!viewInning || !user) return
-    const templates: string[] = JSON.parse(profile?.default_offense_goals ?? '[]')
+    const templates: string[] = safeParseGoals(profile?.default_offense_goals)
     if (templates.length === 0) return
     const inserts = templates.map((text, idx) => ({
       id: 'r_' + Date.now() + '_' + idx,
@@ -927,7 +975,7 @@ export default function AppPage() {
             <OffenseSection
               inning={viewInning}
               sportEmoji={sportEmoji}
-              templates={JSON.parse(profile?.default_offense_goals ?? '[]')}
+              templates={safeParseGoals(profile?.default_offense_goals)}
               recentGoals={recentGoals}
               canRainDelay={!!viewGame && !viewGame.innings.some(i => i.is_rain_delay)}
               onAddGoal={() => handleAddGoal()}
