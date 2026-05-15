@@ -175,14 +175,13 @@ export default function AppPage() {
             })),
         }))
 
-      // Auto-finalize any IN_PROGRESS innings from past weeks
-      const currentWeekStart = getWeekStart(today())
+      // Auto-close any IN_PROGRESS innings from before today (midnight rule)
       const now = new Date().toISOString()
       for (const game of raw.games) {
-        if (game.week_end >= currentWeekStart) continue
         let gameChanged = false
         for (const inning of game.innings) {
           if (inning.status !== 'IN_PROGRESS') continue
+          if (inning.date >= today()) continue  // leave today + future alone
           const outs = countOuts(inning)
           const runs = simulateRuns(inning.offense_goals)
           const result: GameResult = outs < 3 ? 'LOSS' : runs > 0 ? 'WIN' : 'TIE'
@@ -787,6 +786,26 @@ export default function AppPage() {
     }
   }
 
+  // ===== REOPEN =====
+  async function handleReopenInning() {
+    if (!viewInning) return
+    const inningId     = viewInning.id
+    const capturedGame = viewGame
+    const patch        = { status: 'IN_PROGRESS' as Status, result: 'IN_PROGRESS' as GameResult, closed_at: null }
+
+    updateInning(inningId, patch)
+    beginSave()
+    const { error: innErr } = await supabase.from('innings').update(patch).eq('id', inningId)
+    if (capturedGame && !innErr) {
+      const updatedInnings = capturedGame.innings.map(i => i.id === inningId ? { ...i, ...patch } : i)
+      const gr = gameResult(updatedInnings)
+      await supabase.from('games').update({ result: gr }).eq('id', capturedGame.id)
+      updateGame(capturedGame.id, { result: gr })
+    }
+    endSave(innErr)
+    if (!innErr) showToast('📂 Inning re-opened — make your edits, then close it again')
+  }
+
   // ===== REFLECTION =====
   async function handleSaveReflection(val: string) {
     if (!viewInning) return
@@ -1016,14 +1035,24 @@ export default function AppPage() {
         ) : (
           <div className="space-y-4 animate-slide-up">
             {isClosed && closedResult && viewInning && (
-              <div className={`rounded-xl px-5 py-4 font-bold text-center text-sm ${
-                closedResult === 'WIN'  ? 'bg-green-50  border border-green-200  text-green-800'  :
-                closedResult === 'TIE'  ? 'bg-yellow-50 border border-yellow-200 text-yellow-800' :
-                                          'bg-red-50    border border-red-200    text-red-800'
+              <div className={`rounded-xl px-5 py-4 flex items-center justify-between gap-3 ${
+                closedResult === 'WIN'  ? 'bg-green-50  border border-green-200'  :
+                closedResult === 'TIE'  ? 'bg-yellow-50 border border-yellow-200' :
+                                          'bg-red-50    border border-red-200'
               }`}>
-                {closedResult === 'WIN'  ? '🏆 Inning WIN! All 3 outs + runs scored — you crushed it!' :
-                 closedResult === 'TIE'  ? '🤝 Inning TIE — 3 outs but no runs. Edit to change the result.' :
-                                           `😤 Inning closed — ${countOuts(viewInning)}/3 outs. Edit to change the result.`}
+                <p className={`font-bold text-sm ${
+                  closedResult === 'WIN' ? 'text-green-800' : closedResult === 'TIE' ? 'text-yellow-800' : 'text-red-800'
+                }`}>
+                  {closedResult === 'WIN'  ? '🏆 Inning WIN! All 3 outs + runs scored.' :
+                   closedResult === 'TIE'  ? '🤝 Inning TIE — 3 outs but no runs.' :
+                                             `😤 Inning closed — ${countOuts(viewInning)}/3 outs.`}
+                </p>
+                <button
+                  onClick={handleReopenInning}
+                  className="flex-shrink-0 text-xs font-bold px-3 py-1.5 rounded-lg border border-current opacity-60 hover:opacity-100 transition-opacity"
+                >
+                  Re-open
+                </button>
               </div>
             )}
 
