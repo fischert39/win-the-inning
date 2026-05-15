@@ -161,6 +161,7 @@ function NotificationToggle() {
   const [permission,   setPermission]   = useState<NotificationPermission | 'unsupported'>('default')
   const [subscribed,   setSubscribed]   = useState(false)
   const [loading,      setLoading]      = useState(false)
+  const [errorMsg,     setErrorMsg]     = useState<string | null>(null)
   const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY
 
   // Not available in this browser or VAPID key not configured
@@ -177,6 +178,7 @@ function NotificationToggle() {
   async function toggle() {
     if (!supported || loading) return
     setLoading(true)
+    setErrorMsg(null)
     try {
       const reg = await navigator.serviceWorker.ready
       const existing = await reg.pushManager.getSubscription()
@@ -206,10 +208,15 @@ function NotificationToggle() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ subscription: sub }),
         })
-        if (res.ok) setSubscribed(true)
+        if (res.ok) {
+          setSubscribed(true)
+        } else {
+          const body = await res.json().catch(() => ({}))
+          setErrorMsg(body.error ?? `Server error ${res.status}`)
+        }
       }
-    } catch {
-      // Permission denied or subscription failed — state already reflects reality
+    } catch (err) {
+      setErrorMsg(err instanceof Error ? err.message : 'Unknown error')
     } finally {
       setLoading(false)
     }
@@ -225,32 +232,37 @@ function NotificationToggle() {
       : 'Get a daily nudge to win your inning'
 
   return (
-    <button
-      onClick={toggle}
-      disabled={denied || loading}
-      className={`w-full flex items-center gap-3 p-3.5 rounded-xl border-2 transition-all text-left mb-3 ${
-        denied
-          ? 'border-slate-100 opacity-50 cursor-not-allowed'
-          : subscribed
-            ? 'border-brand-orange bg-brand-orange/5'
-            : 'border-slate-100 hover:border-slate-200'
-      }`}
-    >
-      <span className="text-xl flex-shrink-0">{loading ? '⏳' : '🔔'}</span>
-      <div className="flex-1 min-w-0">
-        <p className="text-brand-navy font-bold text-sm">Daily reminders</p>
-        <p className="text-slate-400 text-xs">{desc}</p>
-      </div>
-      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
-        subscribed ? 'border-brand-orange bg-brand-orange' : 'border-slate-300'
-      }`}>
-        {subscribed && (
-          <svg className="w-3 h-3 text-white" viewBox="0 0 12 12" fill="none">
-            <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
-        )}
-      </div>
-    </button>
+    <>
+      <button
+        onClick={toggle}
+        disabled={denied || loading}
+        className={`w-full flex items-center gap-3 p-3.5 rounded-xl border-2 transition-all text-left mb-1 ${
+          denied
+            ? 'border-slate-100 opacity-50 cursor-not-allowed'
+            : subscribed
+              ? 'border-brand-orange bg-brand-orange/5'
+              : 'border-slate-100 hover:border-slate-200'
+        }`}
+      >
+        <span className="text-xl flex-shrink-0">{loading ? '⏳' : '🔔'}</span>
+        <div className="flex-1 min-w-0">
+          <p className="text-brand-navy font-bold text-sm">Daily reminders</p>
+          <p className="text-slate-400 text-xs">{desc}</p>
+        </div>
+        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
+          subscribed ? 'border-brand-orange bg-brand-orange' : 'border-slate-300'
+        }`}>
+          {subscribed && (
+            <svg className="w-3 h-3 text-white" viewBox="0 0 12 12" fill="none">
+              <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          )}
+        </div>
+      </button>
+      {errorMsg && (
+        <p className="text-red-500 text-xs mb-3 px-1">{errorMsg}</p>
+      )}
+    </>
   )
 }
 
