@@ -58,8 +58,8 @@ export default function AppPage() {
   const viewDateInProgressRef = useRef(false)
   const pendingViewDateRef    = useRef<string | null>(null)
   const toastTimerRef         = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const router  = useRouter()
-  const supabase = createClient()
+  const router   = useRouter()
+  const supabase = useMemo(() => createClient(), [])
 
   const todayStr = today()
   const vDateEarly = viewDate || todayStr
@@ -203,6 +203,31 @@ export default function AppPage() {
   }, [])
 
   useEffect(() => { loadData() }, [])
+
+  // ===== REALTIME SYNC =====
+  // Re-fetch whenever another device changes innings or goals
+  useEffect(() => {
+    if (!user) return
+
+    let timer: ReturnType<typeof setTimeout> | null = null
+    function scheduleReload() {
+      if (timer) clearTimeout(timer)
+      timer = setTimeout(() => {
+        if (saveCountRef.current === 0) loadData()
+      }, 600)
+    }
+
+    const channel = supabase
+      .channel('realtime-user-data')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'innings' },        scheduleReload)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'offense_goals' },  scheduleReload)
+      .subscribe()
+
+    return () => {
+      if (timer) clearTimeout(timer)
+      supabase.removeChannel(channel)
+    }
+  }, [user?.id])
 
   // ===== COMPUTED =====
   const vDate      = viewDate || todayStr
