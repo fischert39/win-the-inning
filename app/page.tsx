@@ -63,6 +63,8 @@ export default function AppPage() {
   const viewDateInProgressRef = useRef(false)
   const pendingViewDateRef    = useRef<string | null>(null)
   const toastTimerRef         = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const reloadTimerRef        = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const pendingRemoteSyncRef  = useRef(false)
   const router   = useRouter()
   const supabase = useMemo(() => createClient(), [])
 
@@ -108,7 +110,15 @@ export default function AppPage() {
   }
   function endSave(error?: { message: string } | null) {
     saveCountRef.current = Math.max(0, saveCountRef.current - 1)
-    if (saveCountRef.current === 0) setSaving(false)
+    if (saveCountRef.current === 0) {
+      setSaving(false)
+      // A remote change arrived while saves were in-flight — sync now that we're clear
+      if (pendingRemoteSyncRef.current) {
+        pendingRemoteSyncRef.current = false
+        if (reloadTimerRef.current) clearTimeout(reloadTimerRef.current)
+        reloadTimerRef.current = setTimeout(() => { reloadTimerRef.current = null; loadData() }, 300)
+      }
+    }
     if (error) showToast(`❌ Save failed — check your connection`)
   }
 
@@ -238,11 +248,15 @@ export default function AppPage() {
   useEffect(() => {
     if (!user) return
 
-    let timer: ReturnType<typeof setTimeout> | null = null
     function scheduleReload() {
-      if (timer) clearTimeout(timer)
-      timer = setTimeout(() => {
-        if (saveCountRef.current === 0) loadData()
+      pendingRemoteSyncRef.current = true
+      // If saves are in-flight, endSave will trigger the reload when they clear
+      if (saveCountRef.current > 0) return
+      if (reloadTimerRef.current) clearTimeout(reloadTimerRef.current)
+      reloadTimerRef.current = setTimeout(() => {
+        reloadTimerRef.current = null
+        pendingRemoteSyncRef.current = false
+        loadData()
       }, 600)
     }
 
@@ -253,7 +267,7 @@ export default function AppPage() {
       .subscribe()
 
     return () => {
-      if (timer) clearTimeout(timer)
+      if (reloadTimerRef.current) clearTimeout(reloadTimerRef.current)
       supabase.removeChannel(channel)
     }
   }, [user?.id])
@@ -368,8 +382,11 @@ export default function AppPage() {
     const gid = 'g_' + ws + '_' + Date.now()
     const iid = 'i_' + t  + '_' + Date.now()
 
+    // Deactivate any current season first
     await supabase.from('seasons').update({ is_current: false }).eq('user_id', user.id).eq('is_current', true)
-    await supabase.from('seasons').insert({
+
+    // Insert season — if this fails, nothing was created yet
+    const { error: seasonErr } = await supabase.from('seasons').insert({
       id: sid, user_id: user.id, start_date: t, is_current: true,
       ...(opts ? {
         success_definition: opts.successDefinition || null,
@@ -377,6 +394,9 @@ export default function AppPage() {
         length_weeks:       opts.lengthWeeks,
       } : {}),
     })
+    if (seasonErr) { showToast('❌ Failed to start season — try again'); return }
+
+    // Profile update is non-critical — don't abort on failure
     await supabase.from('profiles').update({
       sport,
       ...(opts ? {
@@ -386,8 +406,17 @@ export default function AppPage() {
         auto_carry_tasks:   opts.autoCarryTasks,
       } : {}),
     }).eq('id', user.id)
-    await supabase.from('games').insert({ id: gid, user_id: user.id, season_id: sid, week_start: ws, week_end: we })
-    await supabase.from('innings').insert({
+
+    const { error: gameErr } = await supabase.from('games').insert({
+      id: gid, user_id: user.id, season_id: sid, week_start: ws, week_end: we,
+    })
+    if (gameErr) {
+      await supabase.from('seasons').delete().eq('id', sid)
+      showToast('❌ Failed to start season — try again')
+      return
+    }
+
+    const { error: inningErr } = await supabase.from('innings').insert({
       id: iid, user_id: user.id, game_id: gid, date: t,
       inning_number: inningNumber(t), target_goals: 5,
       mind_task:   profile?.default_mind_task   ?? '',
@@ -399,6 +428,14 @@ export default function AppPage() {
       reflection: '', future_goals: '',
       status: 'IN_PROGRESS', result: 'IN_PROGRESS', is_rain_delay: false, pinch_hit_used: false,
     })
+    if (inningErr) {
+      // Cascade-delete the season (FK ON DELETE CASCADE removes game too)
+      await supabase.from('seasons').delete().eq('id', sid)
+      showToast('❌ Failed to start season — try again')
+      return
+    }
+
+    // Season goals are non-critical — don't abort on failure
     if (initialGoals.length > 0) {
       await supabase.from('season_goals').insert(
         initialGoals.map((text, idx) => ({
@@ -408,6 +445,7 @@ export default function AppPage() {
         }))
       )
     }
+
     setProfile(prev => prev ? {
       ...prev, sport,
       ...(opts ? {
@@ -816,8 +854,20 @@ export default function AppPage() {
   // ===== REOPEN =====
   async function handleReopenInning() {
     if (!viewInning) return
-    const inningId     = viewInning.id
-    const capturedGame = viewGame
+    const inningId      = viewInning.id
+    const capturedGame  = viewGame
+    // Snapshot everything BEFORE we clear — needed for undo
+    const capturedGoals = [...viewInning.offense_goals]
+    const originalFields = {
+      status:           viewInning.status,
+      result:           viewInning.result,
+      closed_at:        viewInning.closed_at,
+      mind_completed:   viewInning.mind_completed,
+      spirit_completed: viewInning.spirit_completed,
+      body_completed:   viewInning.body_completed,
+      pinch_hit_used:   viewInning.pinch_hit_used,
+    }
+
     const patch = {
       status:           'IN_PROGRESS' as Status,
       result:           'IN_PROGRESS' as GameResult,
@@ -846,7 +896,34 @@ export default function AppPage() {
       updateGame(capturedGame.id, { result: gr })
     }
     endSave(innErr ?? goalsErr)
-    if (!innErr && !goalsErr) showToast('📂 Inning re-opened — enter your data and close it again')
+
+    if (!innErr && !goalsErr) {
+      showToast('📂 Inning re-opened — enter your data and close it again')
+
+      // Register undo so an accidental tap doesn't permanently delete goals
+      registerUndo(
+        'Re-open inning',
+        () => {
+          updateInning(inningId, { ...originalFields, offense_goals: capturedGoals })
+          if (capturedGame) {
+            const reverted = capturedGame.innings.map(i =>
+              i.id === inningId ? { ...i, ...originalFields, offense_goals: capturedGoals } : i)
+            updateGame(capturedGame.id, { result: gameResult(reverted) })
+          }
+        },
+        async () => {
+          if (capturedGoals.length > 0) {
+            await supabase.from('offense_goals').insert(capturedGoals)
+          }
+          await supabase.from('innings').update(originalFields).eq('id', inningId)
+          if (capturedGame) {
+            const reverted = capturedGame.innings.map(i =>
+              i.id === inningId ? { ...i, ...originalFields, offense_goals: capturedGoals } : i)
+            await supabase.from('games').update({ result: gameResult(reverted) }).eq('id', capturedGame.id)
+          }
+        }
+      )
+    }
   }
 
   // ===== REFLECTION =====
