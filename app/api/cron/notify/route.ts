@@ -20,8 +20,9 @@ export async function GET(req: NextRequest) {
     .from('push_subscriptions')
     .select('user_id, endpoint, p256dh, auth')
 
+  console.log('[cron/notify] subs:', subs?.length ?? 0, 'error:', error?.message ?? null)
   if (error || !subs?.length) {
-    return NextResponse.json({ sent: 0, total: 0 })
+    return NextResponse.json({ sent: 0, total: 0, debug: { error: error?.message ?? null, subs: subs?.length ?? 0 } })
   }
 
   // Load profiles separately
