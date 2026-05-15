@@ -5,8 +5,7 @@ export const runtime = 'nodejs'
 
 export async function POST(req: NextRequest) {
   const supabase = createClient()
-  const { data: { user }, error: authError } = await supabase.auth.getUser()
-  console.log('[push/subscribe] user:', user?.id ?? null, 'authError:', authError?.message ?? null)
+  const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const body = await req.json()
@@ -15,8 +14,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid subscription object' }, { status: 400 })
   }
 
-  console.log('[push/subscribe] upserting for user:', user.id, 'endpoint:', subscription.endpoint.slice(0, 50))
-  const { error, data } = await supabase.from('push_subscriptions').upsert(
+  const { error } = await supabase.from('push_subscriptions').upsert(
     {
       user_id:  user.id,
       endpoint: subscription.endpoint,
@@ -24,9 +22,8 @@ export async function POST(req: NextRequest) {
       auth:     subscription.keys.auth,
     },
     { onConflict: 'user_id,endpoint' }
-  ).select()
+  )
 
-  console.log('[push/subscribe] upsert error:', error?.message ?? null, 'data:', JSON.stringify(data))
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json({ success: true })
 }

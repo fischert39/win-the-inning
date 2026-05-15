@@ -27,9 +27,8 @@ export async function GET(req: NextRequest) {
   })
   const subs: { user_id: string; endpoint: string; p256dh: string; auth: string }[] | null = subsRes.ok ? await subsRes.json() : null
 
-  console.log('[cron/notify] subs via fetch:', subs?.length ?? 0, 'status:', subsRes.status)
   if (!subs?.length) {
-    return NextResponse.json({ sent: 0, total: 0, debug: { subs: subs?.length ?? 0, fetchStatus: subsRes.status } })
+    return NextResponse.json({ sent: 0, total: 0 })
   }
 
   // Load profiles separately
