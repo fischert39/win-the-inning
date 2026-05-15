@@ -26,6 +26,12 @@ module.exports = {
         },
       },
       keyframes: {
+        'flicker': {
+          '0%, 100%': { transform: 'scale(1) rotate(-1deg)' },
+          '25%':       { transform: 'scale(1.12) rotate(2deg)' },
+          '50%':       { transform: 'scale(1.05) rotate(-1.5deg)' },
+          '75%':       { transform: 'scale(1.09) rotate(1deg)' },
+        },
         'bounce-slow': {
           '0%, 100%': { transform: 'translateY(0)' },
           '50%':       { transform: 'translateY(-14px)' },
@@ -50,6 +56,7 @@ module.exports = {
         },
       },
       animation: {
+        'flicker':      'flicker 1.8s ease-in-out infinite',
         'bounce-slow':  'bounce-slow 2s infinite',
         'fade-in':      'fade-in 0.2s ease',
         'slide-up':     'slide-up 0.25s ease',

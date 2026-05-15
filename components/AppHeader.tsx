@@ -60,13 +60,9 @@ export default function AppHeader({ record, streak, sport, profile, onPastSeason
           <span className="text-white/40 text-[10px] font-medium uppercase tracking-widest -mt-0.5">
             Season Record
           </span>
-          {streak.type && streak.count > 0 && (
-            <span className={`text-[10px] font-semibold mt-1 px-2 py-0.5 rounded-full ${
-              streak.type === 'WIN'
-                ? 'bg-brand-orange/20 text-brand-orange'
-                : 'bg-red-500/20 text-red-400'
-            }`}>
-              {streak.type === 'WIN' ? '🔥' : '📉'} {streak.count} in a row
+          {streak.type === 'LOSS' && streak.count > 0 && (
+            <span className="text-[10px] font-semibold mt-1 px-2 py-0.5 rounded-full bg-red-500/20 text-red-400">
+              📉 {streak.count} in a row
             </span>
           )}
         </div>

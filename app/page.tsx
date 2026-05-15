@@ -10,6 +10,7 @@ import {
   countOuts, simulateRuns, inningResult, gameResult, getDailyQuote, getDailyVerse, currentStreak, getPrevDate,
 } from '@/lib/game-logic'
 import AppHeader      from '@/components/AppHeader'
+import StreakBanner   from '@/components/StreakBanner'
 import PreSeason      from '@/components/PreSeason'
 import TeamSettings   from '@/components/TeamSettings'
 import SeasonRecap    from '@/components/SeasonRecap'
@@ -928,6 +929,12 @@ export default function AppPage() {
 
         {/* Today tab */}
         {activeTab === 'today' && (<>
+        <StreakBanner
+          streak={streak}
+          todayWon={!isOther && closedResult === 'WIN'}
+          isToday={!isOther}
+        />
+
         {prevWeekGame && (
           <WeeklyWrapUp
             game={prevWeekGame}
