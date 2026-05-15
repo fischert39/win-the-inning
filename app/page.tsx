@@ -11,6 +11,7 @@ import {
 } from '@/lib/game-logic'
 import AppHeader      from '@/components/AppHeader'
 import StreakBanner   from '@/components/StreakBanner'
+import DayContext     from '@/components/DayContext'
 import PreSeason      from '@/components/PreSeason'
 import TeamSettings   from '@/components/TeamSettings'
 import SeasonRecap    from '@/components/SeasonRecap'
@@ -959,6 +960,16 @@ export default function AppPage() {
           todayWon={!isOther && closedResult === 'WIN'}
           isToday={!isOther}
         />
+
+        {!isOther && (
+          <DayContext
+            season={season}
+            todayStr={todayStr}
+            sport={sport}
+            inningsPlayed={inningsPlayed}
+            inningsWon={inningsWon}
+          />
+        )}
 
         {prevWeekGame && (
           <WeeklyWrapUp
