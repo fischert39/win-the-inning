@@ -22,6 +22,7 @@ interface Props {
   canRainDelay:       boolean
   onRainDelay:        () => void
   isFuture?:          boolean
+  isOther?:           boolean
 }
 
 const HIT_TYPES: { key: HitType; label: string; title: string; color: string }[] = [
@@ -53,15 +54,18 @@ function BaseDiamond({ goals }: { goals: OffenseGoal[] }) {
 export default function OffenseSection({
   inning, sportEmoji, templates, recentGoals,
   onAddGoal, onAddGoalWithText, onSaveGoalText, onToggleGoal, onSetHitType, onDeleteGoal, onCloseInning,
-  onLoadTemplates, onSaveTemplates, canRainDelay, onRainDelay, isFuture = false,
+  onLoadTemplates, onSaveTemplates, canRainDelay, onRainDelay, isFuture = false, isOther = false,
 }: Props) {
   const [showRecent,  setShowRecent]  = useState(false)
   const [showPresets, setShowPresets] = useState(false)
 
   const closed      = inning.status === 'CLOSED'
+  const readOnly    = closed || isFuture
   const goals       = inning.offense_goals
   const runs        = simulateRuns(goals)
-  const showAdd     = goals.length === 0 || goals[goals.length - 1].goal.trim() !== ''
+  const completed   = goals.filter(g => g.completed).length
+  const target      = inning.target_goals ?? 5
+  const showAdd     = !readOnly && (goals.length === 0 || goals[goals.length - 1].goal.trim() !== '')
   const hasGoals    = goals.some(g => g.goal.trim() !== '')
   const goalTexts   = goals.map(g => g.goal.trim()).filter(Boolean)
   const matchesTmpl = templates.length > 0 &&
@@ -78,7 +82,13 @@ export default function OffenseSection({
         <div className="flex items-start justify-between mb-1">
           <div>
             <h2 className="text-brand-navy font-bold text-base">Offense</h2>
-            <p className="text-slate-400 text-xs mt-0.5">Complete goals to score runs</p>
+            {goals.length > 0 ? (
+              <p className={`text-xs mt-0.5 font-semibold ${completed >= target ? 'text-green-600' : 'text-slate-400'}`}>
+                {completed} / {target} goals completed{completed >= target ? ' ✓' : ''}
+              </p>
+            ) : (
+              <p className="text-slate-400 text-xs mt-0.5">Complete goals to score runs</p>
+            )}
           </div>
           <div className="flex items-center gap-3">
             <BaseDiamond goals={goals} />
@@ -113,16 +123,22 @@ export default function OffenseSection({
           />
         ))}
 
-        {goals.length === 0 && !closed && (
+        {goals.length === 0 && (
           <div className="text-center py-3 space-y-2">
-            <p className="text-slate-300 text-sm">No goals yet — add your first one below!</p>
-            {templates.length > 0 && (
-              <button
-                onClick={onLoadTemplates}
-                className="text-xs text-brand-orange font-bold hover:underline"
-              >
-                📋 Load my templates ({templates.length} goals)
-              </button>
+            {readOnly ? (
+              <p className="text-slate-300 text-sm italic">No goals were recorded for this inning.</p>
+            ) : (
+              <>
+                <p className="text-slate-300 text-sm">No goals yet — add your first one below!</p>
+                {templates.length > 0 && (
+                  <button
+                    onClick={onLoadTemplates}
+                    className="text-xs text-brand-orange font-bold hover:underline"
+                  >
+                    📋 Load my templates ({templates.length} goals)
+                  </button>
+                )}
+              </>
             )}
           </div>
         )}
@@ -171,7 +187,7 @@ export default function OffenseSection({
           </button>
         )}
 
-        {hasGoals && (
+        {hasGoals && !readOnly && (
           <button
             onClick={onSaveTemplates}
             className={`w-full rounded-xl py-2 text-xs font-bold transition-all border ${
@@ -193,19 +209,19 @@ export default function OffenseSection({
           </button>
         )}
 
-        <button
-          onClick={onCloseInning}
-          disabled={isFuture}
-          className={`w-full py-4 rounded-xl font-bold text-sm tracking-wide transition-all text-white active:scale-[0.98] ${
-            isFuture
-              ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
-              : closed
-                ? 'bg-brand-blue hover:bg-[#005fa3] shadow-md shadow-brand-blue/20'
+        {!closed && (
+          <button
+            onClick={onCloseInning}
+            disabled={isFuture}
+            className={`w-full py-4 rounded-xl font-bold text-sm tracking-wide transition-all text-white active:scale-[0.98] ${
+              isFuture
+                ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
                 : 'bg-brand-orange hover:bg-brand-orange-dark shadow-md shadow-brand-orange/30'
-          }`}
-        >
-          {isFuture ? '⏳ Available on game day' : closed ? 'Update Inning' : 'Close the Inning'}
-        </button>
+            }`}
+          >
+            {isFuture ? '⏳ Available on game day' : 'Close the Inning'}
+          </button>
+        )}
       </div>
     </div>
   )
@@ -229,18 +245,20 @@ function GoalRow({
         <input
           type="text"
           value={goal.goal}
+          readOnly={closed}
           placeholder="What's your goal?"
-          onChange={e => onSave(e.target.value)}
+          onChange={e => { if (!closed) onSave(e.target.value) }}
           className={`flex-1 text-sm bg-transparent outline-none placeholder:text-slate-300 ${
             goal.completed ? 'line-through text-slate-400' : 'text-brand-navy'
-          }`}
+          } ${closed ? 'cursor-default select-none' : ''}`}
         />
         {/* Complete checkbox */}
         <button
-          onClick={onToggle}
+          onClick={() => { if (!closed) onToggle() }}
+          disabled={closed}
           className={`w-5 h-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center transition-all ${
             goal.completed ? 'bg-brand-green border-brand-green' : 'border-slate-300 hover:border-brand-green'
-          }`}
+          } ${closed ? 'opacity-70 cursor-default' : ''}`}
         >
           {goal.completed && (
             <svg className="w-3 h-3 text-white" viewBox="0 0 12 12" fill="none">
@@ -248,22 +266,29 @@ function GoalRow({
             </svg>
           )}
         </button>
-        <button onClick={onDelete} className="text-slate-200 hover:text-brand-red text-lg leading-none transition-colors">
-          ×
-        </button>
+        {!closed && (
+          <button onClick={onDelete} className="text-slate-200 hover:text-brand-red text-lg leading-none transition-colors">
+            ×
+          </button>
+        )}
       </div>
 
-      {/* Hit type selector */}
+      {/* Hit type selector — read-only when closed */}
       <div className="flex gap-1.5 px-3 pb-2.5">
         {HIT_TYPES.map(ht => (
           <button
             key={ht.key}
-            onClick={() => onSetHit(ht.key)}
+            onClick={() => { if (!closed) onSetHit(ht.key) }}
+            disabled={closed}
             title={ht.title}
-            className={`px-2 py-0.5 rounded-md text-[11px] font-black transition-all ring-1 ring-transparent cursor-pointer ${
+            className={`px-2 py-0.5 rounded-md text-[11px] font-black transition-all ring-1 ring-transparent ${
+              closed ? 'cursor-default' : 'cursor-pointer'
+            } ${
               goal.hit_type === ht.key
                 ? ht.color + ' ring-offset-0'
-                : 'bg-white text-slate-400 hover:text-slate-600 ring-slate-100'
+                : closed
+                  ? 'bg-white text-slate-200 ring-slate-100'
+                  : 'bg-white text-slate-400 hover:text-slate-600 ring-slate-100'
             }`}
           >
             {ht.label}

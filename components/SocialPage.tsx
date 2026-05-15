@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import type { Profile } from '@/types'
 import FindFriends      from '@/components/FindFriends'
 import FriendComparison from '@/components/FriendComparison'
@@ -20,6 +21,14 @@ export default function SocialPage({
   profile, record, inningsWon, inningsPlayed,
   onShare, onShareCard, onSetUsername, onOpenSettings,
 }: Props) {
+  const [copied, setCopied] = useState(false)
+
+  function handleCopy() {
+    navigator.clipboard.writeText(`${window.location.origin}/u/${profile!.username!}`)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
   return (
     <div className="space-y-4 animate-slide-up">
       {/* Header */}
@@ -102,10 +111,10 @@ export default function SocialPage({
             </div>
           </div>
           <button
-            onClick={() => navigator.clipboard.writeText(`${window.location.origin}/u/${profile.username!}`)}
-            className="text-xs text-brand-orange font-black hover:underline flex-shrink-0"
+            onClick={handleCopy}
+            className={`text-xs font-black flex-shrink-0 transition-colors ${copied ? 'text-green-600' : 'text-brand-orange hover:underline'}`}
           >
-            Copy
+            {copied ? '✓ Copied!' : 'Copy'}
           </button>
         </div>
       )}

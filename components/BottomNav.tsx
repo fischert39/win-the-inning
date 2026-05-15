@@ -17,9 +17,9 @@ export default function BottomNav({ tab, onChange }: Props) {
           <button
             key={item.id}
             onClick={() => onChange(item.id)}
-            className="flex-1 flex flex-col items-center py-1.5 transition-colors"
+            className="flex-1 flex flex-col items-center py-3 transition-colors"
           >
-            <div className={`flex flex-col items-center gap-0.5 px-4 py-1.5 rounded-xl transition-all ${
+            <div className={`flex flex-col items-center gap-0.5 px-4 py-3 rounded-xl transition-all ${
               tab === item.id ? 'bg-brand-orange/10' : ''
             }`}>
               <span className={`text-xl leading-none transition-transform ${tab === item.id ? 'scale-110' : ''}`}>

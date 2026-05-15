@@ -752,13 +752,6 @@ export default function AppPage() {
     }
   }
 
-  async function handleAdjustTarget(delta: number) {
-    if (!viewInning || viewInning.status === 'CLOSED') return
-    const next = Math.max(1, Math.min(15, viewInning.target_goals + delta))
-    updateInning(viewInning.id, { target_goals: next })
-    await supabase.from('innings').update({ target_goals: next }).eq('id', viewInning.id)
-  }
-
   async function handleCloseInning() {
     if (!viewInning) return
     if (viewInning.date > todayStr) {
@@ -1137,6 +1130,7 @@ export default function AppPage() {
               onSaveTemplates={handleSaveTemplates}
               onRainDelay={handleRainDelay}
               isFuture={!!viewInning && viewInning.date > todayStr}
+              isOther={!!isOther}
             />
 
             {verse && (
