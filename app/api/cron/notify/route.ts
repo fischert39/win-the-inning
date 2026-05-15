@@ -15,18 +15,21 @@ export async function GET(req: NextRequest) {
   const todayStr   = today()
   const yestStr    = getPrevDate(todayStr)
 
-  // Verify admin client works
-  const { data: profilesCheck, error: profilesErr } = await supabase.from('profiles').select('id').limit(3)
-  console.log('[cron/notify] profiles check:', profilesCheck?.length ?? 0, profilesErr?.message ?? null)
+  // Load all subscriptions via direct REST (bypasses JS client issues)
+  const supabaseUrl  = process.env.NEXT_PUBLIC_SUPABASE_URL!
+  const serviceKey   = process.env.SUPABASE_SERVICE_ROLE_KEY!
+  const subsRes = await fetch(`${supabaseUrl}/rest/v1/push_subscriptions?select=user_id,endpoint,p256dh,auth`, {
+    headers: {
+      apikey: serviceKey,
+      Authorization: `Bearer ${serviceKey}`,
+      'Content-Type': 'application/json',
+    },
+  })
+  const subs: { user_id: string; endpoint: string; p256dh: string; auth: string }[] | null = subsRes.ok ? await subsRes.json() : null
 
-  // Load all subscriptions
-  const { data: subs, error } = await supabase
-    .from('push_subscriptions')
-    .select('user_id, endpoint, p256dh, auth')
-
-  console.log('[cron/notify] subs:', subs?.length ?? 0, 'error:', error?.message ?? null)
-  if (error || !subs?.length) {
-    return NextResponse.json({ sent: 0, total: 0, debug: { error: error?.message ?? null, subs: subs?.length ?? 0, profilesCheck: profilesCheck?.length ?? 0, profilesErr: profilesErr?.message ?? null } })
+  console.log('[cron/notify] subs via fetch:', subs?.length ?? 0, 'status:', subsRes.status)
+  if (!subs?.length) {
+    return NextResponse.json({ sent: 0, total: 0, debug: { subs: subs?.length ?? 0, fetchStatus: subsRes.status } })
   }
 
   // Load profiles separately
