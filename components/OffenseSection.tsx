@@ -21,6 +21,7 @@ interface Props {
   onSaveTemplates:    () => void
   canRainDelay:       boolean
   onRainDelay:        () => void
+  isFuture?:          boolean
 }
 
 const HIT_TYPES: { key: HitType; label: string; title: string; color: string }[] = [
@@ -52,7 +53,7 @@ function BaseDiamond({ goals }: { goals: OffenseGoal[] }) {
 export default function OffenseSection({
   inning, sportEmoji, templates, recentGoals,
   onAddGoal, onAddGoalWithText, onSaveGoalText, onToggleGoal, onSetHitType, onDeleteGoal, onCloseInning,
-  onLoadTemplates, onSaveTemplates, canRainDelay, onRainDelay,
+  onLoadTemplates, onSaveTemplates, canRainDelay, onRainDelay, isFuture = false,
 }: Props) {
   const [showRecent,  setShowRecent]  = useState(false)
   const [showPresets, setShowPresets] = useState(false)
@@ -194,13 +195,16 @@ export default function OffenseSection({
 
         <button
           onClick={onCloseInning}
+          disabled={isFuture}
           className={`w-full py-4 rounded-xl font-bold text-sm tracking-wide transition-all text-white active:scale-[0.98] ${
-            closed
-              ? 'bg-brand-blue hover:bg-[#005fa3] shadow-md shadow-brand-blue/20'
-              : 'bg-brand-orange hover:bg-brand-orange-dark shadow-md shadow-brand-orange/30'
+            isFuture
+              ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
+              : closed
+                ? 'bg-brand-blue hover:bg-[#005fa3] shadow-md shadow-brand-blue/20'
+                : 'bg-brand-orange hover:bg-brand-orange-dark shadow-md shadow-brand-orange/30'
           }`}
         >
-          {closed ? 'Update Inning' : 'Close the Inning'}
+          {isFuture ? '⏳ Available on game day' : closed ? 'Update Inning' : 'Close the Inning'}
         </button>
       </div>
     </div>

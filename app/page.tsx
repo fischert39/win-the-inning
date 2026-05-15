@@ -761,6 +761,10 @@ export default function AppPage() {
 
   async function handleCloseInning() {
     if (!viewInning) return
+    if (viewInning.date > todayStr) {
+      showToast("⏳ You can't close a future inning — come back on that day")
+      return
+    }
     const outs      = countOuts(viewInning)
     const runs      = simulateRuns(viewInning.offense_goals)
     const result    = (outs === 3 ? (runs > 0 ? 'WIN' : 'TIE') : 'LOSS') as GameResult
@@ -1116,6 +1120,7 @@ export default function AppPage() {
               onLoadTemplates={handleLoadTemplates}
               onSaveTemplates={handleSaveTemplates}
               onRainDelay={handleRainDelay}
+              isFuture={!!viewInning && viewInning.date > todayStr}
             />
 
             {verse && (
