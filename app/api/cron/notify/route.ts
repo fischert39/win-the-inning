@@ -14,7 +14,7 @@ export async function GET(req: NextRequest) {
   const supabase    = createAdminClient()
   const todayStr    = today()
   const yestStr     = getPrevDate(todayStr)
-  const isSunday    = new Date().getUTCDay() === 0
+  const isMonday    = new Date().getUTCDay() === 1
 
   // Load all subscriptions via direct REST (bypasses JS client issues)
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
@@ -34,18 +34,19 @@ export async function GET(req: NextRequest) {
     .from('profiles').select('id, display_name').in('id', userIds)
   const profileMap = new Map(profiles?.map(p => [p.id, p.display_name]) ?? [])
 
-  // ── SUNDAY: weekly recap ──────────────────────────────────────────────────
-  if (isSunday) {
-    const weekStart = getWeekStart(todayStr)  // Monday of this week
+  // ── MONDAY: last week's recap ─────────────────────────────────────────────
+  if (isMonday) {
+    const prevWeekEnd   = getPrevDate(todayStr)           // last Sunday
+    const prevWeekStart = getWeekStart(prevWeekEnd)       // last Monday
 
-    // Fetch all closed innings this week for subscribers (exclude today — still in progress)
+    // Fetch all closed innings from last week for subscribers
     const { data: weekInnings } = await supabase
       .from('innings')
       .select('user_id, result')
       .in('user_id', userIds)
       .eq('status', 'CLOSED')
-      .gte('date', weekStart)
-      .lt('date', todayStr)
+      .gte('date', prevWeekStart)
+      .lte('date', prevWeekEnd)
 
     // Per-user win/loss/tie counts
     const weekMap = new Map<string, { wins: number; losses: number; ties: number }>()
@@ -69,20 +70,20 @@ export async function GET(req: NextRequest) {
       let body: string
 
       if (played === 0) {
-        title = '📋 Your week recap'
-        body  = `No innings logged this week, ${firstName}. Fresh game starts Monday — let's go!`
+        title = `⚾ New game, ${firstName}!`
+        body  = `Fresh week — no innings last week. Today's inning 1 of a new game. Let's go!`
       } else if (w.wins >= 5) {
-        title = `🏆 What a week, ${firstName}!`
-        body  = `${w.wins}-${w.losses} this week — dominant performance. See your full recap.`
+        title = `🏆 ${w.wins}-${w.losses} last week — let's go again!`
+        body  = `Dominant performance, ${firstName}. See your full recap and start the new game strong.`
       } else if (w.wins >= 3) {
-        title = `💪 Solid week, ${firstName}`
-        body  = `${w.wins}-${w.losses} — you're building something. New game Monday.`
+        title = `💪 ${w.wins}-${w.losses} last week, ${firstName}`
+        body  = `Solid game. New week starts now — build on that momentum.`
       } else if (w.wins >= 1) {
-        title = `⚾ Week recap, ${firstName}`
-        body  = `${w.wins}-${w.losses} this week. Every win counts — fresh start Monday!`
+        title = `⚾ ${w.wins}-${w.losses} last week, ${firstName}`
+        body  = `Every win counts. Fresh game today — go get those outs.`
       } else {
-        title = `📋 Tough week, ${firstName}`
-        body  = `0-${w.losses} — happens to the best. Monday is a brand new game.`
+        title = `📋 New game, ${firstName} — fresh start`
+        body  = `Last week is done. Today is Inning 1 of a brand new game. Make it count.`
       }
 
       const result = await sendPush(
@@ -96,7 +97,7 @@ export async function GET(req: NextRequest) {
     if (expired.length > 0) {
       await supabase.from('push_subscriptions').delete().in('endpoint', expired)
     }
-    return NextResponse.json({ sent, total: subs.length, expired: expired.length, type: 'weekly' })
+    return NextResponse.json({ sent, total: subs.length, expired: expired.length, type: 'monday-recap' })
   }
 
   // ── DAILY: existing motivation logic ─────────────────────────────────────
