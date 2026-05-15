@@ -39,7 +39,9 @@ export default function AppPage() {
   const [season,    setSeason]    = useState<FullSeason | null>(null)
   const [viewDate,  setViewDate]  = useState<string | null>(null)
   const [loading,   setLoading]   = useState(true)
+  const [saving,    setSaving]    = useState(false)
   const [toast,     setToast]     = useState<string | null>(null)
+  const saveCountRef              = useRef(0)
   const [recapSeason,        setRecapSeason]        = useState<FullSeason | null>(null)
   const [showPastSeasons,    setShowPastSeasons]    = useState(false)
   const [showWinCelebration, setShowWinCelebration] = useState(false)
@@ -49,10 +51,12 @@ export default function AppPage() {
   const [shareContext,       setShareContext]        = useState<'inning' | 'season'>('season')
   const [activeTab,          setActiveTab]          = useState<'today' | 'stats' | 'social'>('today')
   const [undoAction,         setUndoAction]         = useState<UndoAction | null>(null)
-  const undoIdRef            = useRef(0)
-  const touchStartX          = useRef(0)
-  const touchStartY          = useRef(0)
+  const undoIdRef             = useRef(0)
+  const touchStartX           = useRef(0)
+  const touchStartY           = useRef(0)
   const viewDateInProgressRef = useRef(false)
+  const pendingViewDateRef    = useRef<string | null>(null)
+  const toastTimerRef         = useRef<ReturnType<typeof setTimeout> | null>(null)
   const router  = useRouter()
   const supabase = createClient()
 
@@ -79,10 +83,28 @@ export default function AppPage() {
   }, [season, vDateEarly])
 
   // ===== TOAST =====
-  const showToast = useCallback((msg: string) => {
-    setToast(msg)
-    setTimeout(() => setToast(null), 3000)
+  const dismissToast = useCallback(() => {
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current)
+    setToast(null)
   }, [])
+
+  const showToast = useCallback((msg: string) => {
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current)
+    setToast(msg)
+    const duration = msg.startsWith('❌') ? 8000 : 3000
+    toastTimerRef.current = setTimeout(() => setToast(null), duration)
+  }, [])
+
+  // ===== SAVE STATE =====
+  function beginSave() {
+    saveCountRef.current++
+    if (saveCountRef.current === 1) setSaving(true)
+  }
+  function endSave(error?: { message: string } | null) {
+    saveCountRef.current = Math.max(0, saveCountRef.current - 1)
+    if (saveCountRef.current === 0) setSaving(false)
+    if (error) showToast(`❌ Save failed — check your connection`)
+  }
 
   // ===== UNDO =====
   function registerUndo(label: string, revert: () => void, dbRevert: () => Promise<void>) {
@@ -109,15 +131,18 @@ export default function AppPage() {
 
   // ===== LOAD =====
   const loadData = useCallback(async () => {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) { router.push('/login'); return }
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    if (authError || !user) { router.push('/login'); return }
     setUser(user)
 
-    const { data: prof } = await supabase
+    const { data: prof, error: profError } = await supabase
       .from('profiles').select('*').eq('id', user.id).maybeSingle()
+    if (profError) {
+      showToast(`❌ Couldn't load your profile — please refresh`)
+    }
     setProfile(prof)
 
-    const { data: raw } = await supabase
+    const { data: raw, error: seasonError } = await supabase
       .from('seasons')
       .select('*, season_goals(*), games(*, innings(*, offense_goals(*)))')
       .eq('user_id', user.id)
@@ -125,6 +150,12 @@ export default function AppPage() {
       .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle()
+
+    if (seasonError) {
+      showToast(`❌ Couldn't load your season — please refresh`)
+      setLoading(false)
+      return
+    }
 
     if (raw) {
       raw.season_goals = (raw.season_goals || []).sort(
@@ -269,24 +300,6 @@ export default function AppPage() {
     }
   }
 
-  // ===== PINCH HITTER =====
-  async function handleUsePinchHitter() {
-    if (!viewInning || !user) return
-    if (!confirm('Use a Pinch Hitter token? This adds +1 Out to today\'s defense.')) return
-    const newTokens = Math.max(0, (profile?.pinch_hitter_tokens ?? 0) - 1)
-    updateInning(viewInning.id, { pinch_hit_used: true })
-    setProfile(prev => prev ? { ...prev, pinch_hitter_tokens: newTokens } : prev)
-    await supabase.from('innings').update({ pinch_hit_used: true }).eq('id', viewInning.id)
-    await supabase.from('profiles').update({ pinch_hitter_tokens: newTokens }).eq('id', user.id)
-    if (viewGame) {
-      const updatedInnings = viewGame.innings.map(i => i.id === viewInning.id ? { ...i, pinch_hit_used: true } : i)
-      const gr = gameResult(updatedInnings)
-      await supabase.from('games').update({ result: gr }).eq('id', viewGame.id)
-      updateGame(viewGame.id, { result: gr })
-    }
-    showToast('🎽 Pinch Hitter used — +1 Out added!')
-  }
-
   // ===== SEASON ACTIONS =====
   async function handleStartSeason(sport: Sport, initialGoals: string[] = [], opts?: {
     teamName: string; mascot: string; lengthWeeks: number
@@ -390,8 +403,6 @@ export default function AppPage() {
     if (!confirm('This will permanently delete ALL your seasons, games, innings, and stats. This cannot be undone.')) return
     if (!confirm('Are you absolutely sure? Every record will be gone forever.')) return
     await supabase.from('seasons').delete().eq('user_id', user.id)
-    await supabase.from('profiles').update({ pinch_hitter_tokens: 0 }).eq('id', user.id)
-    setProfile(prev => prev ? { ...prev, pinch_hitter_tokens: 0 } : prev)
     setSeason(null)
     setRecapSeason(null)
     setViewDate(null)
@@ -406,11 +417,15 @@ export default function AppPage() {
   // ===== VIEW DATE =====
   async function handleViewDate(date: string) {
     if (!season || !user) return
-    // Don't navigate past the season's end date
     if (season.end_date && date > season.end_date) return
-    // Prevent concurrent calls from rapid swipes creating duplicate DB rows
-    if (viewDateInProgressRef.current) { setViewDate(date); return }
+    // If a DB operation is already in flight, queue this date and update UI immediately
+    if (viewDateInProgressRef.current) {
+      pendingViewDateRef.current = date
+      setViewDate(date)
+      return
+    }
     viewDateInProgressRef.current = true
+    pendingViewDateRef.current = null
     setViewDate(date)
 
     // Ensure game exists for this week
@@ -502,6 +517,12 @@ export default function AppPage() {
       })
     }
     viewDateInProgressRef.current = false
+    // If the user swiped to a different date while we were loading, process it now
+    const pending = pendingViewDateRef.current
+    if (pending && pending !== date) {
+      pendingViewDateRef.current = null
+      handleViewDate(pending)
+    }
   }
 
   // ===== DEFENSE ACTIONS =====
@@ -514,13 +535,15 @@ export default function AppPage() {
     const capturedGame = viewGame
 
     updateInning(inningId, { [key]: newVal })
-    await supabase.from('innings').update({ [key]: newVal }).eq('id', inningId)
+    beginSave()
+    const { error: e1 } = await supabase.from('innings').update({ [key]: newVal }).eq('id', inningId)
     if (capturedGame) {
       const updatedInnings = capturedGame.innings.map(i => i.id === inningId ? { ...i, [key]: newVal } : i)
       const gr = gameResult(updatedInnings)
-      await supabase.from('games').update({ result: gr }).eq('id', capturedGame.id)
-      updateGame(capturedGame.id, { result: gr })
+      const { error: e2 } = await supabase.from('games').update({ result: gr }).eq('id', capturedGame.id)
+      if (!e1 && !e2) updateGame(capturedGame.id, { result: gr })
     }
+    endSave(e1)
 
     registerUndo(
       `${cat.charAt(0).toUpperCase() + cat.slice(1)} task ${newVal ? 'checked' : 'unchecked'}`,
@@ -545,7 +568,8 @@ export default function AppPage() {
     if (!viewInning) return
     const key = `${cat}_task` as 'mind_task' | 'spirit_task' | 'body_task'
     updateInning(viewInning.id, { [key]: val })
-    await supabase.from('innings').update({ [key]: val }).eq('id', viewInning.id)
+    const { error } = await supabase.from('innings').update({ [key]: val }).eq('id', viewInning.id)
+    if (error) showToast(`❌ Couldn't save task — check your connection`)
   }
 
   async function handleSetUsername(username: string) {
@@ -577,13 +601,15 @@ export default function AppPage() {
   async function handleAddGoal(text = '') {
     if (!viewInning || !user) return
     const sortOrder = viewInning.offense_goals.length
-    const { data: goal } = await supabase
+    beginSave()
+    const { data: goal, error } = await supabase
       .from('offense_goals')
       .insert({
         id: 'r_' + Date.now(), user_id: user.id, inning_id: viewInning.id,
         goal: text, completed: false, hit_type: 'single', sort_order: sortOrder,
       })
       .select().single()
+    endSave(error)
     if (goal) addGoal(viewInning.id, goal)
   }
 
@@ -602,7 +628,9 @@ export default function AppPage() {
     const inningId = viewInning.id
 
     patchGoal(inningId, goalId, { completed: newVal })
-    await supabase.from('offense_goals').update({ completed: newVal }).eq('id', goalId)
+    beginSave()
+    const { error } = await supabase.from('offense_goals').update({ completed: newVal }).eq('id', goalId)
+    endSave(error)
 
     registerUndo(
       `Goal ${newVal ? 'completed' : 'uncompleted'}`,
@@ -614,13 +642,17 @@ export default function AppPage() {
   async function handleSetHitType(goalId: string, type: HitType) {
     if (!viewInning) return
     patchGoal(viewInning.id, goalId, { hit_type: type })
-    await supabase.from('offense_goals').update({ hit_type: type }).eq('id', goalId)
+    beginSave()
+    const { error } = await supabase.from('offense_goals').update({ hit_type: type }).eq('id', goalId)
+    endSave(error)
   }
 
   async function handleDeleteGoal(goalId: string) {
     if (!viewInning) return
     removeGoal(viewInning.id, goalId)
-    await supabase.from('offense_goals').delete().eq('id', goalId)
+    beginSave()
+    const { error } = await supabase.from('offense_goals').delete().eq('id', goalId)
+    endSave(error)
   }
 
   async function handleRainDelay() {
@@ -685,15 +717,16 @@ export default function AppPage() {
       : { status: 'CLOSED' as Status, closed_at: new Date().toISOString(), result }
 
     updateInning(viewInning.id, dbUpdates)
-    await supabase.from('innings').update(dbUpdates).eq('id', viewInning.id)
-
+    beginSave()
+    const { error: innErr } = await supabase.from('innings').update(dbUpdates).eq('id', viewInning.id)
     if (viewGame) {
       const updatedInnings = viewGame.innings.map(i =>
         i.id === viewInning.id ? { ...i, ...dbUpdates } : i)
       const gr = gameResult(updatedInnings)
-      await supabase.from('games').update({ result: gr }).eq('id', viewGame.id)
-      updateGame(viewGame.id, { result: gr })
+      const { error: gameErr } = await supabase.from('games').update({ result: gr }).eq('id', viewGame.id)
+      if (!gameErr) updateGame(viewGame.id, { result: gr })
     }
+    endSave(innErr)
 
     if (!isUpdate) {
       registerUndo(
@@ -717,17 +750,6 @@ export default function AppPage() {
     }
 
     if (result === 'WIN' && !isUpdate) {
-      // Check for perfect week (7 non-rain-delay WINs in the current game)
-      if (viewGame) {
-        const updatedInn = viewGame.innings.map(i => i.id === viewInning.id ? { ...i, ...dbUpdates } : i)
-        const nonRainClosed = updatedInn.filter(i => i.status === 'CLOSED' && !i.is_rain_delay)
-        if (nonRainClosed.length === 7 && nonRainClosed.every(i => inningResult(i) === 'WIN')) {
-          const newTokens = (profile?.pinch_hitter_tokens ?? 0) + 1
-          setProfile(prev => prev ? { ...prev, pinch_hitter_tokens: newTokens } : prev)
-          await supabase.from('profiles').update({ pinch_hitter_tokens: newTokens }).eq('id', user!.id)
-          showToast('🎯 PERFECT WEEK! +1 Pinch Hitter token earned!')
-        }
-      }
       setShowWinCelebration(true)
     } else if (result === 'WIN') {
       showToast('🏆 Inning updated — still a WIN!')
@@ -866,6 +888,12 @@ export default function AppPage() {
         onSignOut={handleSignOut}
       />
 
+      {saving && (
+        <div className="fixed top-[57px] inset-x-0 h-0.5 z-30 overflow-hidden">
+          <div className="h-full bg-brand-orange animate-pulse" />
+        </div>
+      )}
+
       <div
         className="max-w-2xl mx-auto px-4 pb-24 pt-4"
         onTouchStart={activeTab === 'today' ? handleTouchStart : undefined}
@@ -965,11 +993,9 @@ export default function AppPage() {
                 spirit: profile?.default_spirit_task ?? '',
                 body:   profile?.default_body_task   ?? '',
               }}
-              pinchHitterTokens={profile?.pinch_hitter_tokens ?? 0}
               onToggle={handleToggleDefense}
               onSaveTask={handleSaveDefenseTask}
               onSaveDefault={handleSaveDefaultTask}
-              onUsePinchHitter={handleUsePinchHitter}
             />
 
             <OffenseSection
@@ -1070,8 +1096,15 @@ export default function AppPage() {
 
       {/* Toast */}
       {toast && (
-        <div className="fixed top-5 left-1/2 -translate-x-1/2 bg-brand-navy text-white px-6 py-3 rounded-full font-semibold text-sm shadow-2xl z-50 animate-fade-in whitespace-nowrap">
-          {toast}
+        <div className={`fixed top-5 left-1/2 -translate-x-1/2 z-50 animate-fade-in flex items-center gap-2 px-5 py-3 rounded-full font-semibold text-sm shadow-2xl whitespace-nowrap ${
+          toast.startsWith('❌') ? 'bg-red-600 text-white' : 'bg-brand-navy text-white'
+        }`}>
+          <span>{toast}</span>
+          <button onClick={dismissToast} className="text-white/60 hover:text-white transition-colors flex-shrink-0 ml-1" aria-label="Dismiss">
+            <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd"/>
+            </svg>
+          </button>
         </div>
       )}
     </div>
