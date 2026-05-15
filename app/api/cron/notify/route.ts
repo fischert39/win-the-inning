@@ -15,17 +15,24 @@ export async function GET(req: NextRequest) {
   const todayStr   = today()
   const yestStr    = getPrevDate(todayStr)
 
-  // Load all subscriptions with profile display names
+  // Load all subscriptions
   const { data: subs, error } = await supabase
     .from('push_subscriptions')
-    .select('user_id, endpoint, p256dh, auth, profiles(display_name)')
+    .select('user_id, endpoint, p256dh, auth')
 
   if (error || !subs?.length) {
     return NextResponse.json({ sent: 0, total: 0 })
   }
 
-  // Load yesterday's innings for all subscribers in one query
+  // Load profiles separately
   const userIds = subs.map(s => s.user_id)
+  const { data: profiles } = await supabase
+    .from('profiles')
+    .select('id, display_name')
+    .in('id', userIds)
+  const profileMap = new Map(profiles?.map(p => [p.id, p.display_name]) ?? [])
+
+  // Load yesterday's innings for all subscribers in one query
   const { data: yestInnings } = await supabase
     .from('innings')
     .select('user_id, status')
@@ -61,8 +68,7 @@ export async function GET(req: NextRequest) {
 
   await Promise.allSettled(
     subs.map(async sub => {
-      const profile = sub.profiles as unknown as { display_name: string | null } | null
-      const firstName = profile?.display_name?.split(' ')[0] ?? 'there'
+      const firstName = profileMap.get(sub.user_id)?.split(' ')[0] ?? 'there'
       const yestStatus = yestMap.get(sub.user_id)
       const streak = getStreak(sub.user_id)
 
