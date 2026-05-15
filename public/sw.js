@@ -42,7 +42,7 @@ self.addEventListener('fetch', e => {
 
 // ===== PUSH NOTIFICATIONS =====
 self.addEventListener('push', e => {
-  if (!event.data) return
+  if (!e.data) return
   let payload
   try {
     payload = e.data.json()
