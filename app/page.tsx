@@ -825,19 +825,35 @@ export default function AppPage() {
     if (!viewInning) return
     const inningId     = viewInning.id
     const capturedGame = viewGame
-    const patch        = { status: 'IN_PROGRESS' as Status, result: 'IN_PROGRESS' as GameResult, closed_at: null }
+    const patch = {
+      status:           'IN_PROGRESS' as Status,
+      result:           'IN_PROGRESS' as GameResult,
+      closed_at:        null,
+      mind_completed:   false,
+      spirit_completed: false,
+      body_completed:   false,
+      pinch_hit_used:   false,
+    }
 
-    updateInning(inningId, patch)
+    // Clear everything locally — fresh slate for editing
+    updateInning(inningId, { ...patch, offense_goals: [] })
     beginSave()
-    const { error: innErr } = await supabase.from('innings').update(patch).eq('id', inningId)
+
+    // Wipe existing offense goals and reset inning fields in DB
+    const [{ error: goalsErr }, { error: innErr }] = await Promise.all([
+      supabase.from('offense_goals').delete().eq('inning_id', inningId),
+      supabase.from('innings').update(patch).eq('id', inningId),
+    ])
+
     if (capturedGame && !innErr) {
-      const updatedInnings = capturedGame.innings.map(i => i.id === inningId ? { ...i, ...patch } : i)
+      const updatedInnings = capturedGame.innings.map(i =>
+        i.id === inningId ? { ...i, ...patch, offense_goals: [] } : i)
       const gr = gameResult(updatedInnings)
       await supabase.from('games').update({ result: gr }).eq('id', capturedGame.id)
       updateGame(capturedGame.id, { result: gr })
     }
-    endSave(innErr)
-    if (!innErr) showToast('📂 Inning re-opened — make your edits, then close it again')
+    endSave(innErr ?? goalsErr)
+    if (!innErr && !goalsErr) showToast('📂 Inning re-opened — enter your data and close it again')
   }
 
   // ===== REFLECTION =====
