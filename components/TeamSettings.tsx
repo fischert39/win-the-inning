@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 export const MASCOTS = [
   { emoji: '🦅', name: 'Eagles' },
@@ -123,7 +123,10 @@ export default function TeamSettings({
           </div>
         )}
 
-        <div className="flex gap-3 mt-2">
+        {/* Push notifications toggle */}
+        <NotificationToggle />
+
+        <div className="flex gap-3 mt-5">
           <button
             onClick={onClose}
             className="flex-1 py-3 rounded-xl border border-slate-200 text-slate-600 font-semibold text-sm hover:bg-slate-50 transition-colors"
@@ -143,13 +146,121 @@ export default function TeamSettings({
   )
 }
 
+// ===== NOTIFICATION TOGGLE =====
+
+function urlBase64ToUint8Array(base64: string) {
+  const padding = '='.repeat((4 - (base64.length % 4)) % 4)
+  const b64 = (base64 + padding).replace(/-/g, '+').replace(/_/g, '/')
+  const raw = window.atob(b64)
+  return Uint8Array.from([...raw].map(c => c.charCodeAt(0)))
+}
+
+function NotificationToggle() {
+  const [permission,   setPermission]   = useState<NotificationPermission | 'unsupported'>('default')
+  const [subscribed,   setSubscribed]   = useState(false)
+  const [loading,      setLoading]      = useState(false)
+  const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY
+
+  // Not available in this browser or VAPID key not configured
+  const supported = typeof window !== 'undefined' && 'Notification' in window && 'serviceWorker' in navigator && !!vapidKey
+
+  useEffect(() => {
+    if (!supported) return
+    setPermission(Notification.permission)
+    navigator.serviceWorker.ready.then(reg =>
+      reg.pushManager.getSubscription().then(sub => setSubscribed(!!sub))
+    )
+  }, [supported])
+
+  async function toggle() {
+    if (!supported || loading) return
+    setLoading(true)
+    try {
+      const reg = await navigator.serviceWorker.ready
+      const existing = await reg.pushManager.getSubscription()
+
+      if (existing) {
+        // Unsubscribe
+        await existing.unsubscribe()
+        await fetch('/api/push/subscribe', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ endpoint: existing.endpoint }),
+        })
+        setSubscribed(false)
+      } else {
+        // Request permission then subscribe
+        const perm = await Notification.requestPermission()
+        setPermission(perm)
+        if (perm !== 'granted') return
+
+        const sub = await reg.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(vapidKey!),
+        })
+
+        const res = await fetch('/api/push/subscribe', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ subscription: sub }),
+        })
+        if (res.ok) setSubscribed(true)
+      }
+    } catch {
+      // Permission denied or subscription failed — state already reflects reality
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  if (!supported) return null
+
+  const denied = permission === 'denied'
+  const desc = denied
+    ? 'Blocked — enable in your browser settings'
+    : subscribed
+      ? 'Daily 9 AM reminder is active'
+      : 'Get a daily nudge to win your inning'
+
+  return (
+    <button
+      onClick={toggle}
+      disabled={denied || loading}
+      className={`w-full flex items-center gap-3 p-3.5 rounded-xl border-2 transition-all text-left mb-3 ${
+        denied
+          ? 'border-slate-100 opacity-50 cursor-not-allowed'
+          : subscribed
+            ? 'border-brand-orange bg-brand-orange/5'
+            : 'border-slate-100 hover:border-slate-200'
+      }`}
+    >
+      <span className="text-xl flex-shrink-0">{loading ? '⏳' : '🔔'}</span>
+      <div className="flex-1 min-w-0">
+        <p className="text-brand-navy font-bold text-sm">Daily reminders</p>
+        <p className="text-slate-400 text-xs">{desc}</p>
+      </div>
+      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
+        subscribed ? 'border-brand-orange bg-brand-orange' : 'border-slate-300'
+      }`}>
+        {subscribed && (
+          <svg className="w-3 h-3 text-white" viewBox="0 0 12 12" fill="none">
+            <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        )}
+      </div>
+    </button>
+  )
+}
+
+// ===== SHARED TOGGLE COMPONENT =====
+
 function Toggle({ icon, title, desc, active, onToggle, color, className = '' }: {
-  icon:      string
-  title:     string
-  desc:      string
-  active:    boolean
-  onToggle:  () => void
-  color:     'orange' | 'teal'
+  icon:       string
+  title:      string
+  desc:       string
+  active:     boolean
+  onToggle:   () => void
+  color:      'orange' | 'teal'
   className?: string
 }) {
   const ring = color === 'teal'

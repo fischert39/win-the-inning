@@ -39,3 +39,38 @@ self.addEventListener('fetch', e => {
     })
   )
 })
+
+// ===== PUSH NOTIFICATIONS =====
+self.addEventListener('push', e => {
+  if (!event.data) return
+  let payload
+  try {
+    payload = e.data.json()
+  } catch {
+    payload = { title: 'Win the Inning', body: e.data.text(), url: '/' }
+  }
+
+  e.waitUntil(
+    self.registration.showNotification(payload.title ?? 'Win the Inning', {
+      body:  payload.body ?? '',
+      icon:  '/icon-192.png',
+      badge: '/icon-192.png',
+      tag:   payload.tag ?? 'wti',
+      data:  { url: payload.url ?? '/' },
+      requireInteraction: false,
+    })
+  )
+})
+
+self.addEventListener('notificationclick', e => {
+  e.notification.close()
+  const url = e.notification.data?.url ?? '/'
+  e.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {
+      for (const client of list) {
+        if (client.url === url && 'focus' in client) return client.focus()
+      }
+      if (self.clients.openWindow) return self.clients.openWindow(url)
+    })
+  )
+})
