@@ -25,7 +25,8 @@ export async function middleware(request: NextRequest) {
 
   const isAuthRoute  = request.nextUrl.pathname.startsWith('/auth')
   const isLoginRoute = request.nextUrl.pathname.startsWith('/login')
-  const isPublic     = isAuthRoute || isLoginRoute
+  const isCronRoute  = request.nextUrl.pathname.startsWith('/api/cron')
+  const isPublic     = isAuthRoute || isLoginRoute || isCronRoute
 
   if (!user && !isPublic) {
     return NextResponse.redirect(new URL('/login', request.url))
