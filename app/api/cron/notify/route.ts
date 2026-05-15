@@ -61,7 +61,7 @@ export async function GET(req: NextRequest) {
 
   await Promise.allSettled(
     subs.map(async sub => {
-      const profile = sub.profiles as { display_name: string | null } | null
+      const profile = sub.profiles as unknown as { display_name: string | null } | null
       const firstName = profile?.display_name?.split(' ')[0] ?? 'there'
       const yestStatus = yestMap.get(sub.user_id)
       const streak = getStreak(sub.user_id)
