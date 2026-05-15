@@ -3,6 +3,7 @@
 import type { Profile } from '@/types'
 import FindFriends      from '@/components/FindFriends'
 import FriendComparison from '@/components/FriendComparison'
+import ActivityFeed     from '@/components/ActivityFeed'
 
 interface Props {
   profile:        Profile | null
@@ -65,6 +66,15 @@ export default function SocialPage({
             <span className="text-lg">🃏</span>
             Share Scorecard
           </button>
+        </div>
+      </div>
+
+      {/* Activity Feed */}
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+        <div className="px-5 pt-5 pb-3">
+          <h2 className="font-black text-brand-navy text-base mb-0.5">🏆 Recent Wins</h2>
+          <p className="text-slate-400 text-xs mb-4">See what others in the community are accomplishing</p>
+          <ActivityFeed />
         </div>
       </div>
 

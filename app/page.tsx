@@ -28,7 +28,9 @@ import ShareCard      from '@/components/ShareCard'
 import ShareSheet     from '@/components/ShareSheet'
 import SocialPage     from '@/components/SocialPage'
 import StatsPage      from '@/components/StatsPage'
-import BottomNav      from '@/components/BottomNav'
+import BottomNav        from '@/components/BottomNav'
+import SeasonCeremony  from '@/components/SeasonCeremony'
+import WelcomeBack     from '@/components/WelcomeBack'
 import UndoToast, { type UndoAction } from '@/components/UndoToast'
 
 function safeParseGoals(json: string | null | undefined): string[] {
@@ -51,6 +53,8 @@ export default function AppPage() {
   const [showTeamSettings,   setShowTeamSettings]   = useState(false)
   const [showShareSheet,     setShowShareSheet]     = useState(false)
   const [shareContext,       setShareContext]        = useState<'inning' | 'season'>('season')
+  const [showSeasonCeremony, setShowSeasonCeremony] = useState(false)
+  const [welcomeBack,        setWelcomeBack]        = useState<{ days: number; wins: number; losses: number; ties: number } | null>(null)
   const [activeTab,          setActiveTab]          = useState<'today' | 'stats' | 'social'>('today')
   const [undoAction,         setUndoAction]         = useState<UndoAction | null>(null)
   const undoIdRef             = useRef(0)
@@ -200,6 +204,31 @@ export default function AppPage() {
     }
     setSeason(raw)
     setLoading(false)
+
+    // ── Welcome back detection ─────────────────────────────────────────────
+    try {
+      const STORAGE_KEY  = 'wti_last_visit'
+      const lastVisitStr = localStorage.getItem(STORAGE_KEY)
+      const todayDate    = today()
+      localStorage.setItem(STORAGE_KEY, todayDate)
+
+      if (lastVisitStr && lastVisitStr < todayDate && raw) {
+        const daysDiff = Math.round(
+          (new Date(todayDate + 'T12:00:00').getTime() - new Date(lastVisitStr + 'T12:00:00').getTime())
+          / 86_400_000
+        )
+        if (daysDiff >= 3) {
+          // Count innings auto-closed during absence
+          const missedInnings = raw.games
+            .flatMap((g: FullGame) => g.innings)
+            .filter((i: FullInning) => i.date > lastVisitStr && i.date < todayDate && i.status === 'CLOSED')
+          const wins   = missedInnings.filter((i: FullInning) => i.result === 'WIN').length
+          const losses = missedInnings.filter((i: FullInning) => i.result === 'LOSS').length
+          const ties   = missedInnings.filter((i: FullInning) => i.result === 'TIE').length
+          setWelcomeBack({ days: daysDiff, wins, losses, ties })
+        }
+      }
+    } catch { /* localStorage may be unavailable */ }
   }, [])
 
   useEffect(() => { loadData() }, [])
@@ -389,6 +418,7 @@ export default function AppPage() {
       } : {}),
     } : prev)
     await loadData()
+    setShowSeasonCeremony(true)
   }
 
   async function handleEndSeason() {
@@ -1135,6 +1165,14 @@ export default function AppPage() {
           onSave={handleSaveTeam}
           onClose={() => setShowTeamSettings(false)}
         />
+      )}
+
+      {showSeasonCeremony && season && (
+        <SeasonCeremony season={season} onClose={() => setShowSeasonCeremony(false)} />
+      )}
+
+      {welcomeBack && (
+        <WelcomeBack summary={welcomeBack} onClose={() => setWelcomeBack(null)} />
       )}
 
       {showWinCelebration && (
