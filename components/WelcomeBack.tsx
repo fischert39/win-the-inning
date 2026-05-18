@@ -8,11 +8,12 @@ interface MissedSummary {
 }
 
 interface Props {
-  summary: MissedSummary
-  onClose: () => void
+  summary:   MissedSummary
+  onClose:   () => void
+  onReview?: () => void
 }
 
-export default function WelcomeBack({ summary, onClose }: Props) {
+export default function WelcomeBack({ summary, onClose, onReview }: Props) {
   const { days, wins, losses, ties } = summary
   const total = wins + losses + ties
 
@@ -59,6 +60,15 @@ export default function WelcomeBack({ summary, onClose }: Props) {
         >
           {cta} →
         </button>
+
+        {onReview && total > 0 && (
+          <button
+            onClick={onReview}
+            className="w-full text-slate-400 text-sm py-2 hover:text-brand-navy transition-colors"
+          >
+            Review missed innings →
+          </button>
+        )}
       </div>
     </div>
   )

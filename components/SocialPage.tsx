@@ -5,21 +5,24 @@ import type { Profile } from '@/types'
 import FindFriends      from '@/components/FindFriends'
 import FriendComparison from '@/components/FriendComparison'
 import ActivityFeed     from '@/components/ActivityFeed'
+import TeamPage         from '@/components/TeamPage'
 
 interface Props {
-  profile:        Profile | null
-  record:         { wins: number; losses: number }
-  inningsWon:     number
-  inningsPlayed:  number
-  onShare:        () => void
-  onShareCard:    () => void
-  onSetUsername:  (u: string) => Promise<void>
-  onOpenSettings: () => void
+  profile:           Profile | null
+  userId:            string
+  record:            { wins: number; losses: number }
+  inningsWon:        number
+  inningsPlayed:     number
+  onShare:           () => void
+  onShareCard:       () => void
+  onSetUsername:     (u: string) => Promise<void>
+  onOpenSettings:    () => void
+  onUnreadChange:    (count: number) => void
 }
 
 export default function SocialPage({
-  profile, record, inningsWon, inningsPlayed,
-  onShare, onShareCard, onSetUsername, onOpenSettings,
+  profile, userId, record, inningsWon, inningsPlayed,
+  onShare, onShareCard, onSetUsername, onOpenSettings, onUnreadChange,
 }: Props) {
   const [copied, setCopied] = useState(false)
 
@@ -31,14 +34,13 @@ export default function SocialPage({
 
   return (
     <div className="space-y-4 animate-slide-up">
-      {/* Header */}
-      <div className="bg-brand-navy rounded-2xl p-5 text-white">
-        <p className="text-white/40 text-[10px] font-black uppercase tracking-widest mb-1">Social</p>
-        <h2 className="text-xl font-black mb-0.5">
-          {profile?.mascot ?? '🏆'} {profile?.team_name ?? profile?.display_name ?? 'Your Team'}
-        </h2>
-        <p className="text-white/50 text-sm">{record.wins}–{record.losses} this season</p>
-      </div>
+      {/* Team section */}
+      <TeamPage
+        userId={userId}
+        displayName={profile?.display_name ?? null}
+        groupTeamId={profile?.group_team_id ?? null}
+        onUnreadChange={onUnreadChange}
+      />
 
       {/* Share */}
       <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
@@ -66,8 +68,6 @@ export default function SocialPage({
             </svg>
             Share to Instagram
           </button>
-
-          {/* Share Scorecard */}
           <button
             onClick={onShareCard}
             className="w-full flex items-center gap-3 bg-slate-100 text-slate-700 font-bold text-sm py-3.5 px-5 rounded-xl hover:bg-slate-200 active:scale-[0.98] transition-all"
@@ -78,11 +78,11 @@ export default function SocialPage({
         </div>
       </div>
 
-      {/* Activity Feed */}
+      {/* Community activity feed */}
       <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
         <div className="px-5 pt-5 pb-3">
-          <h2 className="font-black text-brand-navy text-base mb-0.5">🏆 Recent Wins</h2>
-          <p className="text-slate-400 text-xs mb-4">See what others in the community are accomplishing</p>
+          <h2 className="font-black text-brand-navy text-base mb-0.5">🏆 Community Wins</h2>
+          <p className="text-slate-400 text-xs mb-4">See what others are accomplishing</p>
           <ActivityFeed />
         </div>
       </div>

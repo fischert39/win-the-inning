@@ -59,6 +59,8 @@ export default function SeasonGoals({ goals, onAdd, onSave, onToggle, onDelete }
                 value={goal.text}
                 placeholder="What does a winning season look like?"
                 onChange={e => onSave(goal.id, e.target.value)}
+                autoCorrect="off"
+                autoCapitalize="sentences"
                 className={`flex-1 text-sm text-brand-navy placeholder:text-slate-300 bg-transparent border-b border-transparent focus:border-brand-orange transition-colors py-0.5 ${
                   goal.completed ? 'line-through text-slate-400' : ''
                 }`}

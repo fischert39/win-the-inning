@@ -23,6 +23,7 @@ interface Props {
   onRainDelay:        () => void
   isFuture?:          boolean
   isOther?:           boolean
+  forceOpen?:         boolean
 }
 
 const HIT_TYPES: { key: HitType; label: string; title: string; color: string }[] = [
@@ -54,12 +55,12 @@ function BaseDiamond({ goals }: { goals: OffenseGoal[] }) {
 export default function OffenseSection({
   inning, sportEmoji, templates, recentGoals,
   onAddGoal, onAddGoalWithText, onSaveGoalText, onToggleGoal, onSetHitType, onDeleteGoal, onCloseInning,
-  onLoadTemplates, onSaveTemplates, canRainDelay, onRainDelay, isFuture = false, isOther = false,
+  onLoadTemplates, onSaveTemplates, canRainDelay, onRainDelay, isFuture = false, isOther = false, forceOpen = false,
 }: Props) {
   const [showRecent,  setShowRecent]  = useState(false)
   const [showPresets, setShowPresets] = useState(false)
 
-  const closed      = inning.status === 'CLOSED'
+  const closed      = inning.status === 'CLOSED' && !forceOpen
   const readOnly    = closed || isFuture
   const goals       = inning.offense_goals
   const runs        = simulateRuns(goals)
@@ -248,6 +249,8 @@ function GoalRow({
           readOnly={closed}
           placeholder="What's your goal?"
           onChange={e => { if (!closed) onSave(e.target.value) }}
+          autoCorrect="off"
+          autoCapitalize="sentences"
           className={`flex-1 text-sm bg-transparent outline-none placeholder:text-slate-300 ${
             goal.completed ? 'line-through text-slate-400' : 'text-brand-navy'
           } ${closed ? 'cursor-default select-none' : ''}`}

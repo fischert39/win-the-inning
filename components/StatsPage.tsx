@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import type { FullSeason, Profile } from '@/types'
 import { computeAchievements } from '@/lib/achievements'
 import { inningResult, simulateRuns } from '@/lib/game-logic'
@@ -66,7 +66,7 @@ export default function StatsPage({
   season, record, profile, inningsWon, inningsPlayed,
   onPastSeasons, onClearData,
 }: Props) {
-  const achievements = computeAchievements(season)
+  const achievements = useMemo(() => computeAchievements(season), [season])
   const unlocked     = achievements.filter(a => a.unlocked).length
 
   // ─── Compute stats from season data ───────────────────────────────────────

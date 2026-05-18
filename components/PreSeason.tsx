@@ -265,6 +265,8 @@ export default function PreSeason({ sport: initialSport, displayName, onStart, o
             onChange={e => setTeamName(e.target.value)}
             placeholder={`e.g. The ${sport === 'baseball' ? 'Thunder Hawks' : 'Fire Foxes'}`}
             maxLength={30}
+            autoCorrect="off"
+            autoCapitalize="words"
             className="w-full bg-white/10 border border-white/15 rounded-xl px-4 py-3 text-sm text-white placeholder:text-white/30 outline-none focus:border-brand-orange/50"
           />
         </div>
@@ -337,6 +339,8 @@ export default function PreSeason({ sport: initialSport, displayName, onStart, o
                 value={g}
                 onChange={e => setGoal(i, e.target.value)}
                 placeholder={`Goal ${i + 1}… e.g. "Run a 5K"`}
+                autoCorrect="off"
+                autoCapitalize="sentences"
                 className="w-full bg-white/10 border border-white/15 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-white/30 outline-none focus:border-brand-orange/50"
               />
             ))}
@@ -388,6 +392,8 @@ export default function PreSeason({ sport: initialSport, displayName, onStart, o
             onChange={e => setSuccessDefinition(e.target.value)}
             placeholder="At the end of this season, I will have…"
             rows={2}
+            autoCorrect="off"
+            autoCapitalize="sentences"
             className="w-full bg-white/10 border border-white/15 rounded-xl px-4 py-3 text-sm text-white placeholder:text-white/30 outline-none focus:border-brand-orange/50 resize-none"
           />
         </div>
@@ -402,6 +408,8 @@ export default function PreSeason({ sport: initialSport, displayName, onStart, o
             onChange={e => setObstacle(e.target.value)}
             placeholder="My biggest challenge will be… and I will overcome it by…"
             rows={2}
+            autoCorrect="off"
+            autoCapitalize="sentences"
             className="w-full bg-white/10 border border-white/15 rounded-xl px-4 py-3 text-sm text-white placeholder:text-white/30 outline-none focus:border-brand-orange/50 resize-none"
           />
         </div>

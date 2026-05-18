@@ -54,9 +54,11 @@ export default function AppPage() {
   const [showShareSheet,     setShowShareSheet]     = useState(false)
   const [shareContext,       setShareContext]        = useState<'inning' | 'season'>('season')
   const [showSeasonCeremony, setShowSeasonCeremony] = useState(false)
-  const [welcomeBack,        setWelcomeBack]        = useState<{ days: number; wins: number; losses: number; ties: number } | null>(null)
+  const [welcomeBack,        setWelcomeBack]        = useState<{ days: number; wins: number; losses: number; ties: number; firstMissedDate: string | null } | null>(null)
   const [activeTab,          setActiveTab]          = useState<'today' | 'stats' | 'social'>('today')
   const [undoAction,         setUndoAction]         = useState<UndoAction | null>(null)
+  const [reopenedInningId,   setReopenedInningId]   = useState<string | null>(null)
+  const [socialBadge,        setSocialBadge]        = useState(0)
   const undoIdRef             = useRef(0)
   const touchStartX           = useRef(0)
   const touchStartY           = useRef(0)
@@ -140,9 +142,15 @@ export default function AppPage() {
     const dy = e.changedTouches[0].clientY - touchStartY.current
     if (Math.abs(dx) < 50 || Math.abs(dx) < Math.abs(dy)) return
     const newDate = dx < 0 ? getNextDate(vDateEarly) : getPrevDate(vDateEarly)
-    if (!season || newDate < season.start_date) return
+    if (!season || newDate < season.start_date) {
+      showToast('⛔ Already at the start of your season')
+      return
+    }
     const maxDate = season.end_date ?? getWeekEnd(getWeekStart(todayStr))
-    if (newDate > maxDate) return
+    if (newDate > maxDate) {
+      showToast('⛔ Can\'t swipe past the end of the season')
+      return
+    }
     handleViewDate(newDate)
   }
 
@@ -233,16 +241,21 @@ export default function AppPage() {
           const missedInnings = raw.games
             .flatMap((g: FullGame) => g.innings)
             .filter((i: FullInning) => i.date > lastVisitStr && i.date < todayDate && i.status === 'CLOSED')
+            .sort((a: FullInning, b: FullInning) => a.date.localeCompare(b.date))
           const wins   = missedInnings.filter((i: FullInning) => i.result === 'WIN').length
           const losses = missedInnings.filter((i: FullInning) => i.result === 'LOSS').length
           const ties   = missedInnings.filter((i: FullInning) => i.result === 'TIE').length
-          setWelcomeBack({ days: daysDiff, wins, losses, ties })
+          const firstMissedDate = missedInnings.length > 0 ? missedInnings[0].date : null
+          setWelcomeBack({ days: daysDiff, wins, losses, ties, firstMissedDate })
         }
       }
     } catch { /* localStorage may be unavailable */ }
   }, [])
 
   useEffect(() => { loadData() }, [])
+
+  // Clear forceOpen when the user navigates to a different date
+  useEffect(() => { setReopenedInningId(null) }, [viewDate])
 
   // ===== REALTIME SYNC =====
   // Re-fetch whenever another device changes innings or goals
@@ -813,8 +826,9 @@ export default function AppPage() {
     const outs      = countOuts(viewInning)
     const runs      = simulateRuns(viewInning.offense_goals)
     const result    = (outs === 3 ? (runs > 0 ? 'WIN' : 'TIE') : 'LOSS') as GameResult
-    const isUpdate  = viewInning.status === 'CLOSED'
-    const inningId  = viewInning.id
+    const isReopened = viewInning.id === reopenedInningId
+    const isUpdate   = viewInning.status === 'CLOSED' && !isReopened
+    const inningId   = viewInning.id
     const capturedGame = viewGame
 
     const dbUpdates = isUpdate
@@ -832,6 +846,7 @@ export default function AppPage() {
       if (!gameErr) updateGame(viewGame.id, { result: gr })
     }
     endSave(innErr)
+    if (!innErr) setReopenedInningId(null)
 
     if (!isUpdate) {
       registerUndo(
@@ -863,81 +878,85 @@ export default function AppPage() {
     } else {
       showToast(isUpdate ? '✅ Inning updated!' : '💪 Inning closed. Get \'em tomorrow!')
     }
+
+    // Post to team activity feed (fire-and-forget)
+    if (!innErr && !isUpdate && profile?.group_team_id) {
+      const teamId = profile.group_team_id
+      supabase.from('team_activity').insert({
+        team_id:  teamId,
+        user_id:  user?.id,
+        type:     result === 'WIN' ? 'inning_won' : 'inning_closed',
+        metadata: { result, runs, date: viewInning?.date },
+      }).then(() => {
+        if (result === 'WIN') {
+          supabase.rpc('check_team_achievements', { p_team_id: teamId })
+        }
+      })
+    }
   }
 
   // ===== REOPEN =====
   async function handleReopenInning() {
     if (!viewInning) return
-    const inningId      = viewInning.id
-    const capturedGame  = viewGame
-    // Snapshot everything BEFORE we clear — needed for undo
-    const capturedGoals = [...viewInning.offense_goals]
+    const inningId     = viewInning.id
+    const capturedGame = viewGame
     const originalFields = {
-      status:           viewInning.status,
-      result:           viewInning.result,
-      closed_at:        viewInning.closed_at,
-      mind_completed:   viewInning.mind_completed,
-      spirit_completed: viewInning.spirit_completed,
-      body_completed:   viewInning.body_completed,
-      pinch_hit_used:   viewInning.pinch_hit_used,
+      status:    viewInning.status,
+      result:    viewInning.result,
+      closed_at: viewInning.closed_at,
     }
 
     const patch = {
-      status:           'IN_PROGRESS' as Status,
-      result:           'IN_PROGRESS' as GameResult,
-      closed_at:        null,
-      mind_completed:   false,
-      spirit_completed: false,
-      body_completed:   false,
-      pinch_hit_used:   false,
+      status:    'IN_PROGRESS' as Status,
+      result:    'IN_PROGRESS' as GameResult,
+      closed_at: null,
     }
 
-    // Clear everything locally — fresh slate for editing
-    updateInning(inningId, { ...patch, offense_goals: [] })
+    // Set forceOpen FIRST so any reload that fires sees it immediately
+    setReopenedInningId(inningId)
+    updateInning(inningId, patch)
     beginSave()
 
-    // Wipe existing offense goals and reset inning fields in DB
-    const [{ error: goalsErr }, { error: innErr }] = await Promise.all([
-      supabase.from('offense_goals').delete().eq('inning_id', inningId),
-      supabase.from('innings').update(patch).eq('id', inningId),
-    ])
+    const { error: innErr } = await supabase.from('innings').update(patch).eq('id', inningId)
 
     if (capturedGame && !innErr) {
       const updatedInnings = capturedGame.innings.map(i =>
-        i.id === inningId ? { ...i, ...patch, offense_goals: [] } : i)
+        i.id === inningId ? { ...i, ...patch } : i)
       const gr = gameResult(updatedInnings)
       const { error: gameErr } = await supabase.from('games').update({ result: gr }).eq('id', capturedGame.id)
       if (!gameErr) updateGame(capturedGame.id, { result: gr })
     }
-    endSave(innErr ?? goalsErr)
+    endSave(innErr)
 
-    if (!innErr && !goalsErr) {
-      showToast('📂 Inning re-opened — enter your data and close it again')
-
-      // Register undo so an accidental tap doesn't permanently delete goals
-      registerUndo(
-        'Re-open inning',
-        () => {
-          updateInning(inningId, { ...originalFields, offense_goals: capturedGoals })
-          if (capturedGame) {
-            const reverted = capturedGame.innings.map(i =>
-              i.id === inningId ? { ...i, ...originalFields, offense_goals: capturedGoals } : i)
-            updateGame(capturedGame.id, { result: gameResult(reverted) })
-          }
-        },
-        async () => {
-          if (capturedGoals.length > 0) {
-            await supabase.from('offense_goals').insert(capturedGoals)
-          }
-          await supabase.from('innings').update(originalFields).eq('id', inningId)
-          if (capturedGame) {
-            const reverted = capturedGame.innings.map(i =>
-              i.id === inningId ? { ...i, ...originalFields, offense_goals: capturedGoals } : i)
-            await supabase.from('games').update({ result: gameResult(reverted) }).eq('id', capturedGame.id)
-          }
-        }
-      )
+    if (innErr) {
+      // Revert on failure
+      setReopenedInningId(null)
+      updateInning(inningId, originalFields)
+      return
     }
+
+    showToast('📂 Inning re-opened — enter your data and close it again')
+
+    registerUndo(
+      'Re-open inning',
+      () => {
+        setReopenedInningId(null)
+        updateInning(inningId, originalFields)
+        if (capturedGame) {
+          const reverted = capturedGame.innings.map(i =>
+            i.id === inningId ? { ...i, ...originalFields } : i)
+          updateGame(capturedGame.id, { result: gameResult(reverted) })
+        }
+      },
+      async () => {
+        await supabase.from('innings').update(originalFields).eq('id', inningId)
+        if (capturedGame) {
+          const reverted = capturedGame.innings.map(i =>
+            i.id === inningId ? { ...i, ...originalFields } : i)
+          await supabase.from('games').update({ result: gameResult(reverted) }).eq('id', capturedGame.id)
+        }
+      }
+    )
   }
 
   // ===== REFLECTION =====
@@ -981,8 +1000,13 @@ export default function AppPage() {
   }
 
   async function handleDeleteSeasonGoal(goalId: string) {
+    const removed = season?.season_goals.find(g => g.id === goalId)
     setSeason(prev => prev ? { ...prev, season_goals: prev.season_goals.filter(g => g.id !== goalId) } : prev)
-    await supabase.from('season_goals').delete().eq('id', goalId)
+    const { error } = await supabase.from('season_goals').delete().eq('id', goalId)
+    if (error) {
+      if (removed) setSeason(prev => prev ? { ...prev, season_goals: [...prev.season_goals, removed] } : prev)
+      showToast('❌ Failed to delete goal — please try again')
+    }
   }
 
   // ===== RENDER =====
@@ -1096,6 +1120,7 @@ export default function AppPage() {
         {activeTab === 'social' && (
           <SocialPage
             profile={profile}
+            userId={user?.id ?? ''}
             record={record}
             inningsWon={inningsWon}
             inningsPlayed={inningsPlayed}
@@ -1103,6 +1128,7 @@ export default function AppPage() {
             onShareCard={() => setShowShareCard(true)}
             onSetUsername={handleSetUsername}
             onOpenSettings={() => setShowTeamSettings(true)}
+            onUnreadChange={setSocialBadge}
           />
         )}
 
@@ -1168,7 +1194,7 @@ export default function AppPage() {
           </div>
         ) : (
           <div className="space-y-4 animate-slide-up">
-            {isClosed && closedResult && viewInning && (
+            {isClosed && closedResult && viewInning && viewInning.id !== reopenedInningId && (
               <div className={`rounded-xl px-5 py-4 flex items-center justify-between gap-3 ${
                 closedResult === 'WIN'  ? 'bg-green-50  border border-green-200'  :
                 closedResult === 'TIE'  ? 'bg-yellow-50 border border-yellow-200' :
@@ -1222,6 +1248,7 @@ export default function AppPage() {
               onRainDelay={handleRainDelay}
               isFuture={!!viewInning && viewInning.date > todayStr}
               isOther={!!isOther}
+              forceOpen={viewInning?.id === reopenedInningId}
             />
 
             {verse && (
@@ -1252,7 +1279,11 @@ export default function AppPage() {
         </>)}
       </div>
 
-      <BottomNav tab={activeTab} onChange={setActiveTab} />
+      <BottomNav
+        tab={activeTab}
+        onChange={tab => { setActiveTab(tab); if (tab === 'social') setSocialBadge(0) }}
+        socialBadge={socialBadge}
+      />
 
       {undoAction && (
         <UndoToast
@@ -1278,7 +1309,15 @@ export default function AppPage() {
       )}
 
       {welcomeBack && (
-        <WelcomeBack summary={welcomeBack} onClose={() => setWelcomeBack(null)} />
+        <WelcomeBack
+          summary={welcomeBack}
+          onClose={() => setWelcomeBack(null)}
+          onReview={welcomeBack.firstMissedDate ? () => {
+            const date = welcomeBack.firstMissedDate!
+            setWelcomeBack(null)
+            handleViewDate(date)
+          } : undefined}
+        />
       )}
 
       {showWinCelebration && (

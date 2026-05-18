@@ -26,6 +26,8 @@ export default function EndOfDay({ inning, onSaveReflection, onSaveFutureGoals }
             value={inning.reflection}
             onChange={e => onSaveReflection(e.target.value)}
             placeholder="How did today go? What did you learn? What are you grateful for?"
+            autoCorrect="off"
+            autoCapitalize="sentences"
             className="w-full text-sm text-brand-navy placeholder:text-slate-300 bg-slate-50 border border-slate-100 rounded-xl p-3 outline-none focus:border-brand-orange focus:bg-white transition-all"
           />
         </div>
@@ -39,6 +41,8 @@ export default function EndOfDay({ inning, onSaveReflection, onSaveFutureGoals }
             value={inning.future_goals}
             onChange={e => onSaveFutureGoals(e.target.value)}
             placeholder="What do you want to accomplish tomorrow?"
+            autoCorrect="off"
+            autoCapitalize="sentences"
             className="w-full text-sm text-brand-navy placeholder:text-slate-300 bg-slate-50 border border-slate-100 rounded-xl p-3 outline-none focus:border-brand-orange focus:bg-white transition-all"
           />
         </div>

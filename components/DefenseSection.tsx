@@ -87,6 +87,8 @@ export default function DefenseSection({ inning, defaultTasks, onToggle, onSaveT
                   value={task}
                   placeholder={cat.placeholder}
                   onChange={e => onSaveTask(cat.key, e.target.value)}
+                  autoCorrect="off"
+                  autoCapitalize="sentences"
                   className={`w-full text-sm text-brand-navy placeholder:text-slate-300 bg-transparent outline-none ${
                     completed ? 'line-through text-slate-400' : ''
                   }`}
