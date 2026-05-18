@@ -2,27 +2,23 @@
 
 import { useState } from 'react'
 import type { Profile } from '@/types'
-import FindFriends      from '@/components/FindFriends'
-import FriendComparison from '@/components/FriendComparison'
-import ActivityFeed     from '@/components/ActivityFeed'
-import TeamPage         from '@/components/TeamPage'
+import TeamPage from '@/components/TeamPage'
 
 interface Props {
-  profile:           Profile | null
-  userId:            string
-  record:            { wins: number; losses: number }
-  inningsWon:        number
-  inningsPlayed:     number
-  onShare:           () => void
-  onShareCard:       () => void
-  onSetUsername:     (u: string) => Promise<void>
-  onOpenSettings:    () => void
-  onUnreadChange:    (count: number) => void
+  profile:        Profile | null
+  userId:         string
+  record:         { wins: number; losses: number }
+  inningsWon:     number
+  inningsPlayed:  number
+  onShare:        () => void
+  onShareCard:    () => void
+  onSetUsername:  (u: string) => Promise<void>
+  onOpenSettings: () => void
+  onUnreadChange: (count: number) => void
 }
 
 export default function SocialPage({
-  profile, userId, record, inningsWon, inningsPlayed,
-  onShare, onShareCard, onSetUsername, onOpenSettings, onUnreadChange,
+  profile, userId, onShare, onShareCard, onUnreadChange,
 }: Props) {
   const [copied, setCopied] = useState(false)
 
@@ -77,28 +73,6 @@ export default function SocialPage({
           </button>
         </div>
       </div>
-
-      {/* Community activity feed */}
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-        <div className="px-5 pt-5 pb-3">
-          <h2 className="font-black text-brand-navy text-base mb-0.5">🏆 Community Wins</h2>
-          <p className="text-slate-400 text-xs mb-4">See what others are accomplishing</p>
-          <ActivityFeed />
-        </div>
-      </div>
-
-      {/* Friend Comparison */}
-      <FriendComparison
-        myUsername={profile?.username ?? null}
-        myStats={{ gameWins: record.wins, gameLosses: record.losses, inningsWon, inningsPlayed }}
-        onSetUsername={onSetUsername}
-      />
-
-      {/* Find Friends */}
-      <FindFriends
-        isDiscoverable={profile?.is_discoverable ?? false}
-        onOpenSettings={onOpenSettings}
-      />
 
       {/* Public profile link */}
       {profile?.username && (
