@@ -4,8 +4,9 @@ import { useState, useMemo } from 'react'
 import type { FullSeason, Profile } from '@/types'
 import { computeAchievements } from '@/lib/achievements'
 import { inningResult, simulateRuns } from '@/lib/game-logic'
-import SeasonTrends from '@/components/SeasonTrends'
-import Achievements  from '@/components/Achievements'
+import SeasonTrends     from '@/components/SeasonTrends'
+import Achievements     from '@/components/Achievements'
+import TeamAchievements from '@/components/TeamAchievements'
 
 interface Props {
   season:        FullSeason
@@ -147,8 +148,11 @@ export default function StatsPage({
         </div>
       </div>
 
-      {/* ── Achievements ── */}
+      {/* ── Individual Achievements ── */}
       <Achievements achievements={achievements} initialOpen />
+
+      {/* ── Team Achievements ── */}
+      <TeamAchievements />
 
       {/* ── Season Trends ── */}
       <SeasonTrends games={season.games} />

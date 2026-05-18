@@ -10,6 +10,89 @@ export interface Achievement {
   category:    'streak' | 'defense' | 'offense' | 'season'
 }
 
+// ── Team Achievements ────────────────────────────────────────────────────────
+
+export type TeamAchievementCategory = 'teamwork' | 'streak' | 'milestone'
+
+export interface TeamAchievementDef {
+  keyPrefix:   string                  // matches start of DB key (e.g. "full_squad_win")
+  icon:        string
+  name:        string
+  description: string
+  category:    TeamAchievementCategory
+}
+
+export const TEAM_ACHIEVEMENT_DEFS: TeamAchievementDef[] = [
+  // ── Teamwork ────────────────────────────────────────────────────────────
+  {
+    keyPrefix: 'full_squad_win',
+    icon: '🏆', name: 'Full Squad Win',
+    description: 'Every teammate won their inning on the same day',
+    category: 'teamwork',
+  },
+  {
+    keyPrefix: 'clean_sweep',
+    icon: '🧹', name: 'Clean Sweep',
+    description: 'Every teammate won the game in the same week',
+    category: 'teamwork',
+  },
+  {
+    keyPrefix: 'lockdown',
+    icon: '🛡️', name: 'Lockdown',
+    description: 'Every teammate completed all 3 defense tasks on the same day',
+    category: 'teamwork',
+  },
+  {
+    keyPrefix: 'three_peat',
+    icon: '🎯', name: 'Three-Peat',
+    description: 'The whole squad won together 3 different days',
+    category: 'teamwork',
+  },
+  {
+    keyPrefix: 'perfect_formation',
+    icon: '💎', name: 'Perfect Formation',
+    description: 'Every teammate went 7-for-7 in the same week',
+    category: 'teamwork',
+  },
+  // ── Streak ──────────────────────────────────────────────────────────────
+  {
+    keyPrefix: 'squad_on_fire',
+    icon: '🔥', name: 'Squad on Fire',
+    description: 'Every teammate has a 3+ day win streak at the same time',
+    category: 'streak',
+  },
+  // ── Milestone ───────────────────────────────────────────────────────────
+  {
+    keyPrefix: 'founding_five',
+    icon: '🤝', name: 'Founding Five',
+    description: 'Team grew to 5 active members',
+    category: 'milestone',
+  },
+  {
+    keyPrefix: 'full_roster',
+    icon: '👥', name: 'Full Roster',
+    description: 'Team reached maximum capacity — 10 members',
+    category: 'milestone',
+  },
+  {
+    keyPrefix: 'century_club',
+    icon: '💯', name: 'Century Club',
+    description: 'Team collectively scored 100 total runs this season',
+    category: 'milestone',
+  },
+  {
+    keyPrefix: 'all_stars',
+    icon: '🌟', name: 'All-Stars',
+    description: 'Every teammate has won 10+ innings this season',
+    category: 'milestone',
+  },
+]
+
+/** Map a raw DB achievement key to its definition */
+export function getTeamAchievementDef(dbKey: string): TeamAchievementDef | undefined {
+  return TEAM_ACHIEVEMENT_DEFS.find(d => dbKey === d.keyPrefix || dbKey.startsWith(d.keyPrefix + '_'))
+}
+
 export function computeAchievements(season: FullSeason): Achievement[] {
   const allInnings = season.games
     .flatMap(g => g.innings)
