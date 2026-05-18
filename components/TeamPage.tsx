@@ -9,6 +9,7 @@ import TeamCreate      from '@/components/TeamCreate'
 import TeamJoin        from '@/components/TeamJoin'
 import TeamAdmin       from '@/components/TeamAdmin'
 import NudgeModal      from '@/components/NudgeModal'
+import InviteSheet     from '@/components/InviteSheet'
 
 interface Props {
   userId:            string
@@ -32,6 +33,7 @@ export default function TeamPage({ userId, displayName, groupTeamId, onUnreadCha
   const [showCreate,  setShowCreate]  = useState(false)
   const [showJoin,    setShowJoin]    = useState(false)
   const [showAdmin,   setShowAdmin]   = useState(false)
+  const [showInvite,  setShowInvite]  = useState(false)
   const [nudgeTarget, setNudgeTarget] = useState<{ userId: string; name: string } | null>(null)
   const [toast,       setToast]       = useState<string | null>(null)
 
@@ -217,17 +219,27 @@ export default function TeamPage({ userId, displayName, groupTeamId, onUnreadCha
                 {team.member_count} member{team.member_count !== 1 ? 's' : ''}
               </p>
             </div>
-            <button
-              onClick={() => setShowAdmin(true)}
-              className="relative mt-1 p-2 rounded-xl hover:bg-white/10 transition-colors"
-            >
-              <svg className="w-5 h-5 text-white/70" viewBox="0 0 20 20" fill="currentColor">
-                <path d="M10 3a1.5 1.5 0 110 3 1.5 1.5 0 010-3zM10 8.5a1.5 1.5 0 110 3 1.5 1.5 0 010-3zM11.5 15.5a1.5 1.5 0 10-3 0 1.5 1.5 0 003 0z"/>
-              </svg>
-              {pendingBadge && (
-                <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-brand-orange rounded-full" />
+            <div className="flex items-center gap-1 mt-1">
+              {team.invite_code && (
+                <button
+                  onClick={() => setShowInvite(true)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-brand-orange hover:bg-brand-orange-dark transition-colors text-white text-xs font-black"
+                >
+                  <span>+</span> Invite
+                </button>
               )}
-            </button>
+              <button
+                onClick={() => setShowAdmin(true)}
+                className="relative p-2 rounded-xl hover:bg-white/10 transition-colors"
+              >
+                <svg className="w-5 h-5 text-white/70" viewBox="0 0 20 20" fill="currentColor">
+                  <path d="M10 3a1.5 1.5 0 110 3 1.5 1.5 0 010-3zM10 8.5a1.5 1.5 0 110 3 1.5 1.5 0 010-3zM11.5 15.5a1.5 1.5 0 10-3 0 1.5 1.5 0 003 0z"/>
+                </svg>
+                {pendingBadge && (
+                  <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-red-500 rounded-full" />
+                )}
+              </button>
+            </div>
           </div>
 
           {/* Achievements strip */}
@@ -310,6 +322,14 @@ export default function TeamPage({ userId, displayName, groupTeamId, onUnreadCha
           fromName={displayName ?? 'A teammate'}
           onSent={handleNudgeSent}
           onClose={() => setNudgeTarget(null)}
+        />
+      )}
+
+      {showInvite && team.invite_code && (
+        <InviteSheet
+          teamName={team.name}
+          inviteCode={team.invite_code}
+          onClose={() => setShowInvite(false)}
         />
       )}
 
