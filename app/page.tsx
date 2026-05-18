@@ -65,6 +65,7 @@ export default function AppPage() {
   const toastTimerRef         = useRef<ReturnType<typeof setTimeout> | null>(null)
   const reloadTimerRef        = useRef<ReturnType<typeof setTimeout> | null>(null)
   const pendingRemoteSyncRef  = useRef(false)
+  const isAddingGoalRef       = useRef(false)
   const router   = useRouter()
   const supabase = useMemo(() => createClient(), [])
 
@@ -546,7 +547,7 @@ export default function AppPage() {
     // Ensure inning exists for this date
     if (!game.innings.find(i => i.date === date)) {
       const iid = 'i_' + date + '_' + Date.now()
-      const { data: newInning } = await supabase
+      const { data: newInning, error: inningError } = await supabase
         .from('innings')
         .insert({
           id: iid, user_id: user.id, game_id: game.id, date,
@@ -561,7 +562,13 @@ export default function AppPage() {
           status: 'IN_PROGRESS', result: 'IN_PROGRESS', is_rain_delay: false, pinch_hit_used: false,
         })
         .select().single()
-      if (!newInning) return
+      if (!newInning || inningError) {
+        showToast("❌ Couldn't load this day — please try again")
+        viewDateInProgressRef.current = false
+        const next = pendingViewDateRef.current
+        if (next) { pendingViewDateRef.current = null; handleViewDate(next) }
+        return
+      }
       let offenseGoals: OffenseGoal[] = []
 
       const prevDate   = getPrevDate(date)
@@ -694,6 +701,8 @@ export default function AppPage() {
   // ===== OFFENSE ACTIONS =====
   async function handleAddGoal(text = '') {
     if (!viewInning || !user) return
+    if (isAddingGoalRef.current) return  // prevent double-tap creating duplicate rows
+    isAddingGoalRef.current = true
     const sortOrder = viewInning.offense_goals.length
     beginSave()
     const { data: goal, error } = await supabase
@@ -705,6 +714,7 @@ export default function AppPage() {
       .select().single()
     endSave(error)
     if (goal) addGoal(viewInning.id, goal)
+    isAddingGoalRef.current = false
   }
 
   async function handleSaveGoalText(goalId: string, val: string) {
@@ -751,6 +761,10 @@ export default function AppPage() {
 
   async function handleRainDelay() {
     if (!viewInning || !viewGame) return
+    if (viewGame.innings.some(i => i.is_rain_delay)) {
+      showToast('☔ Rain Delay already used this week')
+      return
+    }
     if (!confirm('Use your Rain Delay? This skips today without a loss — 1 per week.')) return
     const updates = { status: 'CLOSED' as Status, is_rain_delay: true, result: 'IN_PROGRESS' as GameResult, closed_at: new Date().toISOString() }
     updateInning(viewInning.id, updates)
@@ -892,8 +906,8 @@ export default function AppPage() {
       const updatedInnings = capturedGame.innings.map(i =>
         i.id === inningId ? { ...i, ...patch, offense_goals: [] } : i)
       const gr = gameResult(updatedInnings)
-      await supabase.from('games').update({ result: gr }).eq('id', capturedGame.id)
-      updateGame(capturedGame.id, { result: gr })
+      const { error: gameErr } = await supabase.from('games').update({ result: gr }).eq('id', capturedGame.id)
+      if (!gameErr) updateGame(capturedGame.id, { result: gr })
     }
     endSave(innErr ?? goalsErr)
 

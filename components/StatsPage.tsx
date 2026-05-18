@@ -73,7 +73,6 @@ export default function StatsPage({
   const allInnings   = season.games.flatMap(g => g.innings)
   const closedInnings = allInnings.filter(i => i.status === 'CLOSED' && !i.is_rain_delay)
   const rainDelays   = allInnings.filter(i => i.is_rain_delay).length
-  const pinchHits    = allInnings.filter(i => i.pinch_hit_used).length
 
   // Defense
   const mindTotal   = closedInnings.filter(i => i.mind_task).length
@@ -183,10 +182,6 @@ export default function StatsPage({
             <div className="text-center">
               <p className="text-brand-navy font-black text-base">{rainDelays}</p>
               <p className="text-slate-400 text-[10px] mt-0.5">Rain Delays</p>
-            </div>
-            <div className="text-center">
-              <p className="text-brand-navy font-black text-base">{pinchHits}</p>
-              <p className="text-slate-400 text-[10px] mt-0.5">Pinch Hits</p>
             </div>
           </div>
         </div>

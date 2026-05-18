@@ -77,7 +77,7 @@ export default async function AdminPage() {
 
   // Inning aggregates (closed only)
   type InningAgg = {
-    total: number; won: number; rainDelay: number; pinchHit: number
+    total: number; won: number; rainDelay: number
     lastActive: string | null
     mindTotal: number; mindDone: number
     spiritTotal: number; spiritDone: number
@@ -87,13 +87,12 @@ export default async function AdminPage() {
   for (const i of innings) {
     if (i.status !== 'CLOSED') continue
     const cur = inningAgg.get(i.user_id) ?? {
-      total: 0, won: 0, rainDelay: 0, pinchHit: 0, lastActive: null,
+      total: 0, won: 0, rainDelay: 0, lastActive: null,
       mindTotal: 0, mindDone: 0, spiritTotal: 0, spiritDone: 0, bodyTotal: 0, bodyDone: 0,
     }
     cur.total++
     if (i.result === 'WIN') cur.won++
     if (i.is_rain_delay)    cur.rainDelay++
-    if (i.pinch_hit_used)   cur.pinchHit++
     if (i.closed_at && (!cur.lastActive || i.closed_at > cur.lastActive)) cur.lastActive = i.closed_at
     if (i.mind_task)   { cur.mindTotal++;   if (i.mind_completed)   cur.mindDone++ }
     if (i.spirit_task) { cur.spiritTotal++; if (i.spirit_completed) cur.spiritDone++ }
@@ -128,7 +127,7 @@ export default async function AdminPage() {
   // ─── Build per-user rows ─────────────────────────────────────────────────────
 
   const emptyIA: InningAgg = {
-    total: 0, won: 0, rainDelay: 0, pinchHit: 0, lastActive: null,
+    total: 0, won: 0, rainDelay: 0, lastActive: null,
     mindTotal: 0, mindDone: 0, spiritTotal: 0, spiritDone: 0, bodyTotal: 0, bodyDone: 0,
   }
 
@@ -162,7 +161,6 @@ export default async function AdminPage() {
       inningsWon:    ia.won,
       inningWinPct:  pct(ia.won, ia.total),
       rainDelayInnings: ia.rainDelay,
-      pinchHitUsed:  ia.pinchHit,
 
       totalGoals:    goa.total,
       goalsCompleted: goa.done,
@@ -185,7 +183,6 @@ export default async function AdminPage() {
       bibleVerse:          profile?.daily_bible_verse  ?? false,
       autoCarry:           profile?.auto_carry_tasks   ?? false,
       isDiscoverable:      profile?.is_discoverable    ?? false,
-      pinchHitterTokens:   profile?.pinch_hitter_tokens ?? 0,
     }
   })
 
@@ -238,7 +235,6 @@ export default async function AdminPage() {
     totalInnings:      closedInnings.length,
     inningsWon:        closedInnings.filter(i => i.result === 'WIN').length,
     rainDelayInnings:  closedInnings.filter(i => i.is_rain_delay).length,
-    pinchHitInnings:   closedInnings.filter(i => i.pinch_hit_used).length,
 
     totalGoals:    globalGoals.total,
     goalsCompleted: globalGoals.done,
@@ -258,7 +254,6 @@ export default async function AdminPage() {
     autoCarryUsers:     profiles.filter(p => p.auto_carry_tasks).length,
     discoverableUsers:  profiles.filter(p => p.is_discoverable).length,
     usernameSetUsers:   profiles.filter(p => p.username).length,
-    totalTokens:        profiles.reduce((sum, p) => sum + (p.pinch_hitter_tokens ?? 0), 0),
   }
 
   return <AdminDashboard stats={stats} users={rows} />

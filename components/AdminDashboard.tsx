@@ -24,7 +24,6 @@ export interface AdminUserRow {
   inningsWon: number
   inningWinPct: number | null
   rainDelayInnings: number
-  pinchHitUsed: number
   totalGoals: number
   goalsCompleted: number
   goalCompPct: number | null
@@ -44,7 +43,6 @@ export interface AdminUserRow {
   bibleVerse: boolean
   autoCarry: boolean
   isDiscoverable: boolean
-  pinchHitterTokens: number
 }
 
 export interface AdminStats {
@@ -63,7 +61,6 @@ export interface AdminStats {
   totalInnings: number
   inningsWon: number
   rainDelayInnings: number
-  pinchHitInnings: number
   totalGoals: number
   goalsCompleted: number
   singles: number
@@ -80,7 +77,6 @@ export interface AdminStats {
   autoCarryUsers: number
   discoverableUsers: number
   usernameSetUsers: number
-  totalTokens: number
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -221,7 +217,6 @@ export default function AdminDashboard({ stats, users }: { stats: AdminStats; us
             <Card label="Innings Closed"  value={stats.totalInnings}   sub={`${stats.rainDelayInnings} rain delays`} />
             <Card label="Goals Set"       value={stats.totalGoals}     />
             <Card label="Goals Completed" value={stats.goalsCompleted} sub={`${safePct(stats.goalsCompleted, stats.totalGoals)}% completion`} accent="text-brand-green" />
-            <Card label="Pinch Hits Used" value={stats.pinchHitInnings} />
           </div>
         </section>
 
@@ -309,7 +304,6 @@ export default function AdminDashboard({ stats, users }: { stats: AdminStats; us
             <Card label="Discoverable"    value={stats.discoverableUsers}  sub="social search on"    accent="text-brand-teal" />
             <Card label="Bible Verse"     value={stats.bibleVerseUsers}    sub="daily verse enabled" accent="text-brand-purple" />
             <Card label="Auto-Carry Tasks" value={stats.autoCarryUsers}   sub="tasks carry over"    accent="text-brand-green" />
-            <Card label="Pinch Hitter Tokens" value={stats.totalTokens}   sub="tokens in circulation" accent="text-brand-orange" />
           </div>
         </section>
 
@@ -354,8 +348,6 @@ export default function AdminDashboard({ stats, users }: { stats: AdminStats; us
                   {th('spiritCompPct',    'Spirit%',   true)}
                   {th('bodyCompPct',      'Body%',     true)}
                   {th('rainDelayInnings', 'Rain',      true)}
-                  {th('pinchHitUsed',     'PH',        true)}
-                  {th('pinchHitterTokens','Tokens',    true)}
                   {th('bibleVerse',       'Bible')}
                   {th('autoCarry',        'Auto')}
                   {th('isDiscoverable',   'Social')}
@@ -421,10 +413,6 @@ export default function AdminDashboard({ stats, users }: { stats: AdminStats; us
                     <td className="px-3 py-2.5 text-right tabular-nums">{fmtPct(u.bodyCompPct)}</td>
                     {/* Rain */}
                     <td className="px-3 py-2.5 text-right tabular-nums text-slate-400">{u.rainDelayInnings}</td>
-                    {/* PH */}
-                    <td className="px-3 py-2.5 text-right tabular-nums text-slate-400">{u.pinchHitUsed}</td>
-                    {/* Tokens */}
-                    <td className="px-3 py-2.5 text-right tabular-nums">{u.pinchHitterTokens}</td>
                     {/* Bible */}
                     <td className="px-3 py-2.5 text-center">{u.bibleVerse     ? <Check /> : <Dash />}</td>
                     {/* Auto */}
