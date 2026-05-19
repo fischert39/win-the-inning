@@ -49,6 +49,7 @@ export default function AppPage() {
   const [recapSeason,        setRecapSeason]        = useState<FullSeason | null>(null)
   const [showPastSeasons,    setShowPastSeasons]    = useState(false)
   const [showWinCelebration, setShowWinCelebration] = useState(false)
+  const [winData,            setWinData]            = useState<{ runs: number; streak: number } | null>(null)
   const [showShareCard,      setShowShareCard]      = useState(false)
   const [showTeamSettings,   setShowTeamSettings]   = useState(false)
   const [showShareSheet,     setShowShareSheet]     = useState(false)
@@ -870,6 +871,8 @@ export default function AppPage() {
     }
 
     if (result === 'WIN' && !isUpdate) {
+      const newStreak = streak.type === 'WIN' ? streak.count + 1 : 1
+      setWinData({ runs, streak: newStreak })
       setShowWinCelebration(true)
     } else if (result === 'WIN') {
       showToast('🏆 Inning updated — still a WIN!')
@@ -1322,8 +1325,10 @@ export default function AppPage() {
 
       {showWinCelebration && (
         <WinCelebration
-          onDismiss={() => setShowWinCelebration(false)}
-          onShare={() => { setShowWinCelebration(false); setShareContext('inning'); setShowShareSheet(true) }}
+          runs={winData?.runs ?? 0}
+          streak={winData?.streak ?? 0}
+          onDismiss={() => { setShowWinCelebration(false); setWinData(null) }}
+          onShare={() => { setShowWinCelebration(false); setWinData(null); setShareContext('inning'); setShowShareSheet(true) }}
         />
       )}
 
