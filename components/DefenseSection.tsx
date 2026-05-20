@@ -22,39 +22,43 @@ export default function DefenseSection({ inning, defaultTasks, onToggle, onSaveT
 
   return (
     <div className="bg-white rounded-2xl shadow-sm overflow-hidden border-l-4 border-brand-purple">
-      {/* Header */}
-      <div className={`px-5 pt-5 pb-3 flex items-center justify-between transition-colors ${outs === 3 ? 'bg-brand-orange/5' : ''}`}>
-        <div>
-          <div className="flex items-center gap-2">
-            <h2 className="font-bold text-brand-navy text-base">Defense</h2>
-            {outs === 3 && (
-              <span className="text-[11px] font-semibold bg-brand-orange/10 text-brand-orange px-2 py-0.5 rounded-full">
-                Complete!
-              </span>
-            )}
-          </div>
-          <p className="text-slate-400 text-xs mt-0.5">Mind · Spirit · Body</p>
+
+      {/* ── Dark defense strip ── */}
+      <div className={`px-5 py-3 flex items-center justify-between transition-colors ${
+        outs === 3 ? 'bg-brand-orange' : 'bg-brand-navy'
+      }`}>
+        <span className={`text-[10px] font-black uppercase tracking-widest ${
+          outs === 3 ? 'text-white/70' : 'text-white/40'
+        }`}>
+          Defense
+        </span>
+        <div className="flex gap-2 items-center">
+          {[0, 1, 2].map(i => (
+            <span
+              key={i}
+              className={`w-3.5 h-3.5 rounded-full transition-all duration-300 ${
+                i < outs
+                  ? outs === 3 ? 'bg-white shadow-sm' : 'bg-brand-orange shadow-sm shadow-brand-orange/60'
+                  : outs === 3 ? 'bg-white/30' : 'bg-white/15'
+              }`}
+            />
+          ))}
         </div>
-        <div className="flex flex-col items-end gap-1">
-          <div className="flex gap-1.5">
-            {[0, 1, 2].map(i => (
-              <span
-                key={i}
-                className={`w-3 h-3 rounded-full transition-colors ${
-                  i < outs ? 'bg-brand-orange animate-pop' : 'bg-slate-200'
-                }`}
-              />
-            ))}
-          </div>
-          <span className={`text-xs font-semibold transition-colors ${outs === 3 ? 'text-brand-orange' : 'text-slate-400'}`}>
-            {outs}/3 Outs
-          </span>
-        </div>
+        <span className={`text-xs font-bold tabular-nums ${
+          outs === 3 ? 'text-white' : 'text-white/40'
+        }`}>
+          {outs === 3 ? '3 Outs ✓' : `${outs}/3 Outs`}
+        </span>
+      </div>
+
+      {/* Sub-header: Mind · Spirit · Body */}
+      <div className="px-5 pt-3 pb-2">
+        <p className="text-slate-400 text-xs font-semibold">Mind · Spirit · Body</p>
       </div>
 
 
       {/* Category rows */}
-      <div className="px-5 pb-5 space-y-3">
+      <div className="px-5 pt-1 pb-5 space-y-3">
         {CATS.map(cat => {
           const completed   = inning[`${cat.key}_completed`]
           const task        = inning[`${cat.key}_task`]

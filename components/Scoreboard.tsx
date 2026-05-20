@@ -113,55 +113,85 @@ export default function Scoreboard({ games, todayStr, viewDate, seasonStartDate,
           const res       = inn ? inningResult(inn) : null
           const runs      = inn ? simulateRuns(inn.offense_goals) : 0
           const outs      = inn ? countOuts(inn) : 0
-
           const isRainDelay = inn?.is_rain_delay ?? false
+
+          // Cell background
           let cellBg = 'bg-white/5 hover:bg-white/10'
-          if (isRainDelay)    cellBg = 'bg-sky-500/15    hover:bg-sky-500/25'
-          else if (res === 'WIN')  cellBg = 'bg-brand-green/20 hover:bg-brand-green/30'
-          else if (res === 'TIE')  cellBg = 'bg-yellow-500/20  hover:bg-yellow-500/30'
-          else if (res === 'LOSS') cellBg = 'bg-brand-red/20   hover:bg-brand-red/30'
-          if (isViewing)      cellBg += ' ring-2 ring-brand-orange'
-          if (isToday && !isViewing) cellBg += ' ring-2 ring-white/30'
+          if (isRainDelay)        cellBg = 'bg-sky-500/20    hover:bg-sky-500/30'
+          else if (res === 'WIN') cellBg = 'bg-brand-green/25 hover:bg-brand-green/35'
+          else if (res === 'TIE') cellBg = 'bg-yellow-500/25  hover:bg-yellow-500/35'
+          else if (res === 'LOSS')cellBg = 'bg-brand-red/25   hover:bg-brand-red/35'
+
+          let ringClass = ''
+          if (isViewing)                    ringClass = 'ring-2 ring-brand-orange'
+          else if (isToday && !isViewing)   ringClass = 'ring-2 ring-white/40'
+
+          // Result glyph
+          const ResultGlyph = () => {
+            if (!inn)         return <span className="text-white/15 text-lg leading-none">–</span>
+            if (isRainDelay)  return <span className="text-lg leading-none">☔</span>
+            if (res === 'WIN')  return (
+              <div className="flex flex-col items-center">
+                <span className="text-brand-green font-black text-base leading-none">W</span>
+                <span className="text-brand-green/70 text-[10px] font-bold tabular-nums leading-none mt-0.5">{runs}R</span>
+              </div>
+            )
+            if (res === 'TIE')  return (
+              <div className="flex flex-col items-center">
+                <span className="text-yellow-400 font-black text-base leading-none">T</span>
+                <span className="text-yellow-400/70 text-[10px] font-bold leading-none mt-0.5">–</span>
+              </div>
+            )
+            if (res === 'LOSS') return (
+              <div className="flex flex-col items-center">
+                <span className="text-brand-red font-black text-base leading-none">L</span>
+                <span className="text-brand-red/70 text-[10px] font-bold tabular-nums leading-none mt-0.5">{outs}/3</span>
+              </div>
+            )
+            // In-progress: show out dots
+            return (
+              <div className="flex flex-col items-center gap-1">
+                <div className="flex gap-0.5">
+                  {[0,1,2].map(i => (
+                    <span key={i} className={`w-1.5 h-1.5 rounded-full ${i < outs ? 'bg-brand-orange' : 'bg-white/20'}`} />
+                  ))}
+                </div>
+                {runs > 0 && (
+                  <span className="text-brand-orange/70 text-[10px] font-bold tabular-nums leading-none">{runs}R</span>
+                )}
+              </div>
+            )
+          }
 
           return (
             <button
               key={date}
               onClick={() => onViewDate(date)}
-              className={`${cellBg} rounded-xl px-2.5 py-3 flex flex-col items-center gap-1.5 transition-all min-w-[48px] cursor-pointer`}
+              className={`${cellBg} ${ringClass} rounded-xl px-2 py-3.5 flex flex-col items-center gap-2 transition-all min-w-[44px] max-w-[52px] flex-1 cursor-pointer`}
             >
-              <span className={`text-[10px] font-semibold ${isToday ? 'text-brand-orange' : 'text-white/40'}`}>
+              {/* Day name */}
+              <span className={`text-[11px] font-black uppercase tracking-wide leading-none ${
+                isToday ? 'text-brand-orange' : 'text-white/40'
+              }`}>
                 {dayShort(date)}
               </span>
-              <span className="text-white/30 text-[9px]">{idx + 1}</span>
-              {!inn ? (
-                <span className="text-white/20 text-sm font-light">·</span>
-              ) : isRainDelay ? (
-                <span className="text-sky-400 text-sm">☔</span>
-              ) : res === 'WIN' ? (
-                <span className="text-brand-green text-sm font-bold">W</span>
-              ) : res === 'TIE' ? (
-                <span className="text-yellow-400 text-sm font-bold">T</span>
-              ) : res === 'LOSS' ? (
-                <span className="text-brand-red text-sm font-bold">L</span>
-              ) : (
-                <div className="flex gap-0.5 py-0.5">
-                  {[0, 1, 2].map(i => (
-                    <span key={i} className={`w-1.5 h-1.5 rounded-full ${i < outs ? 'bg-brand-orange' : 'bg-white/20'}`} />
-                  ))}
-                </div>
-              )}
-              <span className="text-white/40 text-[9px] tabular-nums font-medium">
-                {inn ? `${runs}R` : isFuture ? '' : ''}
-              </span>
+
+              {/* Inning number */}
+              <span className="text-white/20 text-[9px] font-semibold leading-none">{idx + 1}</span>
+
+              {/* Result glyph */}
+              <div className="flex items-center justify-center min-h-[32px]">
+                <ResultGlyph />
+              </div>
             </button>
           )
         })}
 
         {/* Totals column */}
-        <div className="bg-white/8 rounded-xl px-3 py-2.5 flex flex-col items-center gap-1 min-w-[52px] border border-white/10">
-          <span className="text-white/40 text-[10px] font-bold">R</span>
-          <span className="text-white text-sm font-black tabular-nums">{totalRuns}</span>
-          <span className="text-white/30 text-[10px]">Total</span>
+        <div className="bg-white/8 rounded-xl px-2.5 py-3.5 flex flex-col items-center justify-center gap-1.5 min-w-[44px] border border-white/10">
+          <span className="text-white/30 text-[9px] font-black uppercase tracking-wide">Runs</span>
+          <span className="text-white text-xl font-black tabular-nums leading-none">{totalRuns}</span>
+          <span className="text-white/20 text-[9px] font-semibold">Total</span>
         </div>
       </div>
     </div>

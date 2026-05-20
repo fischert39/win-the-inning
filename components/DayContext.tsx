@@ -4,12 +4,39 @@ import { inningNumber } from '@/lib/game-logic'
 import type { FullSeason } from '@/types'
 
 interface Props {
-  season:       FullSeason
-  todayStr:     string
-  sport:        'softball' | 'baseball'
+  season:        FullSeason
+  todayStr:      string
+  sport:         'softball' | 'baseball'
   inningsPlayed: number
-  inningsWon:   number
+  inningsWon:    number
 }
+
+// ── Rotating flavor lines ─────────────────────────────────────────────────────
+// Picked by (daysElapsed % length) — stable within a day, fresh each session.
+const FLAVOR_LINES = [
+  "Step up to the plate.",
+  "The only inning that matters is this one.",
+  "No excuses. Just outs.",
+  "Win today. Worry about tomorrow later.",
+  "The grind is the game.",
+  "Three outs. That's the goal.",
+  "Consistency beats talent. Every time.",
+  "Small wins add up to seasons.",
+  "Show up. Lock in. Win.",
+  "Champions practice when no one's watching.",
+  "One inning at a time.",
+  "Build the habit. Win the inning.",
+  "Stay in the box. Keep swinging.",
+  "Defense wins games. Offense wins fans.",
+  "Make today's inning count.",
+  "Momentum is built one rep at a time.",
+  "You rise to your habits, not your goals.",
+  "Back in the box. Time to swing.",
+  "Every inning shapes the season.",
+  "Today's effort is tomorrow's results.",
+  "The scoreboard doesn't lie.",
+  "Earn it. Every. Single. Day.",
+]
 
 export default function DayContext({ season, todayStr, sport, inningsPlayed, inningsWon }: Props) {
   const sportEmoji = sport === 'baseball' ? '⚾' : '🥎'
@@ -21,49 +48,62 @@ export default function DayContext({ season, todayStr, sport, inningsPlayed, inn
   const inningNum   = inningNumber(todayStr)
 
   // Season progress
-  const startMs    = new Date(season.start_date + 'T12:00:00').getTime()
-  const todayMs    = new Date(todayStr + 'T12:00:00').getTime()
+  const startMs     = new Date(season.start_date + 'T12:00:00').getTime()
+  const todayMs     = new Date(todayStr + 'T12:00:00').getTime()
   const daysElapsed = Math.max(1, Math.round((todayMs - startMs) / 86_400_000) + 1)
-  const totalDays  = season.length_weeks ? season.length_weeks * 7 : null
-  const pct        = totalDays ? Math.min(100, Math.round((daysElapsed / totalDays) * 100)) : null
-  const daysLeft   = totalDays ? Math.max(0, totalDays - daysElapsed) : null
-
-  const progressMsg = pct === null ? `Day ${daysElapsed}` :
-    pct < 25  ? 'Early season — build your habits' :
-    pct < 50  ? 'Building momentum' :
-    pct < 75  ? 'Past the halfway point — stay consistent' :
-    pct < 90  ? 'Final stretch — make every inning count' :
-                'Closing out the season strong'
+  const totalDays   = season.length_weeks ? season.length_weeks * 7 : null
+  const pct         = totalDays ? Math.min(100, Math.round((daysElapsed / totalDays) * 100)) : null
+  const daysLeft    = totalDays ? Math.max(0, totalDays - daysElapsed) : null
 
   const winRate = inningsPlayed > 0 ? Math.round((inningsWon / inningsPlayed) * 100) : null
 
-  return (
-    <div className="bg-white rounded-2xl overflow-hidden mb-4 border border-slate-100 shadow-sm">
-      <div className="px-5 pt-4 pb-3 flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
-            Season in Progress
-          </p>
-          <p className="text-brand-navy font-black text-xl leading-tight">
-            {sportEmoji} Game {gameNum} · Inning {inningNum}
-          </p>
-          <p className="text-xs text-slate-400 mt-1">
-            {progressMsg}{daysLeft !== null ? ` · ${daysLeft}d left` : ''}
-            {winRate !== null ? ` · ${winRate}% win rate` : ''}
-          </p>
-        </div>
+  // Flavor line — rotates daily
+  const flavorLine = FLAVOR_LINES[daysElapsed % FLAVOR_LINES.length]
 
-        {pct !== null && (
-          <div className="text-right flex-shrink-0">
-            <p className="text-3xl font-black text-brand-orange leading-none">{pct}%</p>
-            <p className="text-[10px] text-slate-400 mt-0.5">complete</p>
+  // Progress label
+  const progressLabel = pct === null ? null :
+    pct < 15  ? 'Early season' :
+    pct < 40  ? 'Building momentum' :
+    pct < 60  ? 'Halfway there' :
+    pct < 80  ? 'Final stretch' :
+    pct < 95  ? 'Closing strong' :
+                'Last innings'
+
+  return (
+    <div className="rounded-2xl overflow-hidden mb-4 shadow-sm">
+
+      {/* ── Navy header ─────────────────────────────────────────────── */}
+      <div className="bg-brand-navy px-5 pt-4 pb-4">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-white/40 text-[10px] font-black uppercase tracking-widest mb-1">
+              {sportEmoji} Game {gameNum} · Inning {inningNum}
+            </p>
+            <p className="text-white font-black text-xl leading-tight">
+              {flavorLine}
+            </p>
+            {winRate !== null && inningsPlayed >= 3 && (
+              <p className="text-white/40 text-xs mt-1.5 font-semibold">
+                {inningsWon}W–{inningsPlayed - inningsWon}L &nbsp;·&nbsp; {winRate}% win rate
+                {daysLeft !== null ? ` · ${daysLeft}d left` : ''}
+              </p>
+            )}
           </div>
-        )}
+
+          {pct !== null && (
+            <div className="text-right flex-shrink-0 pt-0.5">
+              <p className="text-3xl font-black text-brand-orange leading-none tabular-nums">{pct}%</p>
+              <p className="text-white/30 text-[10px] mt-0.5 font-semibold">
+                {progressLabel}
+              </p>
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* Progress bar */}
+      {/* ── Progress bar ─────────────────────────────────────────────── */}
       {pct !== null && (
-        <div className="h-1.5 bg-slate-100">
+        <div className="h-1.5 bg-brand-navy/80">
           <div
             className="h-full bg-gradient-to-r from-brand-orange to-amber-400 transition-all duration-700"
             style={{ width: `${pct}%` }}
@@ -71,9 +111,9 @@ export default function DayContext({ season, todayStr, sport, inningsPlayed, inn
         </div>
       )}
 
-      {/* Win condition / success definition */}
+      {/* ── Win condition ─────────────────────────────────────────────── */}
       {season.success_definition && (
-        <div className="px-5 py-2.5 border-t border-slate-50">
+        <div className="bg-brand-navy/5 border-t border-slate-100 px-5 py-2.5">
           <p className="text-xs text-slate-500">
             <span className="font-semibold text-brand-navy">🎯 Win condition: </span>
             {season.success_definition}
