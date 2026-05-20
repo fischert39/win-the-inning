@@ -52,15 +52,38 @@ export default function AppHeader({ record, streak, sport, profile, onPastSeason
           </div>
         </div>
 
-        {/* Center: season record + streak */}
+        {/* Center: season record */}
         <div className="flex flex-col items-center">
-          <span className="text-2xl font-extrabold tabular-nums tracking-tight">
-            {record.wins}–{record.losses}
+          <div className="flex items-baseline gap-1 tabular-nums tracking-tight leading-none">
+            <span className={`text-2xl font-black ${
+              record.wins > record.losses ? 'text-brand-green' :
+              record.wins < record.losses ? 'text-white/70' :
+              'text-white'
+            }`}>
+              {record.wins}
+            </span>
+            <span className="text-white/30 text-lg font-light">–</span>
+            <span className={`text-2xl font-black ${
+              record.losses > record.wins ? 'text-brand-red' :
+              record.losses < record.wins ? 'text-white/70' :
+              'text-white'
+            }`}>
+              {record.losses}
+            </span>
+          </div>
+          <span className="text-white/30 text-[10px] font-semibold uppercase tracking-widest mt-0.5">
+            {record.wins === 0 && record.losses === 0
+              ? 'Season Record'
+              : record.wins > record.losses ? 'Winning Season'
+              : record.wins < record.losses ? 'Season Record'
+              : 'Even'}
           </span>
-          <span className="text-white/40 text-[10px] font-medium uppercase tracking-widest -mt-0.5">
-            Season Record
-          </span>
-          {streak.type === 'LOSS' && streak.count > 0 && (
+          {streak.type === 'WIN' && streak.count >= 3 && (
+            <span className="text-[10px] font-bold mt-1 px-2 py-0.5 rounded-full bg-brand-orange/20 text-brand-orange">
+              🔥 {streak.count} straight
+            </span>
+          )}
+          {streak.type === 'LOSS' && streak.count >= 2 && (
             <span className="text-[10px] font-semibold mt-1 px-2 py-0.5 rounded-full bg-red-500/20 text-red-400">
               📉 {streak.count} in a row
             </span>

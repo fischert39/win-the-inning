@@ -28,7 +28,7 @@ export default function SeasonGoals({ goals, onAdd, onSave, onToggle, onDelete }
 
       {goals.length === 0 ? (
         <div className="px-5 pb-5 text-slate-300 text-sm text-center py-4">
-          No season goals yet — add one above!
+          What are you playing for? Set a goal above.
         </div>
       ) : (
         <div className="px-5 pb-5 space-y-2">

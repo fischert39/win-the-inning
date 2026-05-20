@@ -1186,11 +1186,12 @@ export default function AppPage() {
 
         {!viewInning ? (
           <div className="text-center py-16 text-slate-400">
-            <span className="text-4xl block mb-3">📅</span>
-            <p>No inning for this day yet.</p>
+            <span className="text-4xl block mb-3">⚾</span>
+            <p className="font-semibold text-slate-500">Nothing on deck yet.</p>
+            <p className="text-sm text-slate-400 mt-1">Step up to the plate.</p>
             <button
               onClick={() => handleViewDate(vDate)}
-              className="mt-4 bg-brand-orange text-white px-6 py-2 rounded-lg font-bold text-sm hover:bg-brand-orange-dark transition-colors"
+              className="mt-5 bg-brand-orange text-white px-6 py-3 rounded-xl font-bold text-sm hover:bg-brand-orange-dark transition-colors shadow-sm shadow-brand-orange/20"
             >
               Open This Day
             </button>

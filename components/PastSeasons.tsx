@@ -73,9 +73,9 @@ export default function PastSeasons({ userId, sport, onBack }: Props) {
 
         {!loading && seasons.length === 0 && (
           <div className="text-center py-16">
-            <span className="text-4xl block mb-3">📋</span>
-            <p className="text-white/50">No past seasons yet.</p>
-            <p className="text-white/30 text-sm mt-1">Complete a season to see it here.</p>
+            <span className="text-4xl block mb-3">🏟️</span>
+            <p className="text-white/60 font-semibold">No seasons in the books yet.</p>
+            <p className="text-white/30 text-sm mt-1">Finish your current season to start building your history.</p>
           </div>
         )}
 

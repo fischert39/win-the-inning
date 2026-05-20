@@ -100,7 +100,8 @@ export default function TeamFeed({ items, loading, myUserId }: Props) {
     return (
       <div className="text-center py-8 text-slate-300 text-sm">
         <p className="text-2xl mb-2">⚾</p>
-        <p>No activity yet — close an inning to get started!</p>
+        <p className="font-semibold text-slate-500">Feed's quiet.</p>
+        <p className="text-sm mt-1">Close an inning to fire things up.</p>
       </div>
     )
   }

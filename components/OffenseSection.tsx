@@ -26,11 +26,18 @@ interface Props {
   forceOpen?:         boolean
 }
 
-const HIT_TYPES: { key: HitType; label: string; title: string; color: string }[] = [
-  { key: 'single', label: 'S',  title: 'Single — 1 base',  color: 'bg-sky-100 text-sky-700 ring-sky-400' },
-  { key: 'double', label: '2B', title: 'Double — 2 bases', color: 'bg-brand-teal/15 text-teal-700 ring-teal-400' },
-  { key: 'triple', label: '3B', title: 'Triple — 3 bases', color: 'bg-brand-purple/15 text-purple-700 ring-purple-400' },
-  { key: 'homer',  label: 'HR', title: 'Home Run — score!', color: 'bg-brand-orange/15 text-orange-700 ring-brand-orange' },
+const HIT_TYPES: {
+  key:      HitType
+  label:    string
+  sub:      string   // base indicator
+  title:    string
+  color:    string   // selected classes
+  isHomer:  boolean
+}[] = [
+  { key: 'single', label: '1B', sub: '●○○', title: 'Single — 1 base',   color: 'bg-sky-100 text-sky-700 ring-sky-400',              isHomer: false },
+  { key: 'double', label: '2B', sub: '●●○', title: 'Double — 2 bases',  color: 'bg-teal-100 text-teal-700 ring-teal-400',            isHomer: false },
+  { key: 'triple', label: '3B', sub: '●●●', title: 'Triple — 3 bases',  color: 'bg-purple-100 text-purple-700 ring-purple-400',      isHomer: false },
+  { key: 'homer',  label: 'HR', sub: '🔥',  title: 'Home Run — scores!', color: 'bg-brand-orange text-white ring-brand-orange shadow-sm shadow-brand-orange/40', isHomer: true },
 ]
 
 function BaseDiamond({ goals }: { goals: OffenseGoal[] }) {
@@ -173,10 +180,10 @@ export default function OffenseSection({
         {goals.length === 0 && (
           <div className="text-center py-3 space-y-2">
             {readOnly ? (
-              <p className="text-slate-300 text-sm italic">No goals were recorded for this inning.</p>
+              <p className="text-slate-300 text-sm italic">Blank scorecard — nothing on the board.</p>
             ) : (
               <>
-                <p className="text-slate-300 text-sm">No goals yet — add your first one below!</p>
+                <p className="text-slate-300 text-sm">Lineup's empty. Load the bases.</p>
                 {templates.length > 0 && (
                   <button
                     onClick={onLoadTemplates}
@@ -333,26 +340,38 @@ function GoalRow({
       </div>
 
       {/* Hit type selector — read-only when closed */}
-      <div className="flex gap-1.5 px-3 pb-2.5">
-        {HIT_TYPES.map(ht => (
-          <button
-            key={ht.key}
-            onClick={() => { if (!closed) onSetHit(ht.key) }}
-            disabled={closed}
-            title={ht.title}
-            className={`px-2 py-0.5 rounded-md text-[11px] font-black transition-all ring-1 ring-transparent ${
-              closed ? 'cursor-default' : 'cursor-pointer'
-            } ${
-              goal.hit_type === ht.key
-                ? ht.color + ' ring-offset-0'
-                : closed
-                  ? 'bg-white text-slate-200 ring-slate-100'
-                  : 'bg-white text-slate-400 hover:text-slate-600 ring-slate-100'
-            }`}
-          >
-            {ht.label}
-          </button>
-        ))}
+      <div className="flex gap-1.5 px-3 pb-3">
+        {HIT_TYPES.map(ht => {
+          const isSelected = goal.hit_type === ht.key
+          return (
+            <button
+              key={ht.key}
+              onClick={() => { if (!closed) onSetHit(ht.key) }}
+              disabled={closed}
+              title={ht.title}
+              className={`flex flex-col items-center gap-0.5 rounded-lg transition-all ring-1 ring-transparent active:scale-95 ${
+                ht.isHomer ? 'px-2.5 py-1.5 min-w-[36px]' : 'px-2 py-1 min-w-[32px]'
+              } ${closed ? 'cursor-default' : 'cursor-pointer'} ${
+                isSelected
+                  ? ht.color
+                  : closed
+                    ? 'bg-white text-slate-200 ring-slate-100'
+                    : 'bg-white text-slate-400 hover:bg-slate-50 hover:text-slate-600 ring-slate-100'
+              }`}
+            >
+              <span className={`font-black leading-none ${ht.isHomer ? 'text-xs' : 'text-[11px]'}`}>
+                {ht.label}
+              </span>
+              <span className={`leading-none transition-all ${
+                ht.isHomer
+                  ? 'text-[10px]'
+                  : `text-[8px] tracking-tighter ${isSelected ? 'opacity-80' : 'opacity-40'}`
+              }`}>
+                {ht.sub}
+              </span>
+            </button>
+          )
+        })}
       </div>
     </div>
   )
