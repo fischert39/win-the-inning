@@ -58,18 +58,22 @@ export default function SeasonGate({ sport: initialSport, displayName, onStart, 
         {/* Win conditions */}
         <div className="bg-white/5 border border-white/10 rounded-xl p-5 mb-8">
           <p className="text-white/40 text-xs font-bold uppercase tracking-widest mb-3">Win conditions</p>
-          <div className="space-y-2 text-sm">
-            <div className="flex items-center gap-3">
-              <span className="text-brand-orange font-black">Win Inning</span>
-              <span className="text-white/60">Complete all 3 defense tasks (Mind + Spirit + Body)</span>
+          <div className="space-y-3 text-sm">
+            <div className="flex items-start gap-3">
+              <span className="text-brand-orange font-black flex-shrink-0">Win Inning</span>
+              <span className="text-white/60">3 outs (Mind + Spirit + Body) <span className="text-white/40">+</span> at least 1 run scored</span>
             </div>
-            <div className="flex items-center gap-3">
-              <span className="text-brand-green font-black">Win Game</span>
-              <span className="text-white/60">Win 5 of 7 innings in a week</span>
+            <div className="flex items-start gap-3">
+              <span className="text-yellow-400 font-black flex-shrink-0">Tie Inning</span>
+              <span className="text-white/60">3 outs recorded, but no runs scored</span>
             </div>
-            <div className="flex items-center gap-3">
-              <span className="text-brand-teal font-black">Win Season</span>
-              <span className="text-white/60">Finish with a winning record</span>
+            <div className="flex items-start gap-3">
+              <span className="text-brand-green font-black flex-shrink-0">Win Game</span>
+              <span className="text-white/60">Win more innings than you lose in the week</span>
+            </div>
+            <div className="flex items-start gap-3">
+              <span className="text-brand-teal font-black flex-shrink-0">Win Season</span>
+              <span className="text-white/60">Finish with more game wins than losses</span>
             </div>
           </div>
         </div>

@@ -157,7 +157,7 @@ export default function PreSeason({ sport: initialSport, displayName, onStart, o
 
         <div className="grid grid-cols-4 gap-2 mb-8">
           {[
-            { key: 'S',  name: 'Single',   color: 'bg-sky-500/20 border-sky-400/30 text-sky-300',       desc: '1 base' },
+            { key: '1B', name: 'Single',   color: 'bg-sky-500/20 border-sky-400/30 text-sky-300',       desc: '1 base' },
             { key: '2B', name: 'Double',   color: 'bg-teal-500/20 border-teal-400/30 text-teal-300',     desc: '2 bases' },
             { key: '3B', name: 'Triple',   color: 'bg-purple-500/20 border-purple-400/30 text-purple-300', desc: '3 bases' },
             { key: 'HR', name: 'Home Run', color: 'bg-brand-orange/20 border-brand-orange/30 text-brand-orange', desc: 'Score!' },
@@ -466,15 +466,18 @@ export default function PreSeason({ sport: initialSport, displayName, onStart, o
       </div>
 
       <div className="pt-4 space-y-3">
+        <div className="flex justify-between items-center">
+          <StepDots current={6} />
+          <button onClick={() => setStep(5)} className="text-white/40 hover:text-white/70 text-sm font-semibold transition-colors px-3 py-2">
+            ← Back
+          </button>
+        </div>
         <button
           onClick={handleStart}
           disabled={starting}
           className="w-full bg-gradient-to-r from-brand-orange to-[#FF4500] text-white font-black text-lg py-4 rounded-2xl shadow-xl hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-60"
         >
           {starting ? 'Starting…' : `⚡ Start the Season`}
-        </button>
-        <button onClick={() => setStep(5)} className="w-full text-white/30 text-sm hover:text-white/50 transition-colors py-1">
-          ← Back
         </button>
       </div>
     </Screen>
@@ -493,6 +496,25 @@ function Screen({ children }: { children: React.ReactNode }) {
   )
 }
 
+function StepDots({ current }: { current: number }) {
+  return (
+    <div className="flex gap-1.5">
+      {[1, 2, 3, 4, 5, 6].map(i => (
+        <span
+          key={i}
+          className={`rounded-full transition-all duration-300 ${
+            i === current
+              ? 'w-4 h-2 bg-brand-orange'          // active: pill shape
+              : i < current
+                ? 'w-2 h-2 bg-white/50'             // completed: solid dim
+                : 'w-2 h-2 bg-white/15'             // upcoming: faint
+          }`}
+        />
+      ))}
+    </div>
+  )
+}
+
 function NavRow({
   onNext, onBack, step, showBack = true, isSetup = false,
 }: {
@@ -504,11 +526,7 @@ function NavRow({
 }) {
   return (
     <div className="pt-6 flex items-center justify-between">
-      <div className="flex gap-1.5">
-        {[1, 2, 3, 4].map(i => (
-          <span key={i} className={`w-2 h-2 rounded-full transition-colors ${i === step ? 'bg-brand-orange' : 'bg-white/20'}`} />
-        ))}
-      </div>
+      <StepDots current={step} />
       <div className="flex items-center gap-3">
         {showBack && onBack && (
           <button onClick={onBack} className="text-white/40 hover:text-white/70 text-sm font-semibold transition-colors px-3 py-2">

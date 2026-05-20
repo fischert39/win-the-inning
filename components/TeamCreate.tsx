@@ -38,8 +38,9 @@ export default function TeamCreate({ onCreated, onCancel }: Props) {
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-sm p-4">
       <div className="bg-white rounded-2xl w-full max-w-md shadow-xl p-6 space-y-5">
         <div>
-          <h2 className="text-brand-navy font-black text-xl">Create a Team</h2>
-          <p className="text-slate-400 text-sm mt-0.5">Invite friends to root each other on</p>
+          <p className="text-[10px] font-black text-brand-orange uppercase tracking-widest mb-1">👥 New Team</p>
+          <h2 className="text-brand-navy font-black text-xl">Build Your Crew</h2>
+          <p className="text-slate-400 text-sm mt-0.5">Hold each other accountable. Win together.</p>
         </div>
 
         <div className="space-y-4">
@@ -95,7 +96,7 @@ export default function TeamCreate({ onCreated, onCancel }: Props) {
             disabled={!name.trim() || loading}
             className="flex-1 py-3 rounded-xl bg-brand-orange text-white font-bold text-sm hover:bg-brand-orange-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {loading ? 'Creating…' : 'Create Team'}
+            {loading ? 'Creating…' : '🚀 Create Team'}
           </button>
         </div>
       </div>
