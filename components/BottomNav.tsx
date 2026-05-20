@@ -13,7 +13,7 @@ export default function BottomNav({ tab, onChange, socialBadge = 0 }: Props) {
         {(([
           { id: 'today',  icon: '🏠', label: 'Today'  },
           { id: 'stats',  icon: '📊', label: 'Stats'  },
-          { id: 'social', icon: '👥', label: 'Social' },
+          { id: 'social', icon: '👥', label: 'Team' },
         ]) as const).map(item => (
           <button
             key={item.id}
