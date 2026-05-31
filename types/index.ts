@@ -63,6 +63,7 @@ export type TeamActivityType =
   | 'nudge_sent'
   | 'member_joined'
   | 'achievement_unlocked'
+  | 'season_ended'
 
 export interface TeamActivity {
   id:           string

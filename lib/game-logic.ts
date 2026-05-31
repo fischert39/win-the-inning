@@ -119,6 +119,12 @@ export function today(): string {
   return toDateKey(new Date())
 }
 
+export function addDays(dateStr: string, days: number): string {
+  const d = new Date(dateStr + 'T12:00:00')
+  d.setDate(d.getDate() + days)
+  return toDateKey(d)
+}
+
 export function getWeekStart(dateStr: string): string {
   const d = new Date(dateStr + 'T12:00:00')
   const dow = d.getDay()

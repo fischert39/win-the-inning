@@ -6,7 +6,7 @@ import type { User } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/client'
 import type { Profile, FullSeason, FullGame, FullInning, OffenseGoal, SeasonGoal, Sport, HitType, GameResult, Status } from '@/types'
 import {
-  today, getWeekStart, getWeekEnd, inningNumber, displayDate, toDateKey, getNextDate,
+  today, addDays, getWeekStart, getWeekEnd, inningNumber, displayDate, toDateKey, getNextDate,
   countOuts, simulateRuns, inningResult, gameResult, getDailyQuote, getDailyVerse, currentStreak, getPrevDate,
 } from '@/lib/game-logic'
 import AppHeader      from '@/components/AppHeader'
@@ -50,6 +50,7 @@ export default function AppPage() {
   const [showPastSeasons,    setShowPastSeasons]    = useState(false)
   const [showWinCelebration, setShowWinCelebration] = useState(false)
   const [winData,            setWinData]            = useState<{ runs: number; streak: number } | null>(null)
+  const [seasonInGrace,      setSeasonInGrace]      = useState(false)
   const [showShareCard,      setShowShareCard]      = useState(false)
   const [showTeamSettings,   setShowTeamSettings]   = useState(false)
   const [showShareSheet,     setShowShareSheet]     = useState(false)
@@ -147,7 +148,8 @@ export default function AppPage() {
       showToast('⛔ Already at the start of your season')
       return
     }
-    const maxDate = season.end_date ?? getWeekEnd(getWeekStart(todayStr))
+    const maxDate = season.end_date
+      ?? (season.length_weeks ? addDays(season.start_date, season.length_weeks * 7 - 1) : getWeekEnd(getWeekStart(todayStr)))
     if (newDate > maxDate) {
       showToast('⛔ Can\'t swipe past the end of the season')
       return
@@ -199,19 +201,21 @@ export default function AppPage() {
             })),
         }))
 
-      // Auto-close any IN_PROGRESS innings from before today (midnight rule)
-      const now = new Date().toISOString()
+      // Auto-close any IN_PROGRESS innings whose 48-hour editing window has expired.
+      // Window = 2 full days after the inning date, so cutoff = today - 2 days.
+      const cutoff = addDays(today(), -2)
+      const now    = new Date().toISOString()
       for (const game of raw.games) {
         let gameChanged = false
         for (const inning of game.innings) {
           if (inning.status !== 'IN_PROGRESS') continue
-          if (inning.date >= today()) continue  // leave today + future alone
-          const outs = countOuts(inning)
-          const runs = simulateRuns(inning.offense_goals)
+          if (inning.date > cutoff) continue  // still within the 48-hour window
+          const outs   = countOuts(inning)
+          const runs   = simulateRuns(inning.offense_goals)
           const result: GameResult = outs < 3 ? 'LOSS' : runs > 0 ? 'WIN' : 'TIE'
           await supabase.from('innings').update({ status: 'CLOSED', result, closed_at: now }).eq('id', inning.id)
-          inning.status = 'CLOSED'
-          inning.result = result
+          inning.status    = 'CLOSED'
+          inning.result    = result
           inning.closed_at = now
           gameChanged = true
         }
@@ -221,8 +225,62 @@ export default function AppPage() {
           game.result = newResult
         }
       }
+
+      // ── Season auto-end detection ────────────────────────────────────────────
+      let autoEnded = false
+      if (raw.length_weeks && !raw.end_date) {
+        const plannedEnd  = addDays(raw.start_date, raw.length_weeks * 7 - 1)
+        const graceEnd    = addDays(plannedEnd, 2)
+        const todayNow    = today()
+
+        if (todayNow > graceEnd) {
+          // Grace period expired — auto-close everything and end the season
+          const closeTime = new Date().toISOString()
+          for (const game of raw.games) {
+            for (const inning of game.innings) {
+              if (inning.status !== 'IN_PROGRESS') continue
+              const outs   = countOuts(inning)
+              const runs   = simulateRuns(inning.offense_goals)
+              const result: GameResult = outs < 3 ? 'LOSS' : runs > 0 ? 'WIN' : 'TIE'
+              await supabase.from('innings').update({ status: 'CLOSED', result, closed_at: closeTime }).eq('id', inning.id)
+              inning.status    = 'CLOSED'
+              inning.result    = result
+              inning.closed_at = closeTime
+            }
+            const gr = gameResult(game.innings)
+            await supabase.from('games').update({ result: gr }).eq('id', game.id)
+            game.result = gr
+          }
+          await supabase.from('seasons').update({ end_date: plannedEnd, is_current: false }).eq('id', raw.id)
+          // Post to team feed if on a team
+          if (user) {
+            const { data: prof } = await supabase.from('profiles').select('group_team_id').eq('id', user.id).maybeSingle()
+            if (prof?.group_team_id) {
+              const gWins   = raw.games.filter((g: FullGame) => gameResult(g.innings) === 'WIN').length
+              const gLosses = raw.games.filter((g: FullGame) => gameResult(g.innings) === 'LOSS').length
+              supabase.from('team_activity').insert({
+                team_id: prof.group_team_id, user_id: user.id,
+                type: 'season_ended',
+                metadata: { wins: gWins, losses: gLosses },
+              })
+            }
+          }
+          setRecapSeason({ ...raw, end_date: plannedEnd })
+          setSeason(null)
+          autoEnded = true
+        } else if (todayNow > plannedEnd) {
+          // Season ended — in the 48-hour grace window
+          setSeasonInGrace(true)
+        } else {
+          // Still active
+          setSeasonInGrace(false)
+        }
+      }
+
+      if (!autoEnded) setSeason(raw)
+    } else {
+      setSeason(raw)
     }
-    setSeason(raw)
     setLoading(false)
 
     // ── Welcome back detection ─────────────────────────────────────────────
@@ -477,21 +535,29 @@ export default function AppPage() {
   async function handleEndSeason() {
     if (!season) return
     if (!confirm('End this season? Your record will be saved.')) return
+    await doEndSeason(season)
+  }
+
+  async function doEndSeason(s: FullSeason) {
+    // Use the planned end date if available, otherwise today
+    const endDate = s.length_weeks
+      ? addDays(s.start_date, s.length_weeks * 7 - 1)
+      : todayStr
 
     // Finalize any still-open innings so the recap shows accurate results
     const now = new Date().toISOString()
-    const updatedGames = await Promise.all(season.games.map(async game => {
+    const updatedGames = await Promise.all(s.games.map(async game => {
       const updatedInnings = game.innings.map(inning => {
         if (inning.status !== 'IN_PROGRESS') return inning
-        const outs = countOuts(inning)
-        const runs = simulateRuns(inning.offense_goals)
+        const outs   = countOuts(inning)
+        const runs   = simulateRuns(inning.offense_goals)
         const result = (outs < 3 ? 'LOSS' : runs > 0 ? 'WIN' : 'TIE') as GameResult
         return { ...inning, status: 'CLOSED' as Status, result, closed_at: now }
       })
       for (const inning of game.innings) {
         if (inning.status !== 'IN_PROGRESS') continue
-        const outs = countOuts(inning)
-        const runs = simulateRuns(inning.offense_goals)
+        const outs   = countOuts(inning)
+        const runs   = simulateRuns(inning.offense_goals)
         const result = (outs < 3 ? 'LOSS' : runs > 0 ? 'WIN' : 'TIE') as GameResult
         await supabase.from('innings').update({ status: 'CLOSED', result, closed_at: now }).eq('id', inning.id)
       }
@@ -502,8 +568,21 @@ export default function AppPage() {
       return { ...game, innings: updatedInnings, result: gr }
     }))
 
-    await supabase.from('seasons').update({ end_date: todayStr, is_current: false }).eq('id', season.id)
-    setRecapSeason({ ...season, games: updatedGames, end_date: todayStr })
+    await supabase.from('seasons').update({ end_date: endDate, is_current: false }).eq('id', s.id)
+
+    // Post to team feed
+    if (user && profile?.group_team_id) {
+      const gWins   = updatedGames.filter(g => gameResult(g.innings) === 'WIN').length
+      const gLosses = updatedGames.filter(g => gameResult(g.innings) === 'LOSS').length
+      supabase.from('team_activity').insert({
+        team_id: profile.group_team_id, user_id: user.id,
+        type: 'season_ended',
+        metadata: { wins: gWins, losses: gLosses },
+      })
+    }
+
+    setSeasonInGrace(false)
+    setRecapSeason({ ...s, games: updatedGames, end_date: endDate })
     setSeason(null)
   }
 
@@ -526,7 +605,9 @@ export default function AppPage() {
   // ===== VIEW DATE =====
   async function handleViewDate(date: string) {
     if (!season || !user) return
-    if (season.end_date && date > season.end_date) return
+    const seasonMax = season.end_date
+      ?? (season.length_weeks ? addDays(season.start_date, season.length_weeks * 7 - 1) : null)
+    if (seasonMax && date > seasonMax) return
     // If a DB operation is already in flight, queue this date and update UI immediately
     if (viewDateInProgressRef.current) {
       pendingViewDateRef.current = date
@@ -1044,6 +1125,16 @@ export default function AppPage() {
     )
   }
 
+  // ── Grace-period helpers (computed before render) ─────────────────────────
+  const graceEndDate = (season && season.length_weeks && !season.end_date)
+    ? addDays(addDays(season.start_date, season.length_weeks * 7 - 1), 2)
+    : null
+  const graceHoursLeft = (graceEndDate && seasonInGrace)
+    ? Math.max(0, Math.ceil(
+        (new Date(graceEndDate + 'T23:59:59').getTime() - Date.now()) / 3_600_000
+      ))
+    : 0
+
   if (!season) {
     return (
       <PreSeason
@@ -1081,6 +1172,19 @@ export default function AppPage() {
   const closedResult = viewInning ? inningResult(viewInning) : null
   const quote       = getDailyQuote()
   const verse       = profile?.daily_bible_verse ? getDailyVerse() : null
+
+  // ── Season timeline helpers ────────────────────────────────────────────────
+  const seasonEndDate   = (season.length_weeks && !season.end_date)
+    ? addDays(season.start_date, season.length_weeks * 7 - 1)
+    : season.end_date ?? null
+  const daysLeftInSeason = seasonEndDate && !seasonInGrace
+    ? Math.max(0, Math.ceil(
+        (new Date(seasonEndDate + 'T12:00:00').getTime() - new Date(todayStr + 'T12:00:00').getTime()) / 86_400_000
+      ) + 1)
+    : null
+  const isLastWeek  = !!(daysLeftInSeason !== null && daysLeftInSeason <= 7 && daysLeftInSeason > 0 && !seasonInGrace)
+  // Past-day 48h window indicator (for viewing an in-progress inning that isn't today)
+  const isIn48hWindow = !!(viewInning && viewInning.status === 'IN_PROGRESS' && viewDate && viewDate < todayStr)
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -1137,6 +1241,57 @@ export default function AppPage() {
 
         {/* Today tab */}
         {activeTab === 'today' && (<>
+
+        {/* ── Season ended: grace period banner ── */}
+        {seasonInGrace && (
+          <div className="bg-brand-navy rounded-2xl p-5 mb-4 animate-slide-up">
+            <div className="flex items-start justify-between gap-3 mb-3">
+              <div>
+                <p className="text-white/40 text-[10px] font-black uppercase tracking-widest mb-1">Season Complete</p>
+                <h2 className="text-white font-black text-xl leading-tight">Your season has ended.</h2>
+                <p className="text-white/60 text-sm mt-1">
+                  {graceHoursLeft > 0
+                    ? `You have ${graceHoursLeft}h to review and add any final data.`
+                    : 'Your editing window is closing soon.'}
+                </p>
+              </div>
+              <span className="text-4xl">🏁</span>
+            </div>
+            <button
+              onClick={() => season && doEndSeason(season)}
+              className="w-full bg-brand-orange text-white font-black py-3 rounded-xl text-sm hover:bg-brand-orange-dark transition-colors active:scale-[0.98] shadow-sm shadow-brand-orange/30"
+            >
+              Finalize My Season →
+            </button>
+          </div>
+        )}
+
+        {/* ── Final week countdown banner ── */}
+        {isLastWeek && !seasonInGrace && (
+          <div className="bg-gradient-to-r from-brand-orange to-amber-500 rounded-2xl px-5 py-3.5 mb-4 flex items-center justify-between animate-slide-up">
+            <div>
+              <p className="text-white font-black text-sm leading-tight">Final Week</p>
+              <p className="text-white/80 text-xs mt-0.5">
+                {daysLeftInSeason === 1 ? 'Last inning of the season.' : `${daysLeftInSeason} innings left. Make them count.`}
+              </p>
+            </div>
+            <span className="text-3xl">🏆</span>
+          </div>
+        )}
+
+        {/* ── Past-day 48h editing window indicator ── */}
+        {isIn48hWindow && (
+          <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 mb-4 flex items-center gap-3 animate-fade-in">
+            <span className="text-xl">⏳</span>
+            <div>
+              <p className="text-amber-800 text-sm font-bold">Editing window open</p>
+              <p className="text-amber-700 text-xs mt-0.5">
+                Add or update your data, then close the inning when you&apos;re done.
+              </p>
+            </div>
+          </div>
+        )}
+
         <StreakBanner
           streak={streak}
           todayWon={!isOther && closedResult === 'WIN'}

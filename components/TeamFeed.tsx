@@ -16,6 +16,7 @@ const ICONS: Record<string, string> = {
   nudge_sent:          '💬',
   member_joined:       '👋',
   achievement_unlocked:'⚡',
+  season_ended:        '🏁',
 }
 
 function timeAgo(iso: string): string {
@@ -74,6 +75,15 @@ function activityText(item: TeamActivity, myUserId: string): { main: string; sub
         main: (m.label as string) ?? '⚡ Achievement Unlocked',
         sub:  (m.detail as string) ?? undefined,
       }
+    case 'season_ended': {
+      const w = (m.wins as number) ?? 0
+      const l = (m.losses as number) ?? 0
+      const won = w > l
+      return {
+        main: `${actor} wrapped up their season 🏁`,
+        sub:  `Final record: ${w}W–${l}L ${won ? '· Winning season! 🏆' : ''}`,
+      }
+    }
     default:
       return { main: `${actor} did something` }
   }
