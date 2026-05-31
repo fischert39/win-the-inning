@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import type { FullGame, FullInning } from '@/types'
-import { getWeekDates, getWeekStart, toDateKey, dayShort, inningResult, gameResult, simulateRuns, countOuts } from '@/lib/game-logic'
+import { getWeekDates, getWeekStart, toDateKey, dayShort, inningResult, gameResult, simulateRuns, countOuts, isPreSeasonGame } from '@/lib/game-logic'
 
 interface Props {
   games:            FullGame[]
@@ -31,15 +31,16 @@ export default function Scoreboard({ games, todayStr, viewDate, seasonStartDate,
     setDisplayWeekStart(toDateKey(d))
   }
 
-  const activeGame = games.find(g => g.week_start === displayWeekStart) ?? null
-  const dates      = getWeekDates(displayWeekStart)
+  const activeGame  = games.find(g => g.week_start === displayWeekStart) ?? null
+  const dates       = getWeekDates(displayWeekStart)
   const inningMap: Record<string, FullInning> = {}
   for (const inn of (activeGame?.innings ?? [])) inningMap[inn.date] = inn
 
-  const totalRuns = activeGame?.innings.reduce((s, i) => s + simulateRuns(i.offense_goals), 0) ?? 0
-  const gResult   = activeGame ? gameResult(activeGame.innings) : null
-  const inningWins = (activeGame?.innings ?? []).filter(i => inningResult(i) === 'WIN').length
-  const winsNeeded = 4 // mathematical lock-in: win > loss + remaining means you need 4 wins typically
+  const isPreSeason = isPreSeasonGame(seasonStartDate, displayWeekStart)
+  const totalRuns   = activeGame?.innings.reduce((s, i) => s + simulateRuns(i.offense_goals), 0) ?? 0
+  const gResult     = (!isPreSeason && activeGame) ? gameResult(activeGame.innings) : null
+  const inningWins  = (activeGame?.innings ?? []).filter(i => inningResult(i) === 'WIN').length
+  const winsNeeded  = 4
 
   return (
     <div className="bg-brand-navy rounded-2xl p-4 mb-4 shadow-sm overflow-x-auto scrollbar-hide">
@@ -55,8 +56,11 @@ export default function Scoreboard({ games, todayStr, viewDate, seasonStartDate,
               <path fillRule="evenodd" d="M11.78 5.22a.75.75 0 0 1 0 1.06L8.06 10l3.72 3.72a.75.75 0 1 1-1.06 1.06l-4.25-4.25a.75.75 0 0 1 0-1.06l4.25-4.25a.75.75 0 0 1 1.06 0Z" clipRule="evenodd" />
             </svg>
           </button>
-          <span className="text-white/50 text-xs font-medium">
-            Week of {(() => { const d = new Date(displayWeekStart + 'T12:00:00'); return `${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}` })()}
+          <span className={`text-xs font-bold ${isPreSeason ? 'text-amber-400' : 'text-white/50'}`}>
+            {isPreSeason
+              ? '⚾ Pre-Season'
+              : `Week of ${(() => { const d = new Date(displayWeekStart + 'T12:00:00'); return `${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}` })()}`
+            }
           </span>
           <button
             onClick={() => shiftWeek(1)}
@@ -79,8 +83,17 @@ export default function Scoreboard({ games, todayStr, viewDate, seasonStartDate,
         )}
       </div>
 
-      {/* Win progress — only while game is in progress */}
-      {gResult === 'IN_PROGRESS' && activeGame && (
+      {/* Pre-season note */}
+      {isPreSeason && (
+        <div className="mb-3 px-1">
+          <p className="text-amber-400/70 text-[10px] font-semibold text-center">
+            Warm-up week · doesn&apos;t count toward your record
+          </p>
+        </div>
+      )}
+
+      {/* Win progress — only while game is in progress and not pre-season */}
+      {!isPreSeason && gResult === 'IN_PROGRESS' && activeGame && (
         <div className="mb-3 px-1">
           <div className="flex items-center justify-between mb-1.5">
             <span className="text-white/50 text-[10px] font-medium">
@@ -115,12 +128,13 @@ export default function Scoreboard({ games, todayStr, viewDate, seasonStartDate,
           const outs      = inn ? countOuts(inn) : 0
           const isRainDelay = inn?.is_rain_delay ?? false
 
-          // Cell background
+          // Cell background — muted during pre-season (results don't count)
           let cellBg = 'bg-white/5 hover:bg-white/10'
-          if (isRainDelay)        cellBg = 'bg-sky-500/20    hover:bg-sky-500/30'
-          else if (res === 'WIN') cellBg = 'bg-brand-green/25 hover:bg-brand-green/35'
-          else if (res === 'TIE') cellBg = 'bg-yellow-500/25  hover:bg-yellow-500/35'
-          else if (res === 'LOSS')cellBg = 'bg-brand-red/25   hover:bg-brand-red/35'
+          if (isRainDelay)               cellBg = 'bg-sky-500/20    hover:bg-sky-500/30'
+          else if (!isPreSeason && res === 'WIN')  cellBg = 'bg-brand-green/25 hover:bg-brand-green/35'
+          else if (!isPreSeason && res === 'TIE')  cellBg = 'bg-yellow-500/25  hover:bg-yellow-500/35'
+          else if (!isPreSeason && res === 'LOSS') cellBg = 'bg-brand-red/25   hover:bg-brand-red/35'
+          else if (isPreSeason && res && res !== 'IN_PROGRESS') cellBg = 'bg-amber-500/10 hover:bg-amber-500/15'
 
           let ringClass = ''
           if (isViewing)                    ringClass = 'ring-2 ring-brand-orange'

@@ -1,5 +1,5 @@
 import type { FullSeason } from '@/types'
-import { inningResult, gameResult, simulateRuns, countOuts } from './game-logic'
+import { inningResult, gameResult, simulateRuns, countOuts, isPreSeasonGame } from './game-logic'
 
 export interface Achievement {
   id:          string
@@ -94,7 +94,9 @@ export function getTeamAchievementDef(dbKey: string): TeamAchievementDef | undef
 }
 
 export function computeAchievements(season: FullSeason): Achievement[] {
-  const allInnings = season.games
+  // Exclude the pre-season warmup week from all achievement calculations
+  const realGames  = season.games.filter(g => !isPreSeasonGame(season.start_date, g.week_start))
+  const allInnings = realGames
     .flatMap(g => g.innings)
     .sort((a, b) => a.date.localeCompare(b.date))
 
@@ -114,7 +116,7 @@ export function computeAchievements(season: FullSeason): Achievement[] {
   }
 
   function perfectWeekExists(): boolean {
-    return season.games.some(g => {
+    return realGames.some(g => {
       const c = g.innings.filter(i => i.status === 'CLOSED' && !i.is_rain_delay)
       return c.length === 7 && c.every(i => inningResult(i) === 'WIN')
     })
@@ -152,7 +154,7 @@ export function computeAchievements(season: FullSeason): Achievement[] {
   }
 
   function twoGamesInARow(): boolean {
-    const gPlayed = season.games.filter(g => g.innings.some(i => i.status === 'CLOSED'))
+    const gPlayed = realGames.filter(g => g.innings.some(i => i.status === 'CLOSED'))
     for (let i = 1; i < gPlayed.length; i++) {
       if (gameResult(gPlayed[i].innings) === 'WIN' && gameResult(gPlayed[i - 1].innings) === 'WIN') return true
     }
@@ -160,7 +162,7 @@ export function computeAchievements(season: FullSeason): Achievement[] {
   }
 
   const seasonWon = (() => {
-    const gPlayed = season.games.filter(g => g.innings.some(i => i.status === 'CLOSED'))
+    const gPlayed = realGames.filter(g => g.innings.some(i => i.status === 'CLOSED'))
     const wins   = gPlayed.filter(g => gameResult(g.innings) === 'WIN').length
     const losses = gPlayed.filter(g => gameResult(g.innings) === 'LOSS').length
     return wins > losses && gPlayed.length >= 2

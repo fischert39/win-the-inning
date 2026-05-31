@@ -3,7 +3,7 @@
 import { useState, useMemo } from 'react'
 import type { FullSeason, Profile } from '@/types'
 import { computeAchievements } from '@/lib/achievements'
-import { inningResult, simulateRuns } from '@/lib/game-logic'
+import { inningResult, simulateRuns, isPreSeasonGame } from '@/lib/game-logic'
 import SeasonTrends     from '@/components/SeasonTrends'
 import Achievements     from '@/components/Achievements'
 import TeamAchievements from '@/components/TeamAchievements'
@@ -70,8 +70,9 @@ export default function StatsPage({
   const achievements = useMemo(() => computeAchievements(season), [season])
   const unlocked     = achievements.filter(a => a.unlocked).length
 
-  // ─── Compute stats from season data ───────────────────────────────────────
-  const allInnings   = season.games.flatMap(g => g.innings)
+  // ─── Compute stats from season data (pre-season week excluded) ────────────
+  const realGames    = season.games.filter(g => !isPreSeasonGame(season.start_date, g.week_start))
+  const allInnings   = realGames.flatMap(g => g.innings)
   const closedInnings = allInnings.filter(i => i.status === 'CLOSED' && !i.is_rain_delay)
   const rainDelays   = allInnings.filter(i => i.is_rain_delay).length
 

@@ -8,6 +8,7 @@ import type { Profile, FullSeason, FullGame, FullInning, OffenseGoal, SeasonGoal
 import {
   today, addDays, getWeekStart, getWeekEnd, inningNumber, displayDate, toDateKey, getNextDate,
   countOuts, simulateRuns, inningResult, gameResult, getDailyQuote, getDailyVerse, currentStreak, getPrevDate,
+  isPreSeasonGame, getFirstRealWeekStart,
 } from '@/lib/game-logic'
 import AppHeader      from '@/components/AppHeader'
 import StreakBanner   from '@/components/StreakBanner'
@@ -149,7 +150,7 @@ export default function AppPage() {
       return
     }
     const maxDate = season.end_date
-      ?? (season.length_weeks ? addDays(season.start_date, season.length_weeks * 7 - 1) : getWeekEnd(getWeekStart(todayStr)))
+      ?? (season.length_weeks ? addDays(getFirstRealWeekStart(season.start_date), season.length_weeks * 7 - 1) : getWeekEnd(getWeekStart(todayStr)))
     if (newDate > maxDate) {
       showToast('⛔ Can\'t swipe past the end of the season')
       return
@@ -229,7 +230,7 @@ export default function AppPage() {
       // ── Season auto-end detection ────────────────────────────────────────────
       let autoEnded = false
       if (raw.length_weeks && !raw.end_date) {
-        const plannedEnd  = addDays(raw.start_date, raw.length_weeks * 7 - 1)
+        const plannedEnd  = addDays(getFirstRealWeekStart(raw.start_date), raw.length_weeks * 7 - 1)
         const graceEnd    = addDays(plannedEnd, 2)
         const todayNow    = today()
 
@@ -354,6 +355,7 @@ export default function AppPage() {
     if (!season) return { wins: 0, losses: 0 }
     let wins = 0, losses = 0
     for (const g of season.games) {
+      if (isPreSeasonGame(season.start_date, g.week_start)) continue
       const r = gameResult(g.innings)
       if (r === 'WIN') wins++
       else if (r === 'LOSS') losses++
@@ -541,7 +543,7 @@ export default function AppPage() {
   async function doEndSeason(s: FullSeason) {
     // Use the planned end date if available, otherwise today
     const endDate = s.length_weeks
-      ? addDays(s.start_date, s.length_weeks * 7 - 1)
+      ? addDays(getFirstRealWeekStart(s.start_date), s.length_weeks * 7 - 1)
       : todayStr
 
     // Finalize any still-open innings so the recap shows accurate results
@@ -606,7 +608,7 @@ export default function AppPage() {
   async function handleViewDate(date: string) {
     if (!season || !user) return
     const seasonMax = season.end_date
-      ?? (season.length_weeks ? addDays(season.start_date, season.length_weeks * 7 - 1) : null)
+      ?? (season.length_weeks ? addDays(getFirstRealWeekStart(season.start_date), season.length_weeks * 7 - 1) : null)
     if (seasonMax && date > seasonMax) return
     // If a DB operation is already in flight, queue this date and update UI immediately
     if (viewDateInProgressRef.current) {
@@ -1127,7 +1129,7 @@ export default function AppPage() {
 
   // ── Grace-period helpers (computed before render) ─────────────────────────
   const graceEndDate = (season && season.length_weeks && !season.end_date)
-    ? addDays(addDays(season.start_date, season.length_weeks * 7 - 1), 2)
+    ? addDays(addDays(getFirstRealWeekStart(season.start_date), season.length_weeks * 7 - 1), 2)
     : null
   const graceHoursLeft = (graceEndDate && seasonInGrace)
     ? Math.max(0, Math.ceil(
@@ -1147,9 +1149,11 @@ export default function AppPage() {
   }
 
   const record           = getSeasonRecord()
-  const streak           = currentStreak(season.games)
+  // Exclude pre-season week from streak, closed innings, and inning counts
+  const realGames        = season.games.filter(g => !isPreSeasonGame(season.start_date, g.week_start))
+  const streak           = currentStreak(realGames)
 
-  const allClosedInnings = season.games.flatMap(g => g.innings).filter(i => i.status === 'CLOSED' && !i.is_rain_delay)
+  const allClosedInnings = realGames.flatMap(g => g.innings).filter(i => i.status === 'CLOSED' && !i.is_rain_delay)
   const inningsWon       = allClosedInnings.filter(i => inningResult(i) === 'WIN').length
   const inningsPlayed    = allClosedInnings.length
 
@@ -1163,6 +1167,8 @@ export default function AppPage() {
       return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
     })()
     const g = season.games.find(g => g.week_start === prevWeekStart)
+    // Never show weekly wrap-up for the pre-season warmup week
+    if (g && isPreSeasonGame(season.start_date, g.week_start)) return null
     return g && g.innings.some(i => i.status === 'CLOSED') ? g : null
   })()
   const sport       = profile?.sport ?? 'softball'
@@ -1173,9 +1179,14 @@ export default function AppPage() {
   const quote       = getDailyQuote()
   const verse       = profile?.daily_bible_verse ? getDailyVerse() : null
 
+  // ── Pre-season detection ──────────────────────────────────────────────────
+  const isViewingPreSeason = viewGame
+    ? isPreSeasonGame(season.start_date, viewGame.week_start)
+    : false
+
   // ── Season timeline helpers ────────────────────────────────────────────────
   const seasonEndDate   = (season.length_weeks && !season.end_date)
-    ? addDays(season.start_date, season.length_weeks * 7 - 1)
+    ? addDays(getFirstRealWeekStart(season.start_date), season.length_weeks * 7 - 1)
     : season.end_date ?? null
   const daysLeftInSeason = seasonEndDate && !seasonInGrace
     ? Math.max(0, Math.ceil(
@@ -1298,7 +1309,7 @@ export default function AppPage() {
           isToday={!isOther}
         />
 
-        {!isOther && (
+        {!isOther && !isViewingPreSeason && (
           <DayContext
             season={season}
             todayStr={todayStr}
@@ -1306,6 +1317,21 @@ export default function AppPage() {
             inningsPlayed={inningsPlayed}
             inningsWon={inningsWon}
           />
+        )}
+
+        {/* ── Pre-season context banner ── */}
+        {isViewingPreSeason && (
+          <div className="bg-brand-navy rounded-2xl px-5 py-4 mb-4 animate-slide-up">
+            <p className="text-white/40 text-[10px] font-black uppercase tracking-widest mb-1">
+              {sportEmoji} Pre-Season
+            </p>
+            <p className="text-white font-black text-xl leading-tight mb-1">
+              Warm-up. No pressure.
+            </p>
+            <p className="text-white/55 text-sm leading-snug">
+              This week doesn&apos;t count toward your record — use it to build your routines before Game 1 starts Monday.
+            </p>
+          </div>
         )}
 
         {prevWeekGame && (

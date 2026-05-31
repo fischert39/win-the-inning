@@ -125,6 +125,25 @@ export function addDays(dateStr: string, days: number): string {
   return toDateKey(d)
 }
 
+/**
+ * Returns the first Monday that belongs to the "real" season.
+ * If the season started on a Monday, that's the start date itself.
+ * If it started mid-week, the first real week begins the following Monday.
+ */
+export function getFirstRealWeekStart(seasonStartDate: string): string {
+  const weekStart = getWeekStart(seasonStartDate)
+  return seasonStartDate === weekStart ? seasonStartDate : addDays(weekStart, 7)
+}
+
+/**
+ * Returns true if this game belongs to the pre-season warmup week —
+ * i.e. the season started mid-week and this is that partial first week.
+ */
+export function isPreSeasonGame(seasonStartDate: string, gameWeekStart: string): boolean {
+  return seasonStartDate !== getWeekStart(seasonStartDate)
+    && gameWeekStart === getWeekStart(seasonStartDate)
+}
+
 export function getWeekStart(dateStr: string): string {
   const d = new Date(dateStr + 'T12:00:00')
   const dow = d.getDay()
