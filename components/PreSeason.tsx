@@ -325,6 +325,9 @@ export default function PreSeason({ sport: initialSport, displayName, onStart, o
             ))}
           </div>
           <p className="text-white/30 text-xs mt-1.5 text-center">{lengthWeeks} weeks = {lengthWeeks} games</p>
+          <p className="text-brand-orange/70 text-xs mt-2 text-center">
+            💡 First time? We recommend starting with 4 or 8 weeks to learn the system.
+          </p>
         </div>
 
         {/* Season goals with preset library */}
