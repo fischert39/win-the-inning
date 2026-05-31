@@ -93,9 +93,10 @@ export default function PreSeason({ sport: initialSport, displayName, onStart, o
         <h1 className="text-4xl font-black text-white leading-tight mb-3">
           Win the Inning<br />Win the Day
         </h1>
-        <p className="text-white/60 text-base leading-relaxed max-w-xs mx-auto">
-          A season-based habit system built on the psychology of baseball.
-          Each day is an inning. Each week is a game. Win enough innings and you win the season.
+        <p className="text-white/70 text-base leading-relaxed max-w-sm mx-auto">
+          People change when they have a clear structure, believe they can improve, and have others in their corner.
+          Win the Inning gives you all three — wrapped in the most compelling competitive framework ever invented: a baseball/softball season.
+          Each day is an inning. Each week is a game. Win enough of both and you win something bigger: the version of yourself you&apos;ve been working toward.
         </p>
       </div>
       <NavRow onNext={next} step={step} showBack={false} />

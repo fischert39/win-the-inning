@@ -6,7 +6,7 @@ const jakarta = Plus_Jakarta_Sans({ subsets: ['latin'], variable: '--font-sans',
 
 export const metadata: Metadata = {
   title: 'Win the Inning, Win the Day',
-  description: 'Turn your big goals into daily micro-wins using the psychology of baseball.',
+  description: 'A habit system built on structure, belief, and accountability — wrapped in the framework of a baseball/softball season. Each day is an inning. Win enough and you win the season.',
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
