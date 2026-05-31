@@ -40,6 +40,17 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   document.documentElement.classList.add('dark');
                 }
               } catch(e) {}
+              try {
+                var p = localStorage.getItem('wti_palette');
+                if (p) {
+                  var c = JSON.parse(p);
+                  var s = document.documentElement.style;
+                  if (c.p)  s.setProperty('--brand-primary',      c.p);
+                  if (c.pd) s.setProperty('--brand-primary-dark', c.pd);
+                  if (c.n)  s.setProperty('--brand-navy',         c.n);
+                  if (c.nl) s.setProperty('--brand-navy-light',   c.nl);
+                }
+              } catch(e) {}
             })();
             if ('serviceWorker' in navigator) {
               window.addEventListener('load', () => {

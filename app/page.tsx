@@ -10,6 +10,7 @@ import {
   countOuts, simulateRuns, inningResult, gameResult, getDailyQuote, getDailyVerse, currentStreak, getPrevDate,
   isPreSeasonGame, getFirstRealWeekStart,
 } from '@/lib/game-logic'
+import { applyPaletteAndCache } from '@/lib/palettes'
 import AppHeader      from '@/components/AppHeader'
 import StreakBanner   from '@/components/StreakBanner'
 import DayContext     from '@/components/DayContext'
@@ -95,6 +96,11 @@ export default function AppPage() {
     }
     return result
   }, [season, vDateEarly])
+
+  // Apply team palette whenever the profile changes
+  useEffect(() => {
+    applyPaletteAndCache(profile?.team_palette ?? null)
+  }, [profile?.team_palette])
 
   // ===== TOAST =====
   const dismissToast = useCallback(() => {
@@ -426,11 +432,12 @@ export default function AppPage() {
   }
 
   // ===== TEAM ACTIONS =====
-  async function handleSaveTeam(teamName: string, mascot: string, autoCarryTasks: boolean, discoverable: boolean, publicEmail: string) {
+  async function handleSaveTeam(teamName: string, mascot: string, palette: string, autoCarryTasks: boolean, discoverable: boolean, publicEmail: string) {
     if (!user) return
     const updates = {
       team_name:        teamName || null,
       mascot,
+      team_palette:     palette || null,
       auto_carry_tasks: autoCarryTasks,
       is_discoverable:  discoverable,
       public_email:     publicEmail || null,
@@ -440,13 +447,14 @@ export default function AppPage() {
     if (error) {
       showToast(`❌ Save failed: ${error.message}`)
     } else {
+      applyPaletteAndCache(palette)
       showToast(`🏟️ Team updated!`)
     }
   }
 
   // ===== SEASON ACTIONS =====
   async function handleStartSeason(sport: Sport, initialGoals: string[] = [], opts?: {
-    teamName: string; mascot: string; lengthWeeks: number
+    teamName: string; mascot: string; teamPalette: string; lengthWeeks: number
     successDefinition: string; obstacle: string; dailyBibleVerse: boolean; autoCarryTasks: boolean
   }) {
     if (!user) return
@@ -477,6 +485,7 @@ export default function AppPage() {
       ...(opts ? {
         team_name:          opts.teamName || null,
         mascot:             opts.mascot,
+        team_palette:       opts.teamPalette || null,
         daily_bible_verse:  opts.dailyBibleVerse,
         auto_carry_tasks:   opts.autoCarryTasks,
       } : {}),
@@ -1481,6 +1490,7 @@ export default function AppPage() {
         <TeamSettings
           currentTeamName={profile?.team_name ?? null}
           currentMascot={profile?.mascot ?? null}
+          currentPalette={profile?.team_palette ?? null}
           currentAutoCarry={profile?.auto_carry_tasks ?? false}
           currentDiscoverable={profile?.is_discoverable ?? false}
           currentPublicEmail={profile?.public_email ?? null}

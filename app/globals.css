@@ -2,6 +2,14 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ── Team-color CSS variables (defaults = Classic orange / Deep navy) ─────── */
+:root {
+  --brand-primary:      255 107 53;   /* #FF6B35 */
+  --brand-primary-dark: 229 90 37;    /* #E55A25 */
+  --brand-navy:         26 26 46;     /* #1A1A2E */
+  --brand-navy-light:   22 33 62;     /* #16213E */
+}
+
 @layer base {
   html { scroll-behavior: smooth; }
   body {

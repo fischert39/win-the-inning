@@ -22,6 +22,7 @@ export interface Profile {
   is_discoverable:       boolean
   public_email:          string | null
   group_team_id:         string | null  // FK to teams.id
+  team_palette:          string | null  // e.g. "blue/slate" (accentId/navyId)
 }
 
 // ── Teams ────────────────────────────────────────────────────

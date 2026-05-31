@@ -3,11 +3,14 @@
 import { useState, useEffect } from 'react'
 import type { Sport } from '@/types'
 import { MASCOTS } from '@/components/TeamSettings'
+import PaletteSelector from '@/components/PaletteSelector'
+import { buildPaletteString } from '@/lib/palettes'
 import { GOAL_PRESETS } from '@/lib/presets'
 
 interface SeasonOptions {
   teamName:          string
   mascot:            string
+  teamPalette:       string
   lengthWeeks:       number
   successDefinition: string
   obstacle:          string
@@ -33,9 +36,10 @@ export default function PreSeason({ sport: initialSport, displayName, onStart, o
   const [starting, setStarting] = useState(false)
 
   // Step 5: Team setup
-  const [sport,    setSport]    = useState<Sport>(initialSport)
-  const [teamName, setTeamName] = useState('')
-  const [mascot,   setMascot]   = useState(MASCOTS[0].emoji)
+  const [sport,        setSport]        = useState<Sport>(initialSport)
+  const [teamName,     setTeamName]     = useState('')
+  const [mascot,       setMascot]       = useState(MASCOTS[0].emoji)
+  const [teamPalette,  setTeamPalette]  = useState(buildPaletteString('orange', 'navy'))
 
   // Step 6: Season vision
   const [lengthWeeks,        setLengthWeeks]        = useState(12)
@@ -78,7 +82,7 @@ export default function PreSeason({ sport: initialSport, displayName, onStart, o
   async function handleStart() {
     setStarting(true)
     const filtered = goals.map(g => g.trim()).filter(Boolean)
-    await onStart(sport, filtered, { teamName: teamName.trim(), mascot, lengthWeeks, successDefinition: successDefinition.trim(), obstacle: obstacle.trim(), dailyBibleVerse, autoCarryTasks })
+    await onStart(sport, filtered, { teamName: teamName.trim(), mascot, teamPalette, lengthWeeks, successDefinition: successDefinition.trim(), obstacle: obstacle.trim(), dailyBibleVerse, autoCarryTasks })
   }
 
   if (!ready) return null
@@ -291,6 +295,12 @@ export default function PreSeason({ sport: initialSport, displayName, onStart, o
               </button>
             ))}
           </div>
+        </div>
+
+        {/* Team colors */}
+        <div>
+          <p className="text-white/40 text-xs font-black uppercase tracking-widest mb-2">Team Colors</p>
+          <PaletteSelector value={teamPalette} onChange={setTeamPalette} dark />
         </div>
       </div>
       <NavRow onNext={next} onBack={back} step={step} isSetup />

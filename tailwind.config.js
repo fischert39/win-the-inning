@@ -13,14 +13,17 @@ module.exports = {
       },
       colors: {
         brand: {
-          orange:       '#FF6B35',
-          'orange-dark':'#E55A25',
+          // These four use CSS custom properties so team colors work.
+          // The RGB values are set at runtime from the chosen palette.
+          orange:       'rgb(var(--brand-primary)      / <alpha-value>)',
+          'orange-dark':'rgb(var(--brand-primary-dark) / <alpha-value>)',
+          navy:         'rgb(var(--brand-navy)         / <alpha-value>)',
+          'navy-light': 'rgb(var(--brand-navy-light)   / <alpha-value>)',
+          // Functional colors — stay fixed regardless of theme
           green:        '#2DC653',
           purple:       '#9B5DE5',
           teal:         '#00B4D8',
           yellow:       '#F5A623',
-          navy:         '#1A1A2E',
-          'navy-light': '#16213E',
           red:          '#E63946',
           blue:         '#0077B6',
         },

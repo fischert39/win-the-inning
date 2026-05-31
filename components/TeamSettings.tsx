@@ -1,6 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import PaletteSelector from '@/components/PaletteSelector'
+import { buildPaletteString } from '@/lib/palettes'
 
 export const MASCOTS = [
   // ── Animals ──────────────────────────────────────────────────
@@ -58,19 +60,21 @@ export const MASCOTS = [
 interface Props {
   currentTeamName:      string | null
   currentMascot:        string | null
+  currentPalette:       string | null
   currentAutoCarry:     boolean
   currentDiscoverable:  boolean
   currentPublicEmail:   string | null
-  onSave:               (teamName: string, mascot: string, autoCarry: boolean, discoverable: boolean, publicEmail: string) => Promise<void>
+  onSave:               (teamName: string, mascot: string, palette: string, autoCarry: boolean, discoverable: boolean, publicEmail: string) => Promise<void>
   onClose:              () => void
 }
 
 export default function TeamSettings({
-  currentTeamName, currentMascot, currentAutoCarry,
+  currentTeamName, currentMascot, currentPalette, currentAutoCarry,
   currentDiscoverable, currentPublicEmail, onSave, onClose,
 }: Props) {
   const [teamName,      setTeamName]      = useState(currentTeamName ?? '')
   const [mascot,        setMascot]        = useState(currentMascot ?? MASCOTS[0].emoji)
+  const [palette,       setPalette]       = useState(currentPalette ?? buildPaletteString('orange', 'navy'))
   const [autoCarry,     setAutoCarry]     = useState(currentAutoCarry)
   const [discoverable,  setDiscoverable]  = useState(currentDiscoverable)
   const [publicEmail,   setPublicEmail]   = useState(currentPublicEmail ?? '')
@@ -78,7 +82,7 @@ export default function TeamSettings({
 
   async function handleSave() {
     setSaving(true)
-    await onSave(teamName.trim(), mascot, autoCarry, discoverable, publicEmail.trim())
+    await onSave(teamName.trim(), mascot, palette, autoCarry, discoverable, publicEmail.trim())
     onClose()
   }
 
@@ -120,6 +124,14 @@ export default function TeamSettings({
               <span className="text-2xl leading-none">{m.emoji}</span>
             </button>
           ))}
+        </div>
+
+        {/* Team colors */}
+        <div className="bg-brand-navy rounded-2xl p-4 mb-5">
+          <label className="block text-[10px] font-black text-white/40 uppercase tracking-wider mb-3">
+            Team Colors
+          </label>
+          <PaletteSelector value={palette} onChange={setPalette} dark />
         </div>
 
         {/* Auto-carry toggle */}
