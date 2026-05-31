@@ -275,19 +275,19 @@ export default function PreSeason({ sport: initialSport, displayName, onStart, o
         {/* Mascot */}
         <div>
           <p className="text-white/40 text-xs font-black uppercase tracking-widest mb-2">Mascot</p>
-          <div className="grid grid-cols-4 gap-2">
+          <div className="grid grid-cols-7 gap-1.5">
             {MASCOTS.map(m => (
               <button
                 key={m.emoji}
                 onClick={() => setMascot(m.emoji)}
-                className={`flex flex-col items-center py-3 rounded-xl border-2 transition-all ${
+                title={m.name}
+                className={`flex items-center justify-center p-2.5 rounded-xl border-2 transition-all active:scale-90 ${
                   mascot === m.emoji
-                    ? 'border-brand-orange bg-brand-orange/10 text-white'
-                    : 'border-white/10 bg-white/5 text-white/70 hover:border-white/20'
+                    ? 'border-brand-orange bg-brand-orange/15'
+                    : 'border-white/10 bg-white/5 hover:border-white/25'
                 }`}
               >
                 <span className="text-2xl leading-none">{m.emoji}</span>
-                <span className="text-[9px] mt-1 font-semibold leading-none">{m.name}</span>
               </button>
             ))}
           </div>

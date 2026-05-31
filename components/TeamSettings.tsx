@@ -3,18 +3,56 @@
 import { useState, useEffect } from 'react'
 
 export const MASCOTS = [
-  { emoji: '🦅', name: 'Eagles' },
-  { emoji: '🐻', name: 'Bears' },
-  { emoji: '🦁', name: 'Lions' },
-  { emoji: '🐯', name: 'Tigers' },
-  { emoji: '🐺', name: 'Wolves' },
-  { emoji: '🦈', name: 'Sharks' },
-  { emoji: '🔥', name: 'Flames' },
-  { emoji: '⚡', name: 'Thunder' },
-  { emoji: '💎', name: 'Diamonds' },
-  { emoji: '🚀', name: 'Rockets' },
-  { emoji: '⚔️', name: 'Warriors' },
-  { emoji: '🛡️', name: 'Knights' },
+  // ── Animals ──────────────────────────────────────────────────
+  { emoji: '🦅', name: 'Eagles'    },
+  { emoji: '🐻', name: 'Bears'     },
+  { emoji: '🦁', name: 'Lions'     },
+  { emoji: '🐯', name: 'Tigers'    },
+  { emoji: '🐺', name: 'Wolves'    },
+  { emoji: '🦈', name: 'Sharks'    },
+  { emoji: '🦊', name: 'Foxes'     },
+  { emoji: '🐆', name: 'Leopards'  },
+  { emoji: '🦍', name: 'Gorillas'  },
+  { emoji: '🐂', name: 'Bulls'     },
+  { emoji: '🦏', name: 'Rhinos'    },
+  { emoji: '🐉', name: 'Dragons'   },
+  { emoji: '🦬', name: 'Bison'     },
+  { emoji: '🐊', name: 'Gators'    },
+  { emoji: '🦂', name: 'Scorpions' },
+  { emoji: '🐍', name: 'Vipers'    },
+  // ── Elements ─────────────────────────────────────────────────
+  { emoji: '🔥', name: 'Flames'    },
+  { emoji: '⚡', name: 'Thunder'   },
+  { emoji: '🌪️', name: 'Tornado'   },
+  { emoji: '🌊', name: 'Waves'     },
+  { emoji: '❄️', name: 'Blizzard'  },
+  { emoji: '☄️', name: 'Comets'    },
+  { emoji: '💥', name: 'Blast'     },
+  { emoji: '🌩️', name: 'Storm'     },
+  // ── Power ────────────────────────────────────────────────────
+  { emoji: '💎', name: 'Diamonds'  },
+  { emoji: '🚀', name: 'Rockets'   },
+  { emoji: '⚔️', name: 'Warriors'  },
+  { emoji: '🛡️', name: 'Knights'   },
+  { emoji: '🎯', name: 'Bullseye'  },
+  { emoji: '👑', name: 'Kings'     },
+  { emoji: '🔱', name: 'Tridents'  },
+  { emoji: '💪', name: 'Force'     },
+  // ── Sport ────────────────────────────────────────────────────
+  { emoji: '⚾', name: 'Nineball'  },
+  { emoji: '🥎', name: 'Softballers'},
+  { emoji: '🏆', name: 'Champs'    },
+  { emoji: '🥊', name: 'Boxers'    },
+  { emoji: '🏹', name: 'Archers'   },
+  { emoji: '🥷', name: 'Ninjas'    },
+  // ── Sky & Space ──────────────────────────────────────────────
+  { emoji: '🌙', name: 'Lunar'     },
+  { emoji: '⭐', name: 'Stars'     },
+  { emoji: '☀️', name: 'Suns'      },
+  { emoji: '🛸', name: 'Space'     },
+  // ── Wild Cards ───────────────────────────────────────────────
+  { emoji: '🤖', name: 'Robots'    },
+  { emoji: '🕷️', name: 'Spiders'   },
 ]
 
 interface Props {
@@ -67,7 +105,7 @@ export default function TeamSettings({
         <label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-2">
           Mascot
         </label>
-        <div className="grid grid-cols-6 gap-2 mb-5">
+        <div className="grid grid-cols-7 gap-2 mb-5">
           {MASCOTS.map(m => (
             <button
               key={m.emoji}
