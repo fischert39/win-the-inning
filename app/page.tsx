@@ -70,6 +70,8 @@ export default function AppPage() {
   const pendingViewDateRef    = useRef<string | null>(null)
   const toastTimerRef         = useRef<ReturnType<typeof setTimeout> | null>(null)
   const reloadTimerRef        = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const writeTimersRef        = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map())
+  const writePendingRef       = useRef<Map<string, () => Promise<void>>>(new Map())
   const pendingRemoteSyncRef  = useRef(false)
   const isAddingGoalRef       = useRef(false)
   const router   = useRouter()
@@ -133,6 +135,37 @@ export default function AppPage() {
     }
     if (error) showToast(`❌ Save failed — check your connection`)
   }
+
+  // ===== DEBOUNCED TEXT SAVE =====
+  // Coalesces per-keystroke writes (reflection, goals, task text) into one write
+  // per field after the user pauses. Each pending key counts as an in-flight save,
+  // so a realtime refresh can't clobber text the user is still typing.
+  function debouncedWrite(key: string, fn: () => Promise<void>, delay = 600) {
+    const timers  = writeTimersRef.current
+    const pending = writePendingRef.current
+    if (!pending.has(key)) beginSave()  // first pending write for this key
+    pending.set(key, fn)
+    const existing = timers.get(key)
+    if (existing) clearTimeout(existing)
+    timers.set(key, setTimeout(async () => {
+      timers.delete(key)
+      const f = pending.get(key)
+      pending.delete(key)
+      try { await f?.() } finally { endSave() }
+    }, delay))
+  }
+
+  // Flush any pending writes when the page unmounts (sign out / navigation)
+  useEffect(() => {
+    const timers  = writeTimersRef.current
+    const pending = writePendingRef.current
+    return () => {
+      timers.forEach(timer => clearTimeout(timer))
+      timers.clear()
+      pending.forEach(fn => { void fn() })
+      pending.clear()
+    }
+  }, [])
 
   // ===== UNDO =====
   function registerUndo(label: string, revert: () => void, dbRevert: () => Promise<void>) {
@@ -773,10 +806,13 @@ export default function AppPage() {
 
   async function handleSaveDefenseTask(cat: 'mind' | 'spirit' | 'body', val: string) {
     if (!viewInning) return
-    const key = `${cat}_task` as 'mind_task' | 'spirit_task' | 'body_task'
-    updateInning(viewInning.id, { [key]: val })
-    const { error } = await supabase.from('innings').update({ [key]: val }).eq('id', viewInning.id)
-    if (error) showToast(`❌ Couldn't save task — check your connection`)
+    const key      = `${cat}_task` as 'mind_task' | 'spirit_task' | 'body_task'
+    const inningId = viewInning.id
+    updateInning(inningId, { [key]: val })
+    debouncedWrite(`deftask:${inningId}:${cat}`, async () => {
+      const { error } = await supabase.from('innings').update({ [key]: val }).eq('id', inningId)
+      if (error) showToast(`❌ Couldn't save task — check your connection`)
+    })
   }
 
   async function handleSetUsername(username: string) {
@@ -826,7 +862,10 @@ export default function AppPage() {
   async function handleSaveGoalText(goalId: string, val: string) {
     if (!viewInning) return
     patchGoal(viewInning.id, goalId, { goal: val })
-    await supabase.from('offense_goals').update({ goal: val }).eq('id', goalId)
+    debouncedWrite(`goal:${goalId}`, async () => {
+      const { error } = await supabase.from('offense_goals').update({ goal: val }).eq('id', goalId)
+      if (error) showToast(`❌ Couldn't save goal — check your connection`)
+    })
   }
 
   async function handleToggleGoal(goalId: string) {
@@ -1057,14 +1096,22 @@ export default function AppPage() {
   // ===== REFLECTION =====
   async function handleSaveReflection(val: string) {
     if (!viewInning) return
-    updateInning(viewInning.id, { reflection: val })
-    await supabase.from('innings').update({ reflection: val }).eq('id', viewInning.id)
+    const inningId = viewInning.id
+    updateInning(inningId, { reflection: val })
+    debouncedWrite(`reflection:${inningId}`, async () => {
+      const { error } = await supabase.from('innings').update({ reflection: val }).eq('id', inningId)
+      if (error) showToast(`❌ Couldn't save reflection — check your connection`)
+    })
   }
 
   async function handleSaveFutureGoals(val: string) {
     if (!viewInning) return
-    updateInning(viewInning.id, { future_goals: val })
-    await supabase.from('innings').update({ future_goals: val }).eq('id', viewInning.id)
+    const inningId = viewInning.id
+    updateInning(inningId, { future_goals: val })
+    debouncedWrite(`future:${inningId}`, async () => {
+      const { error } = await supabase.from('innings').update({ future_goals: val }).eq('id', inningId)
+      if (error) showToast(`❌ Couldn't save — check your connection`)
+    })
   }
 
   // ===== SEASON GOAL ACTIONS =====
@@ -1083,7 +1130,10 @@ export default function AppPage() {
 
   async function handleSaveSeasonGoal(goalId: string, text: string) {
     patchSeasonGoal(goalId, { text })
-    await supabase.from('season_goals').update({ text }).eq('id', goalId)
+    debouncedWrite(`sgoal:${goalId}`, async () => {
+      const { error } = await supabase.from('season_goals').update({ text }).eq('id', goalId)
+      if (error) showToast(`❌ Couldn't save goal — check your connection`)
+    })
   }
 
   async function handleToggleSeasonGoal(goalId: string) {

@@ -2,7 +2,8 @@
 
 import { useState } from 'react'
 import type { Profile } from '@/types'
-import TeamPage from '@/components/TeamPage'
+import TeamPage         from '@/components/TeamPage'
+import FriendComparison from '@/components/FriendComparison'
 
 interface Props {
   profile:        Profile | null
@@ -18,7 +19,8 @@ interface Props {
 }
 
 export default function SocialPage({
-  profile, userId, onShare, onShareCard, onUnreadChange,
+  profile, userId, record, inningsWon, inningsPlayed,
+  onShare, onShareCard, onSetUsername, onUnreadChange,
 }: Props) {
   const [copied, setCopied] = useState(false)
 
@@ -36,6 +38,18 @@ export default function SocialPage({
         displayName={profile?.display_name ?? null}
         groupTeamId={profile?.group_team_id ?? null}
         onUnreadChange={onUnreadChange}
+      />
+
+      {/* Username + friend comparison (claim a username to unlock your public profile) */}
+      <FriendComparison
+        myUsername={profile?.username ?? null}
+        myStats={{
+          gameWins:      record.wins,
+          gameLosses:    record.losses,
+          inningsWon,
+          inningsPlayed,
+        }}
+        onSetUsername={onSetUsername}
       />
 
       {/* Share */}
