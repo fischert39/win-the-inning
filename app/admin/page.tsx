@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation'
+import type { User } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import AdminDashboard from '@/components/AdminDashboard'
@@ -9,6 +10,20 @@ const ADMIN_EMAIL = 'fischert39@gmail.com'
 function pct(num: number, den: number): number | null {
   if (den === 0) return null
   return Math.round((num / den) * 100)
+}
+
+// listUsers returns at most `perPage` rows per call. Page through them all so the
+// dashboard doesn't silently undercount once there are more than 1000 accounts.
+async function listAllUsers(admin: ReturnType<typeof createAdminClient>): Promise<User[]> {
+  const perPage = 1000
+  const all: User[] = []
+  for (let page = 1; page <= 100; page++) {  // hard ceiling (100k) guards against a runaway loop
+    const { data, error } = await admin.auth.admin.listUsers({ page, perPage })
+    if (error || !data) break
+    all.push(...data.users)
+    if (data.users.length < perPage) break
+  }
+  return all
 }
 
 export default async function AdminPage() {
@@ -32,14 +47,14 @@ export default async function AdminPage() {
 
   // Fetch all data in parallel
   const [
-    authResult,
+    authUsers,
     profilesResult,
     seasonsResult,
     gamesResult,
     inningsResult,
     goalsResult,
   ] = await Promise.all([
-    admin.auth.admin.listUsers({ page: 1, perPage: 1000 }),
+    listAllUsers(admin),
     admin.from('profiles').select('*'),
     admin.from('seasons').select('id, user_id, is_current, created_at'),
     admin.from('games').select('id, user_id, result'),
@@ -48,7 +63,6 @@ export default async function AdminPage() {
     admin.from('offense_goals').select('id, user_id, completed, hit_type, created_at'),
   ])
 
-  const authUsers = authResult.data?.users ?? []
   const profiles  = profilesResult.data  ?? []
   const seasons   = seasonsResult.data   ?? []
   const games     = gamesResult.data     ?? []

@@ -34,6 +34,7 @@ import BottomNav        from '@/components/BottomNav'
 import SeasonCeremony  from '@/components/SeasonCeremony'
 import WelcomeBack     from '@/components/WelcomeBack'
 import UndoToast, { type UndoAction } from '@/components/UndoToast'
+import { useConfirm } from '@/components/ConfirmDialog'
 
 function safeParseGoals(json: string | null | undefined): string[] {
   try { return JSON.parse(json ?? '[]') } catch { return [] }
@@ -76,6 +77,7 @@ export default function AppPage() {
   const isAddingGoalRef       = useRef(false)
   const router   = useRouter()
   const supabase = useMemo(() => createClient(), [])
+  const { confirm: confirmDialog, dialog: confirmDialogEl } = useConfirm()
 
   const todayStr = today()
   const vDateEarly = viewDate || todayStr
@@ -578,7 +580,13 @@ export default function AppPage() {
 
   async function handleEndSeason() {
     if (!season) return
-    if (!confirm('End this season? Your record will be saved.')) return
+    const ok = await confirmDialog({
+      title: 'End this season?',
+      message: 'Your record will be saved to your history and a fresh season can begin.',
+      confirmLabel: 'End Season',
+      icon: '🏁',
+    })
+    if (!ok) return
     await doEndSeason(season)
   }
 
@@ -632,8 +640,21 @@ export default function AppPage() {
 
   async function handleClearAllData() {
     if (!user) return
-    if (!confirm('This will permanently delete ALL your seasons, games, innings, and stats. This cannot be undone.')) return
-    if (!confirm('Are you absolutely sure? Every record will be gone forever.')) return
+    const ok1 = await confirmDialog({
+      title: 'Delete all your data?',
+      message: 'This permanently deletes ALL your seasons, games, innings, and stats. This cannot be undone.',
+      confirmLabel: 'Continue',
+      tone: 'danger',
+      icon: '🗑️',
+    })
+    if (!ok1) return
+    const ok2 = await confirmDialog({
+      title: 'Are you absolutely sure?',
+      message: 'Every record will be gone forever.',
+      confirmLabel: 'Delete Everything',
+      tone: 'danger',
+    })
+    if (!ok2) return
     await supabase.from('seasons').delete().eq('user_id', user.id)
     setSeason(null)
     setRecapSeason(null)
@@ -910,7 +931,13 @@ export default function AppPage() {
       showToast('☔ Rain Delay already used this week')
       return
     }
-    if (!confirm('Use your Rain Delay? This skips today without a loss — 1 per week.')) return
+    const ok = await confirmDialog({
+      title: 'Use your Rain Delay?',
+      message: 'This skips today without a loss. You get one per week.',
+      confirmLabel: 'Use Rain Delay',
+      icon: '☔',
+    })
+    if (!ok) return
     const updates = { status: 'CLOSED' as Status, is_rain_delay: true, result: 'IN_PROGRESS' as GameResult, closed_at: new Date().toISOString() }
     updateInning(viewInning.id, updates)
     await supabase.from('innings').update(updates).eq('id', viewInning.id)
@@ -1535,6 +1562,8 @@ export default function AppPage() {
           onDismiss={() => setUndoAction(null)}
         />
       )}
+
+      {confirmDialogEl}
 
       {showTeamSettings && (
         <TeamSettings
