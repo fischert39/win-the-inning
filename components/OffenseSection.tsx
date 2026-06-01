@@ -322,6 +322,8 @@ function GoalRow({
         <button
           onClick={() => { if (!closed) onToggle() }}
           disabled={closed}
+          aria-label={goal.completed ? 'Mark goal not done' : 'Mark goal done'}
+          aria-pressed={goal.completed}
           className={`w-5 h-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center transition-all ${
             goal.completed ? 'bg-brand-green border-brand-green' : 'border-slate-300 hover:border-brand-green'
           } ${closed ? 'opacity-70 cursor-default' : ''}`}
@@ -333,7 +335,7 @@ function GoalRow({
           )}
         </button>
         {!closed && (
-          <button onClick={onDelete} className="text-slate-200 hover:text-brand-red text-lg leading-none transition-colors">
+          <button onClick={onDelete} aria-label="Delete goal" className="text-slate-200 hover:text-brand-red text-lg leading-none transition-colors">
             ×
           </button>
         )}
@@ -349,6 +351,8 @@ function GoalRow({
               onClick={() => { if (!closed) onSetHit(ht.key) }}
               disabled={closed}
               title={ht.title}
+              aria-label={ht.title}
+              aria-pressed={isSelected}
               className={`flex flex-col items-center gap-0.5 rounded-lg transition-all ring-1 ring-transparent active:scale-95 ${
                 ht.isHomer ? 'px-2.5 py-1.5 min-w-[36px]' : 'px-2 py-1 min-w-[32px]'
               } ${closed ? 'cursor-default' : 'cursor-pointer'} ${
@@ -387,6 +391,7 @@ function CollapsiblePanel({ label, open, onToggle, children }: {
     <div className="border border-slate-100 rounded-xl overflow-hidden">
       <button
         onClick={onToggle}
+        aria-expanded={open}
         className="w-full flex items-center justify-between px-3.5 py-2.5 text-left hover:bg-slate-50 transition-colors"
       >
         <span className="text-xs font-semibold text-slate-500">{label}</span>

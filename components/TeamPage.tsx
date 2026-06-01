@@ -230,6 +230,7 @@ export default function TeamPage({ userId, displayName, groupTeamId, onUnreadCha
               )}
               <button
                 onClick={() => setShowAdmin(true)}
+                aria-label="Team settings and members"
                 className="relative p-2 rounded-xl hover:bg-white/10 transition-colors"
               >
                 <svg className="w-5 h-5 text-white/70" viewBox="0 0 20 20" fill="currentColor">

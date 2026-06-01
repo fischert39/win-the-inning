@@ -4,6 +4,7 @@ import { useState } from 'react'
 import type { Profile } from '@/types'
 import TeamPage         from '@/components/TeamPage'
 import FriendComparison from '@/components/FriendComparison'
+import FindFriends      from '@/components/FindFriends'
 
 interface Props {
   profile:        Profile | null
@@ -20,7 +21,7 @@ interface Props {
 
 export default function SocialPage({
   profile, userId, record, inningsWon, inningsPlayed,
-  onShare, onShareCard, onSetUsername, onUnreadChange,
+  onShare, onShareCard, onSetUsername, onOpenSettings, onUnreadChange,
 }: Props) {
   const [copied, setCopied] = useState(false)
 
@@ -50,6 +51,12 @@ export default function SocialPage({
           inningsPlayed,
         }}
         onSetUsername={onSetUsername}
+      />
+
+      {/* Find other players (requires the searched player to be discoverable) */}
+      <FindFriends
+        isDiscoverable={profile?.is_discoverable ?? false}
+        onOpenSettings={onOpenSettings}
       />
 
       {/* Share */}

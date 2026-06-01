@@ -96,12 +96,17 @@ export default function AppHeader({ record, streak, sport, profile, onPastSeason
             onClick={toggleDark}
             className="w-8 h-8 rounded-full bg-white/8 hover:bg-white/15 flex items-center justify-center transition-colors text-base"
             title={dark ? 'Switch to light mode' : 'Switch to dark mode'}
+            aria-label={dark ? 'Switch to light mode' : 'Switch to dark mode'}
+            aria-pressed={dark}
           >
             {dark ? '☀️' : '🌙'}
           </button>
           <div className="relative">
             <button
               onClick={() => setMenuOpen(o => !o)}
+              aria-label="Account menu"
+              aria-expanded={menuOpen}
+              aria-haspopup="menu"
               className="flex items-center gap-1.5 hover:opacity-80 transition-opacity"
             >
               {avatar ? (

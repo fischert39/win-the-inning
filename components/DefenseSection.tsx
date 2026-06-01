@@ -104,6 +104,7 @@ export default function DefenseSection({ inning, defaultTasks, onToggle, onSaveT
                 <button
                   onClick={() => onSaveDefault(cat.key)}
                   title="Save as my default task"
+                  aria-label={`Save ${cat.label} task as default`}
                   className="flex-shrink-0 text-slate-300 hover:text-brand-orange transition-colors"
                 >
                   <svg className="w-4 h-4" viewBox="0 0 16 16" fill="currentColor">
@@ -122,6 +123,8 @@ export default function DefenseSection({ inning, defaultTasks, onToggle, onSaveT
               {/* Checkbox */}
               <button
                 onClick={() => onToggle(cat.key)}
+                aria-label={completed ? `Mark ${cat.label} task not done` : `Mark ${cat.label} task done`}
+                aria-pressed={completed}
                 className={`w-6 h-6 rounded-full border-2 flex-shrink-0 flex items-center justify-center transition-all cursor-pointer ${
                   completed
                     ? 'bg-brand-green border-brand-green'
