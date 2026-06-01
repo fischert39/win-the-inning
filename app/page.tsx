@@ -212,6 +212,15 @@ export default function AppPage() {
     }
     setProfile(prof)
 
+    // Keep the user's timezone current so notification dates use their local time.
+    try {
+      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone
+      if (tz && prof && prof.timezone !== tz) {
+        supabase.from('profiles').update({ timezone: tz }).eq('id', user.id)
+        setProfile(p => p ? { ...p, timezone: tz } : p)
+      }
+    } catch { /* Intl may be unavailable */ }
+
     const { data: raw, error: seasonError } = await supabase
       .from('seasons')
       .select('*, season_goals(*), games(*, innings(*, offense_goals(*)))')

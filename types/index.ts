@@ -23,6 +23,7 @@ export interface Profile {
   public_email:          string | null
   group_team_id:         string | null  // FK to teams.id
   team_palette:          string | null  // e.g. "blue/slate" (accentId/navyId)
+  timezone:              string | null  // IANA tz, e.g. "America/New_York" (for notifications)
 }
 
 // ── Teams ────────────────────────────────────────────────────
