@@ -7,7 +7,7 @@ import { createClient } from '@/lib/supabase/client'
 import type { Profile, FullSeason, FullGame, FullInning, OffenseGoal, SeasonGoal, Sport, HitType, GameResult, Status } from '@/types'
 import {
   today, addDays, getWeekStart, getWeekEnd, inningNumber, displayDate, toDateKey, getNextDate,
-  countOuts, simulateRuns, inningResult, gameResult, getDailyQuote, getDailyVerse, currentStreak, getPrevDate,
+  effectiveOuts, simulateRuns, inningResult, gameResult, getDailyQuote, getDailyVerse, currentStreak, getPrevDate,
   isPreSeasonGame, getFirstRealWeekStart,
 } from '@/lib/game-logic'
 import { applyPaletteAndCache } from '@/lib/palettes'
@@ -261,7 +261,7 @@ export default function AppPage() {
         for (const inning of game.innings) {
           if (inning.status !== 'IN_PROGRESS') continue
           if (inning.date > cutoff) continue  // still within the 48-hour window
-          const outs   = countOuts(inning)
+          const outs   = effectiveOuts(inning)
           const runs   = simulateRuns(inning.offense_goals)
           const result: GameResult = outs < 3 ? 'LOSS' : runs > 0 ? 'WIN' : 'TIE'
           await supabase.from('innings').update({ status: 'CLOSED', result, closed_at: now }).eq('id', inning.id)
@@ -290,7 +290,7 @@ export default function AppPage() {
           for (const game of raw.games) {
             for (const inning of game.innings) {
               if (inning.status !== 'IN_PROGRESS') continue
-              const outs   = countOuts(inning)
+              const outs   = effectiveOuts(inning)
               const runs   = simulateRuns(inning.offense_goals)
               const result: GameResult = outs < 3 ? 'LOSS' : runs > 0 ? 'WIN' : 'TIE'
               await supabase.from('innings').update({ status: 'CLOSED', result, closed_at: closeTime }).eq('id', inning.id)
@@ -326,6 +326,24 @@ export default function AppPage() {
           // Still active
           setSeasonInGrace(false)
         }
+      }
+
+      // ── Perfect Week → Pinch Hitter token (idempotent via games.pinch_token_awarded) ──
+      let tokensAwarded = 0
+      for (const game of raw.games) {
+        if (game.pinch_token_awarded) continue
+        if (isPreSeasonGame(raw.start_date, game.week_start)) continue
+        const decided = game.innings.filter((i: FullInning) => i.status === 'CLOSED' && !i.is_rain_delay)
+        if (decided.length === 7 && decided.every((i: FullInning) => inningResult(i) === 'WIN')) {
+          const { error } = await supabase.from('games').update({ pinch_token_awarded: true }).eq('id', game.id)
+          if (!error) { game.pinch_token_awarded = true; tokensAwarded++ }
+        }
+      }
+      if (tokensAwarded > 0 && prof) {
+        const newTotal = (prof.pinch_hitter_tokens ?? 0) + tokensAwarded
+        await supabase.from('profiles').update({ pinch_hitter_tokens: newTotal }).eq('id', user.id)
+        setProfile(p => p ? { ...p, pinch_hitter_tokens: newTotal } : p)
+        showToast(`🎽 Perfect Week! +${tokensAwarded} Pinch Hitter token${tokensAwarded !== 1 ? 's' : ''}`)
       }
 
       if (!autoEnded) setSeason(raw)
@@ -610,14 +628,14 @@ export default function AppPage() {
     const updatedGames = await Promise.all(s.games.map(async game => {
       const updatedInnings = game.innings.map(inning => {
         if (inning.status !== 'IN_PROGRESS') return inning
-        const outs   = countOuts(inning)
+        const outs   = effectiveOuts(inning)
         const runs   = simulateRuns(inning.offense_goals)
         const result = (outs < 3 ? 'LOSS' : runs > 0 ? 'WIN' : 'TIE') as GameResult
         return { ...inning, status: 'CLOSED' as Status, result, closed_at: now }
       })
       for (const inning of game.innings) {
         if (inning.status !== 'IN_PROGRESS') continue
-        const outs   = countOuts(inning)
+        const outs   = effectiveOuts(inning)
         const runs   = simulateRuns(inning.offense_goals)
         const result = (outs < 3 ? 'LOSS' : runs > 0 ? 'WIN' : 'TIE') as GameResult
         await supabase.from('innings').update({ status: 'CLOSED', result, closed_at: now }).eq('id', inning.id)
@@ -957,6 +975,36 @@ export default function AppPage() {
     showToast('☔ Rain Delay used — day skipped, no loss!')
   }
 
+  async function handlePinchHit() {
+    if (!viewInning || !user || !profile) return
+    const tokens = profile.pinch_hitter_tokens ?? 0
+    if (tokens < 1) { showToast('⚡ No Pinch Hitter tokens — win a Perfect Week to earn one'); return }
+    if (viewInning.pinch_hit_used) { showToast('⚡ Pinch Hitter already used this inning'); return }
+    if (effectiveOuts(viewInning) >= 3) { showToast("⚡ You already have 3 outs — save your token"); return }
+    const ok = await confirmDialog({
+      title: 'Use a Pinch Hitter token?',
+      message: 'Adds one automatic out to this inning. You have ' + tokens + ' token' + (tokens !== 1 ? 's' : '') + '.',
+      confirmLabel: 'Use Token',
+      icon: '⚡',
+    })
+    if (!ok) return
+
+    const inningId = viewInning.id
+    updateInning(inningId, { pinch_hit_used: true })
+    setProfile(p => p ? { ...p, pinch_hitter_tokens: (p.pinch_hitter_tokens ?? 1) - 1 } : p)
+    beginSave()
+    const { error: e1 } = await supabase.from('innings').update({ pinch_hit_used: true }).eq('id', inningId)
+    const { error: e2 } = await supabase.from('profiles').update({ pinch_hitter_tokens: tokens - 1 }).eq('id', user.id)
+    endSave(e1 || e2)
+    if (e1 || e2) {
+      // Revert optimistic changes on failure
+      updateInning(inningId, { pinch_hit_used: false })
+      setProfile(p => p ? { ...p, pinch_hitter_tokens: tokens } : p)
+      return
+    }
+    showToast('⚡ Pinch Hitter — automatic out added!')
+  }
+
   async function handleSaveTemplates() {
     if (!viewInning || !user) return
     const texts = viewInning.offense_goals.map(g => g.goal.trim()).filter(Boolean)
@@ -991,7 +1039,7 @@ export default function AppPage() {
       showToast("⏳ You can't close a future inning — come back on that day")
       return
     }
-    const outs      = countOuts(viewInning)
+    const outs      = effectiveOuts(viewInning)
     const runs      = simulateRuns(viewInning.offense_goals)
     const result    = (outs === 3 ? (runs > 0 ? 'WIN' : 'TIE') : 'LOSS') as GameResult
     const isReopened = viewInning.id === reopenedInningId
@@ -1485,7 +1533,7 @@ export default function AppPage() {
                 }`}>
                   {closedResult === 'WIN'  ? '🏆 Inning WIN! All 3 outs + runs scored.' :
                    closedResult === 'TIE'  ? '🤝 Inning TIE — 3 outs but no runs.' :
-                                             `😤 Inning closed — ${countOuts(viewInning)}/3 outs.`}
+                                             `😤 Inning closed — ${effectiveOuts(viewInning)}/3 outs.`}
                 </p>
                 <button
                   onClick={handleReopenInning}
@@ -1516,6 +1564,8 @@ export default function AppPage() {
               templates={safeParseGoals(profile?.default_offense_goals)}
               recentGoals={recentGoals}
               canRainDelay={!!viewGame && !viewGame.innings.some(i => i.is_rain_delay)}
+              pinchTokens={profile?.pinch_hitter_tokens ?? 0}
+              onPinchHit={handlePinchHit}
               onAddGoal={() => handleAddGoal()}
               onAddGoalWithText={text => handleAddGoal(text)}
               onSaveGoalText={handleSaveGoalText}

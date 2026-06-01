@@ -160,6 +160,7 @@ export interface FullGame {
   week_start: string
   week_end:   string
   result:     GameResult
+  pinch_token_awarded: boolean  // true once a Perfect Week token has been granted for this game
   innings:    FullInning[]
 }
 

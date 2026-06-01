@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import type { FullInning, OffenseGoal, HitType } from '@/types'
-import { simulateRuns, getBaseState, countOuts } from '@/lib/game-logic'
+import { simulateRuns, getBaseState, effectiveOuts } from '@/lib/game-logic'
 import { GOAL_PRESETS } from '@/lib/presets'
 
 interface Props {
@@ -21,6 +21,8 @@ interface Props {
   onSaveTemplates:    () => void
   canRainDelay:       boolean
   onRainDelay:        () => void
+  pinchTokens:        number
+  onPinchHit:         () => void
   isFuture?:          boolean
   isOther?:           boolean
   forceOpen?:         boolean
@@ -62,7 +64,8 @@ function BaseDiamond({ goals }: { goals: OffenseGoal[] }) {
 export default function OffenseSection({
   inning, sportEmoji, templates, recentGoals,
   onAddGoal, onAddGoalWithText, onSaveGoalText, onToggleGoal, onSetHitType, onDeleteGoal, onCloseInning,
-  onLoadTemplates, onSaveTemplates, canRainDelay, onRainDelay, isFuture = false, isOther = false, forceOpen = false,
+  onLoadTemplates, onSaveTemplates, canRainDelay, onRainDelay, pinchTokens, onPinchHit,
+  isFuture = false, isOther = false, forceOpen = false,
 }: Props) {
   const [showRecent,       setShowRecent]       = useState(false)
   const [showPresets,      setShowPresets]      = useState(false)
@@ -72,7 +75,8 @@ export default function OffenseSection({
   const readOnly    = closed || isFuture
   const goals       = inning.offense_goals
   const runs        = simulateRuns(goals)
-  const outs        = countOuts(inning)
+  const outs        = effectiveOuts(inning)
+  const canPinchHit = !readOnly && pinchTokens > 0 && !inning.pinch_hit_used && outs < 3
   const completed   = goals.filter(g => g.completed).length
   const target      = inning.target_goals ?? 5
   const showAdd     = !readOnly && (goals.length === 0 || goals[goals.length - 1].goal.trim() !== '')
@@ -260,6 +264,21 @@ export default function OffenseSection({
             className="w-full py-2.5 rounded-xl font-bold text-sm transition-all border border-sky-200 bg-sky-50 text-sky-700 hover:bg-sky-100 active:scale-[0.98]"
           >
             ☔ Rain Delay — skip today (1 per week)
+          </button>
+        )}
+
+        {inning.pinch_hit_used && !closed && (
+          <div className="w-full py-2.5 rounded-xl font-bold text-sm border border-amber-200 bg-amber-50 text-amber-700 text-center">
+            ⚡ Pinch Hitter active — +1 automatic out
+          </div>
+        )}
+
+        {canPinchHit && (
+          <button
+            onClick={onPinchHit}
+            className="w-full py-2.5 rounded-xl font-bold text-sm transition-all border border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100 active:scale-[0.98]"
+          >
+            ⚡ Use Pinch Hitter — add an out ({pinchTokens} left)
           </button>
         )}
 

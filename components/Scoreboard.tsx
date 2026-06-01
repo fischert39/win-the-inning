@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import type { FullGame, FullInning } from '@/types'
-import { getWeekDates, getWeekStart, toDateKey, dayShort, inningResult, gameResult, simulateRuns, countOuts, isPreSeasonGame } from '@/lib/game-logic'
+import { getWeekDates, getWeekStart, toDateKey, dayShort, inningResult, gameResult, simulateRuns, effectiveOuts, isPreSeasonGame } from '@/lib/game-logic'
 
 interface Props {
   games:            FullGame[]
@@ -125,7 +125,7 @@ export default function Scoreboard({ games, todayStr, viewDate, seasonStartDate,
           const isFuture  = date > todayStr
           const res       = inn ? inningResult(inn) : null
           const runs      = inn ? simulateRuns(inn.offense_goals) : 0
-          const outs      = inn ? countOuts(inn) : 0
+          const outs      = inn ? effectiveOuts(inn) : 0
           const isRainDelay = inn?.is_rain_delay ?? false
 
           // Cell background — muted during pre-season (results don't count)

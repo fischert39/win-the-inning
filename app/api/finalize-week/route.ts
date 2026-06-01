@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { countOuts, simulateRuns, gameResult, getWeekStart, today } from '@/lib/game-logic'
+import { effectiveOuts, simulateRuns, gameResult, getWeekStart, today } from '@/lib/game-logic'
 import type { GameResult, FullInning, OffenseGoal } from '@/types'
 
 export const runtime = 'nodejs'
@@ -34,7 +34,7 @@ export async function GET(request: Request) {
   let finalized = 0
 
   for (const inning of (innings ?? []) as (FullInning & { offense_goals: OffenseGoal[] })[]) {
-    const outs = countOuts(inning)
+    const outs = effectiveOuts(inning)
     const runs = simulateRuns(inning.offense_goals ?? [])
     const result: GameResult = outs < 3 ? 'LOSS' : runs > 0 ? 'WIN' : 'TIE'
 

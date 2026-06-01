@@ -1,7 +1,7 @@
 'use client'
 
 import type { FullInning } from '@/types'
-import { countOuts } from '@/lib/game-logic'
+import { effectiveOuts } from '@/lib/game-logic'
 
 interface Props {
   inning:        FullInning
@@ -18,7 +18,7 @@ const CATS = [
 ]
 
 export default function DefenseSection({ inning, defaultTasks, onToggle, onSaveTask, onSaveDefault }: Props) {
-  const outs = countOuts(inning)
+  const outs = effectiveOuts(inning)
 
   return (
     <div className="bg-white rounded-2xl shadow-sm overflow-hidden border-l-4 border-brand-purple">
@@ -47,7 +47,7 @@ export default function DefenseSection({ inning, defaultTasks, onToggle, onSaveT
         <span className={`text-xs font-bold tabular-nums ${
           outs === 3 ? 'text-white' : 'text-white/40'
         }`}>
-          {outs === 3 ? '3 Outs ✓' : `${outs}/3 Outs`}
+          {inning.pinch_hit_used ? '⚡ ' : ''}{outs === 3 ? '3 Outs ✓' : `${outs}/3 Outs`}
         </span>
       </div>
 
