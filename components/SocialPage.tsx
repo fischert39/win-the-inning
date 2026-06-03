@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import type { Profile } from '@/types'
 import TeamPage         from '@/components/TeamPage'
 import FriendComparison from '@/components/FriendComparison'
@@ -24,6 +24,10 @@ export default function SocialPage({
   onShare, onShareCard, onSetUsername, onOpenSettings, onUnreadChange,
 }: Props) {
   const [copied, setCopied] = useState(false)
+  // Real host of this deployment; defaults to the canonical domain for SSR and
+  // is corrected on the client (avoids showing a wrong/hardcoded URL).
+  const [host, setHost] = useState('win-the-inning-theta.vercel.app')
+  useEffect(() => { setHost(window.location.host) }, [])
 
   function handleCopy() {
     navigator.clipboard.writeText(`${window.location.origin}/u/${profile!.username!}`)
@@ -102,7 +106,7 @@ export default function SocialPage({
             <span className="text-xl">🔗</span>
             <div>
               <p className="font-black text-sm text-brand-navy">Your Public Profile</p>
-              <p className="text-slate-400 text-xs">win-the-inning.vercel.app/u/{profile.username}</p>
+              <p className="text-slate-400 text-xs">{host}/u/{profile.username}</p>
             </div>
           </div>
           <button
