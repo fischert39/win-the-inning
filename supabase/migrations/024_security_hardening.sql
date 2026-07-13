@@ -14,6 +14,63 @@
 --    innings for the weekly finalize cron.
 -- ============================================================
 
+-- ── 0. get_public_profile was only ever in schema.sql, never applied to
+--       prod (discovered when this migration first ran) — /u/[username]
+--       404'd for every username as a result. Definition from schema.sql.
+create or replace function public.get_public_profile(p_username text)
+returns json
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_uid    uuid;
+  v_result json;
+begin
+  select id into v_uid
+  from public.profiles
+  where lower(username) = lower(p_username);
+
+  if v_uid is null then return null; end if;
+
+  select json_build_object(
+    'username',       lower(p_username),
+    'display_name',   p.display_name,
+    'team_name',      p.team_name,
+    'mascot',         p.mascot,
+    'sport',          p.sport,
+    'game_wins',      (select count(*) from public.games g
+                       join public.seasons s on g.season_id = s.id
+                       where g.user_id = v_uid and s.is_current = true and g.result = 'WIN'),
+    'game_losses',    (select count(*) from public.games g
+                       join public.seasons s on g.season_id = s.id
+                       where g.user_id = v_uid and s.is_current = true and g.result = 'LOSS'),
+    'innings_won',    (select count(*) from public.innings i
+                       join public.games g on i.game_id = g.id
+                       join public.seasons s on g.season_id = s.id
+                       where i.user_id = v_uid and s.is_current = true
+                         and i.status = 'CLOSED' and i.result = 'WIN'),
+    'innings_played', (select count(*) from public.innings i
+                       join public.games g on i.game_id = g.id
+                       join public.seasons s on g.season_id = s.id
+                       where i.user_id = v_uid and s.is_current = true
+                         and i.status = 'CLOSED' and not coalesce(i.is_rain_delay, false)),
+    'recent_games',   (select json_agg(sub.result order by sub.week_start desc)
+                       from (select g.result, g.week_start
+                             from public.games g
+                             join public.seasons s on g.season_id = s.id
+                             where g.user_id = v_uid and s.is_current = true
+                               and g.result != 'IN_PROGRESS'
+                             order by g.week_start desc
+                             limit 6) sub)
+  ) into v_result
+  from public.profiles p
+  where p.id = v_uid;
+
+  return v_result;
+end;
+$$;
+
 -- ── 1. Pin search_path ──────────────────────────────────────
 alter function public.handle_new_user() set search_path = public;
 alter function public.get_friend_stats(text) set search_path = public;
