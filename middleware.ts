@@ -23,10 +23,12 @@ export async function middleware(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser()
 
-  const isAuthRoute  = request.nextUrl.pathname.startsWith('/auth')
-  const isLoginRoute = request.nextUrl.pathname.startsWith('/login')
-  const isCronRoute  = request.nextUrl.pathname.startsWith('/api/cron')
-  const isPublic     = isAuthRoute || isLoginRoute || isCronRoute
+  const isAuthRoute    = request.nextUrl.pathname.startsWith('/auth')
+  const isLoginRoute   = request.nextUrl.pathname.startsWith('/login')
+  const isCronRoute    = request.nextUrl.pathname.startsWith('/api/cron')
+  const isProfileRoute = request.nextUrl.pathname.startsWith('/u/')
+  const isJoinRoute    = request.nextUrl.pathname.startsWith('/join/')
+  const isPublic       = isAuthRoute || isLoginRoute || isCronRoute || isProfileRoute || isJoinRoute
 
   if (!user && !isPublic) {
     return NextResponse.redirect(new URL('/login', request.url))
