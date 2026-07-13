@@ -28,7 +28,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <head>
-        <link rel="apple-touch-icon" href="/icon.svg" />
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
       </head>
       <body className={jakarta.variable + ' font-sans'}>
         {/* Anti-flash: apply saved theme before first paint */}
