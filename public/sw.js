@@ -1,4 +1,4 @@
-const CACHE = 'wti-v1'
+const CACHE = 'wti-v2'
 const SHELL = ['/', '/login']
 
 self.addEventListener('install', e => {
@@ -25,7 +25,24 @@ self.addEventListener('fetch', e => {
     return
   }
 
-  // Cache-first for static assets, network-first for pages
+  // Pages: network-first so a fresh deploy is picked up immediately;
+  // the cache is only a fallback for offline.
+  if (e.request.mode === 'navigate') {
+    e.respondWith(
+      fetch(e.request)
+        .then(res => {
+          if (res.ok) {
+            const clone = res.clone()
+            caches.open(CACHE).then(c => c.put(e.request, clone))
+          }
+          return res
+        })
+        .catch(() => caches.match(e.request).then(cached => cached ?? caches.match('/')))
+    )
+    return
+  }
+
+  // Static assets: cache-first with background refresh
   e.respondWith(
     caches.match(e.request).then(cached => {
       const network = fetch(e.request).then(res => {

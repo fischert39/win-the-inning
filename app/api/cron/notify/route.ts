@@ -7,14 +7,20 @@ export const runtime = 'nodejs'
 
 const DOW = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 
-// Local calendar date (YYYY-MM-DD) and day-of-week for an instant in a given IANA
-// timezone. Falls back to UTC if the timezone is missing or invalid.
-function localParts(d: Date, tz: string | null): { date: string; dow: number } {
+// Send the daily reminder at this local hour. The endpoint is triggered every
+// hour (GitHub Actions), and each run only notifies users whose local clock
+// just hit this hour — so everyone gets it at 8am *their* time.
+const TARGET_HOUR = 8
+
+// Local calendar date (YYYY-MM-DD), day-of-week, and hour for an instant in a
+// given IANA timezone. Falls back to UTC if the timezone is missing or invalid.
+function localParts(d: Date, tz: string | null): { date: string; dow: number; hour: number } {
   const zone = tz || 'UTC'
   const fmt = (z: string) => {
     const date = new Intl.DateTimeFormat('en-CA', { timeZone: z, year: 'numeric', month: '2-digit', day: '2-digit' }).format(d)
     const dow  = DOW.indexOf(new Intl.DateTimeFormat('en-US', { timeZone: z, weekday: 'short' }).format(d))
-    return { date, dow }
+    const hour = parseInt(new Intl.DateTimeFormat('en-US', { timeZone: z, hour: '2-digit', hourCycle: 'h23' }).format(d), 10)
+    return { date, dow, hour }
   }
   try { return fmt(zone) } catch { return fmt('UTC') }
 }
@@ -72,7 +78,12 @@ export async function GET(req: NextRequest) {
     const innings   = byUser.get(sub.user_id) ?? []
 
     // Each user's "today" in their own timezone.
-    const { date: localToday, dow } = localParts(now, prof?.timezone ?? null)
+    const { date: localToday, dow, hour } = localParts(now, prof?.timezone ?? null)
+
+    // Only notify users whose local clock is at the target hour. Runs at other
+    // hours skip them — the next hourly trigger will catch their timezone.
+    if (hour !== TARGET_HOUR) return
+
     const localYesterday = getPrevDate(localToday)
 
     let title: string

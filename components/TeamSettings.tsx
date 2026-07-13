@@ -303,7 +303,7 @@ function NotificationToggle() {
   const desc = denied
     ? 'Blocked — enable in your browser settings'
     : subscribed
-      ? 'Daily 9 AM reminder is active'
+      ? 'Daily 8 AM reminder is active'
       : 'Get a daily nudge to win your inning'
 
   return (

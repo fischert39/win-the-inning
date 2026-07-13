@@ -34,6 +34,7 @@ import BottomNav        from '@/components/BottomNav'
 import SeasonCeremony  from '@/components/SeasonCeremony'
 import WelcomeBack     from '@/components/WelcomeBack'
 import UndoToast, { type UndoAction } from '@/components/UndoToast'
+import HowToPlay      from '@/components/HowToPlay'
 import { useConfirm } from '@/components/ConfirmDialog'
 
 function safeParseGoals(json: string | null | undefined): string[] {
@@ -64,6 +65,8 @@ export default function AppPage() {
   const [undoAction,         setUndoAction]         = useState<UndoAction | null>(null)
   const [reopenedInningId,   setReopenedInningId]   = useState<string | null>(null)
   const [socialBadge,        setSocialBadge]        = useState(0)
+  const [showHowTo,          setShowHowTo]          = useState(false)
+  const [howToFirstTime,     setHowToFirstTime]     = useState(false)
   const undoIdRef             = useRef(0)
   const touchStartX           = useRef(0)
   const touchStartY           = useRef(0)
@@ -105,6 +108,23 @@ export default function AppPage() {
   useEffect(() => {
     applyPaletteAndCache(profile?.team_palette ?? null)
   }, [profile?.team_palette])
+
+  // First sign-in: walk through the rules once
+  useEffect(() => {
+    if (loading || !user) return
+    try {
+      if (!localStorage.getItem('wti_onboarded')) {
+        setHowToFirstTime(true)
+        setShowHowTo(true)
+      }
+    } catch { /* localStorage unavailable */ }
+  }, [loading, user])
+
+  function closeHowTo() {
+    try { localStorage.setItem('wti_onboarded', '1') } catch { /* ignore */ }
+    setShowHowTo(false)
+    setHowToFirstTime(false)
+  }
 
   // ===== TOAST =====
   const dismissToast = useCallback(() => {
@@ -1349,6 +1369,7 @@ export default function AppPage() {
         profile={profile}
         onPastSeasons={() => setShowPastSeasons(true)}
         onEditTeam={() => setShowTeamSettings(true)}
+        onHowToPlay={() => setShowHowTo(true)}
         onEndSeason={handleEndSeason}
         onSignOut={handleSignOut}
       />
@@ -1623,6 +1644,10 @@ export default function AppPage() {
       )}
 
       {confirmDialogEl}
+
+      {showHowTo && (
+        <HowToPlay sport={sport} firstTime={howToFirstTime} onClose={closeHowTo} />
+      )}
 
       {showTeamSettings && (
         <TeamSettings

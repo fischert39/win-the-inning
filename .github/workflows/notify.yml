@@ -1,0 +1,29 @@
+# Triggers the daily-reminder endpoint every hour. The endpoint itself only
+# notifies users whose local time is 8am, so each timezone gets exactly one
+# send per day. (Vercel Hobby crons are limited to daily, hence this workflow;
+# the vercel.json cron at 12:00 UTC stays as a fallback — duplicate pushes
+# collapse client-side because they share a notification tag.)
+#
+# Setup: add the repo secret CRON_SECRET (same value as the Vercel env var)
+# under Settings → Secrets and variables → Actions.
+name: Hourly notifications
+
+on:
+  schedule:
+    - cron: '0 * * * *'
+  workflow_dispatch:
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call notify endpoint
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          if [ -z "$CRON_SECRET" ]; then
+            echo "CRON_SECRET secret not configured — skipping."
+            exit 0
+          fi
+          curl -fsS -H "Authorization: Bearer $CRON_SECRET" \
+            "https://win-the-inning-theta.vercel.app/api/cron/notify"

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import type { Profile, Sport } from '@/types'
+import { SunIcon, MoonIcon, PencilIcon, ClipboardIcon, HelpIcon, FlagIcon, LogOutIcon } from '@/components/icons'
 
 interface Props {
   record:          { wins: number; losses: number }
@@ -10,11 +11,12 @@ interface Props {
   profile:         Profile | null
   onPastSeasons:   () => void
   onEditTeam:      () => void
+  onHowToPlay:     () => void
   onEndSeason:     () => void
   onSignOut:       () => void
 }
 
-export default function AppHeader({ record, streak, sport, profile, onPastSeasons, onEditTeam, onEndSeason, onSignOut }: Props) {
+export default function AppHeader({ record, streak, sport, profile, onPastSeasons, onEditTeam, onHowToPlay, onEndSeason, onSignOut }: Props) {
   const [menuOpen, setMenuOpen] = useState(false)
   const [dark,     setDark]     = useState(false)
   const sportEmoji = sport === 'baseball' ? '⚾' : '🥎'
@@ -94,12 +96,12 @@ export default function AppHeader({ record, streak, sport, profile, onPastSeason
         <div className="flex items-center gap-2">
           <button
             onClick={toggleDark}
-            className="w-8 h-8 rounded-full bg-white/8 hover:bg-white/15 flex items-center justify-center transition-colors text-base"
+            className="w-8 h-8 rounded-full bg-white/8 hover:bg-white/15 flex items-center justify-center transition-colors text-white/70 hover:text-white"
             title={dark ? 'Switch to light mode' : 'Switch to dark mode'}
             aria-label={dark ? 'Switch to light mode' : 'Switch to dark mode'}
             aria-pressed={dark}
           >
-            {dark ? '☀️' : '🌙'}
+            {dark ? <SunIcon className="w-[18px] h-[18px]" /> : <MoonIcon className="w-[18px] h-[18px]" />}
           </button>
           <div className="relative">
             <button
@@ -135,26 +137,32 @@ export default function AppHeader({ record, streak, sport, profile, onPastSeason
                     onClick={() => { setMenuOpen(false); onEditTeam() }}
                     className="w-full text-left px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors flex items-center gap-3"
                   >
-                    <span className="text-base">🏟️</span> Edit Team
+                    <PencilIcon className="w-4 h-4 text-slate-400" /> Edit Team
                   </button>
                   <button
                     onClick={() => { setMenuOpen(false); onPastSeasons() }}
                     className="w-full text-left px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors flex items-center gap-3"
                   >
-                    <span className="text-base">📋</span> Past Seasons
+                    <ClipboardIcon className="w-4 h-4 text-slate-400" /> Past Seasons
+                  </button>
+                  <button
+                    onClick={() => { setMenuOpen(false); onHowToPlay() }}
+                    className="w-full text-left px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors flex items-center gap-3"
+                  >
+                    <HelpIcon className="w-4 h-4 text-slate-400" /> How to Play
                   </button>
                   <button
                     onClick={() => { setMenuOpen(false); onEndSeason() }}
                     className="w-full text-left px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors flex items-center gap-3"
                   >
-                    <span className="text-base">🏁</span> End Season
+                    <FlagIcon className="w-4 h-4 text-slate-400" /> End Season
                   </button>
                   <div className="border-t border-slate-100 mt-1 pt-1 dark:border-slate-700">
                     <button
                       onClick={() => { setMenuOpen(false); onSignOut() }}
                       className="w-full text-left px-4 py-2.5 text-sm text-brand-red hover:bg-red-50 transition-colors flex items-center gap-3"
                     >
-                      <span className="text-base">👋</span> Sign Out
+                      <LogOutIcon className="w-4 h-4" /> Sign Out
                     </button>
                   </div>
                 </div>

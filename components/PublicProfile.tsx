@@ -38,7 +38,7 @@ export default function PublicProfile({ profile }: Props) {
             {profile.team_name && profile.display_name && (
               <p className="text-white/50 text-sm mt-0.5">{profile.display_name}</p>
             )}
-            <p className="text-white/30 text-xs mt-1">@{profile.username} · Win the Inning</p>
+            <p className="text-white/50 text-xs mt-1">@{profile.username} · Win the Inning</p>
           </div>
 
           {/* Stats */}
@@ -91,7 +91,7 @@ export default function PublicProfile({ profile }: Props) {
         >
           {sportEmoji} Play Win the Inning
         </a>
-        <p className="text-center text-white/30 text-xs mt-3">
+        <p className="text-center text-white/50 text-xs mt-3">
           Track your daily habits like a baseball season
         </p>
       </div>

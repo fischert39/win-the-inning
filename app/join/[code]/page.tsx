@@ -175,7 +175,7 @@ export default function JoinPage() {
             </svg>
             Sign in with Google to join
           </button>
-          <p className="text-white/30 text-xs text-center">
+          <p className="text-white/50 text-xs text-center">
             New to Win the Inning? You&apos;ll create your account automatically.
           </p>
         </>
