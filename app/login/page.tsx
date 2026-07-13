@@ -63,6 +63,11 @@ export default function LoginPage() {
         <p className="text-center text-white/30 text-sm">
           Your data is private and secure. No spam, ever.
         </p>
+        <p className="text-center text-white/30 text-xs mt-2">
+          <a href="/privacy" className="underline hover:text-white/60 transition-colors">Privacy Policy</a>
+          <span className="mx-2">·</span>
+          <a href="/terms" className="underline hover:text-white/60 transition-colors">Terms of Service</a>
+        </p>
       </div>
     </div>
   )

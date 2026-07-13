@@ -28,7 +28,8 @@ export async function middleware(request: NextRequest) {
   const isCronRoute    = request.nextUrl.pathname.startsWith('/api/cron')
   const isProfileRoute = request.nextUrl.pathname.startsWith('/u/')
   const isJoinRoute    = request.nextUrl.pathname.startsWith('/join/')
-  const isPublic       = isAuthRoute || isLoginRoute || isCronRoute || isProfileRoute || isJoinRoute
+  const isLegalRoute   = request.nextUrl.pathname === '/privacy' || request.nextUrl.pathname === '/terms'
+  const isPublic       = isAuthRoute || isLoginRoute || isCronRoute || isProfileRoute || isJoinRoute || isLegalRoute
 
   if (!user && !isPublic) {
     return NextResponse.redirect(new URL('/login', request.url))

@@ -176,6 +176,8 @@ export default function TeamSettings({
         {/* Push notifications toggle */}
         <NotificationToggle />
 
+        <TipJarLink />
+
         <div className="flex gap-3 mt-5">
           <button
             onClick={onClose}
@@ -193,6 +195,29 @@ export default function TeamSettings({
         </div>
       </div>
     </div>
+  )
+}
+
+// ===== TIP JAR =====
+// Renders only when NEXT_PUBLIC_TIP_JAR_URL is set (a Stripe Payment Link).
+function TipJarLink() {
+  const url = process.env.NEXT_PUBLIC_TIP_JAR_URL
+  if (!url) return null
+
+  return (
+    <a
+      href={url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="w-full flex items-center gap-3 p-3.5 rounded-xl border-2 border-slate-100 hover:border-brand-orange transition-all text-left mt-3"
+    >
+      <span className="text-xl flex-shrink-0">⚾</span>
+      <div className="flex-1 min-w-0">
+        <p className="text-brand-navy font-bold text-sm">Support the club</p>
+        <p className="text-slate-400 text-xs">Chip in to keep Win the Inning free and ad-free</p>
+      </div>
+      <span className="text-slate-300 text-lg flex-shrink-0">→</span>
+    </a>
   )
 }
 
