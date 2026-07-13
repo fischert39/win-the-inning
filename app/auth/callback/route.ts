@@ -5,7 +5,13 @@ export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url)
   const code   = requestUrl.searchParams.get('code')
   const origin = requestUrl.origin
-  const next   = requestUrl.searchParams.get('next') ?? '/'
+
+  // Only allow same-origin paths ("/foo") — anything else (absolute URLs,
+  // protocol-relative "//", "@host" or ".host" tricks) becomes an open redirect.
+  const rawNext = requestUrl.searchParams.get('next') ?? '/'
+  const next = rawNext.startsWith('/') && !rawNext.startsWith('//') && !rawNext.startsWith('/\\')
+    ? rawNext
+    : '/'
 
   if (code) {
     // Create the redirect response first so we can attach cookies to it
