@@ -73,13 +73,16 @@ export default function OffenseSection({
 
   const closed      = inning.status === 'CLOSED' && !forceOpen
   const readOnly    = closed || isFuture
+  // Planning mode: a future day. You can build your lineup (add/edit/delete
+  // goals) but can't complete them or set hits until the day arrives.
+  const planning    = isFuture && !closed
   const goals       = inning.offense_goals
   const runs        = simulateRuns(goals)
   const outs        = effectiveOuts(inning)
   const canPinchHit = !readOnly && pinchTokens > 0 && !inning.pinch_hit_used && outs < 3
   const completed   = goals.filter(g => g.completed).length
   const target      = inning.target_goals ?? 5
-  const showAdd     = !readOnly && (goals.length === 0 || goals[goals.length - 1].goal.trim() !== '')
+  const showAdd     = !closed && (goals.length === 0 || goals[goals.length - 1].goal.trim() !== '')
   const hasGoals    = goals.some(g => g.goal.trim() !== '')
   const goalTexts   = goals.map(g => g.goal.trim()).filter(Boolean)
   const matchesTmpl = templates.length > 0 &&
@@ -155,13 +158,23 @@ export default function OffenseSection({
           )}
         </div>
 
-        {/* Scoring hint — only when not closed */}
-        {!closed && (
+        {/* Scoring hint — only when open and not planning */}
+        {!closed && !planning && (
           <div className="flex gap-4 mt-1.5 text-xs text-slate-400">
             <span><strong className="text-slate-500 font-semibold">S</strong> · 1 base</span>
             <span><strong className="text-slate-500 font-semibold">2B</strong> · 2 bases</span>
             <span><strong className="text-slate-500 font-semibold">3B</strong> · 3 bases</span>
             <span><strong className="text-brand-orange font-semibold">HR</strong> · scores!</span>
+          </div>
+        )}
+
+        {/* Planning-mode note */}
+        {planning && (
+          <div className="mt-2 flex items-start gap-2 rounded-lg bg-sky-50 border border-sky-100 px-3 py-2">
+            <span className="text-sm leading-none mt-0.5">🗓️</span>
+            <p className="text-xs text-sky-700 leading-snug">
+              <strong className="font-bold">Planning ahead.</strong> Line up your goals now — you can check them off once the day starts.
+            </p>
           </div>
         )}
       </div>
@@ -174,6 +187,7 @@ export default function OffenseSection({
             goal={goal}
             sportEmoji={sportEmoji}
             closed={closed}
+            planning={planning}
             onSave={val => onSaveGoalText(goal.id, val)}
             onToggle={() => onToggleGoal(goal.id)}
             onSetHit={type => onSetHitType(goal.id, type)}
@@ -183,7 +197,7 @@ export default function OffenseSection({
 
         {goals.length === 0 && (
           <div className="text-center py-3 space-y-2">
-            {readOnly ? (
+            {closed ? (
               <p className="text-slate-300 text-sm italic">Blank scorecard — nothing on the board.</p>
             ) : (
               <>
@@ -245,7 +259,7 @@ export default function OffenseSection({
           </button>
         )}
 
-        {hasGoals && !readOnly && (
+        {hasGoals && !closed && (
           <button
             onClick={onSaveTemplates}
             className={`w-full rounded-xl py-2 text-xs font-bold transition-all border ${
@@ -258,7 +272,7 @@ export default function OffenseSection({
           </button>
         )}
 
-        {canRainDelay && !closed && (
+        {canRainDelay && !closed && !planning && (
           <button
             onClick={onRainDelay}
             className="w-full py-2.5 rounded-xl font-bold text-sm transition-all border border-sky-200 bg-sky-50 text-sky-700 hover:bg-sky-100 active:scale-[0.98]"
@@ -311,16 +325,20 @@ export default function OffenseSection({
 }
 
 function GoalRow({
-  goal, sportEmoji, closed, onSave, onToggle, onSetHit, onDelete,
+  goal, sportEmoji, closed, planning, onSave, onToggle, onSetHit, onDelete,
 }: {
   goal:       OffenseGoal
   sportEmoji: string
   closed:     boolean
+  planning:   boolean
   onSave:     (val: string) => void
   onToggle:   () => void
   onSetHit:   (type: HitType) => void
   onDelete:   () => void
 }) {
+  // Text + delete are editable while planning; completion + hit type are locked.
+  const textLocked       = closed
+  const completionLocked = closed || planning
   return (
     <div className={`rounded-xl border transition-all ${goal.completed ? 'bg-brand-orange/5 border-brand-orange/20' : 'bg-slate-50 border-slate-100'}`}>
       <div className="flex items-center gap-2 px-3 pt-2.5 pb-1.5">
@@ -328,24 +346,25 @@ function GoalRow({
         <input
           type="text"
           value={goal.goal}
-          readOnly={closed}
+          readOnly={textLocked}
           placeholder="What's your goal?"
-          onChange={e => { if (!closed) onSave(e.target.value) }}
+          onChange={e => { if (!textLocked) onSave(e.target.value) }}
           autoCorrect="off"
           autoCapitalize="sentences"
           className={`flex-1 text-sm bg-transparent outline-none placeholder:text-slate-300 ${
             goal.completed ? 'line-through text-slate-400' : 'text-brand-navy'
-          } ${closed ? 'cursor-default select-none' : ''}`}
+          } ${textLocked ? 'cursor-default select-none' : ''}`}
         />
-        {/* Complete checkbox */}
+        {/* Complete checkbox — locked while planning */}
         <button
-          onClick={() => { if (!closed) onToggle() }}
-          disabled={closed}
+          onClick={() => { if (!completionLocked) onToggle() }}
+          disabled={completionLocked}
           aria-label={goal.completed ? 'Mark goal not done' : 'Mark goal done'}
           aria-pressed={goal.completed}
+          title={planning ? 'Available once the day starts' : undefined}
           className={`w-5 h-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center transition-all ${
             goal.completed ? 'bg-brand-green border-brand-green' : 'border-slate-300 hover:border-brand-green'
-          } ${closed ? 'opacity-70 cursor-default' : ''}`}
+          } ${completionLocked ? 'opacity-40 cursor-not-allowed' : ''}`}
         >
           {goal.completed && (
             <svg className="w-3 h-3 text-white" viewBox="0 0 12 12" fill="none">
@@ -353,31 +372,31 @@ function GoalRow({
             </svg>
           )}
         </button>
-        {!closed && (
+        {!textLocked && (
           <button onClick={onDelete} aria-label="Delete goal" className="text-slate-200 hover:text-brand-red text-lg leading-none transition-colors">
             ×
           </button>
         )}
       </div>
 
-      {/* Hit type selector — read-only when closed */}
+      {/* Hit type selector — locked when closed or planning */}
       <div className="flex gap-1.5 px-3 pb-3">
         {HIT_TYPES.map(ht => {
           const isSelected = goal.hit_type === ht.key
           return (
             <button
               key={ht.key}
-              onClick={() => { if (!closed) onSetHit(ht.key) }}
-              disabled={closed}
-              title={ht.title}
+              onClick={() => { if (!completionLocked) onSetHit(ht.key) }}
+              disabled={completionLocked}
+              title={planning ? 'Available once the day starts' : ht.title}
               aria-label={ht.title}
               aria-pressed={isSelected}
               className={`flex flex-col items-center gap-0.5 rounded-lg transition-all ring-1 ring-transparent active:scale-95 ${
                 ht.isHomer ? 'px-2.5 py-1.5 min-w-[36px]' : 'px-2 py-1 min-w-[32px]'
-              } ${closed ? 'cursor-default' : 'cursor-pointer'} ${
+              } ${completionLocked ? 'cursor-not-allowed' : 'cursor-pointer'} ${
                 isSelected
                   ? ht.color
-                  : closed
+                  : completionLocked
                     ? 'bg-white text-slate-200 ring-slate-100'
                     : 'bg-white text-slate-400 hover:bg-slate-50 hover:text-slate-600 ring-slate-100'
               }`}

@@ -938,6 +938,10 @@ export default function AppPage() {
 
   async function handleToggleGoal(goalId: string) {
     if (!viewInning) return
+    if (viewInning.date > todayStr) {
+      showToast("🗓️ You can plan goals ahead, but can't check them off until the day starts")
+      return
+    }
     const g = viewInning.offense_goals.find(og => og.id === goalId)
     if (!g) return
     const prevVal  = g.completed
@@ -958,6 +962,7 @@ export default function AppPage() {
 
   async function handleSetHitType(goalId: string, type: HitType) {
     if (!viewInning) return
+    if (viewInning.date > todayStr) return
     patchGoal(viewInning.id, goalId, { hit_type: type })
     beginSave()
     const { error } = await supabase.from('offense_goals').update({ hit_type: type }).eq('id', goalId)
