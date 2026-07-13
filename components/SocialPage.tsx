@@ -40,7 +40,6 @@ export default function SocialPage({
       {/* Team section */}
       <TeamPage
         userId={userId}
-        displayName={profile?.display_name ?? null}
         groupTeamId={profile?.group_team_id ?? null}
         onUnreadChange={onUnreadChange}
       />

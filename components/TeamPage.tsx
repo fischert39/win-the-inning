@@ -13,14 +13,13 @@ import InviteSheet     from '@/components/InviteSheet'
 
 interface Props {
   userId:            string
-  displayName:       string | null
   groupTeamId:       string | null
   onUnreadChange:    (count: number) => void
 }
 
 type SubTab = 'feed' | 'scoreboard'
 
-export default function TeamPage({ userId, displayName, groupTeamId, onUnreadChange }: Props) {
+export default function TeamPage({ userId, groupTeamId, onUnreadChange }: Props) {
   const supabase = createClient()
 
   const [team,        setTeam]        = useState<GroupTeam | null>(null)
@@ -320,7 +319,6 @@ export default function TeamPage({ userId, displayName, groupTeamId, onUnreadCha
           teamId={team.id}
           toUserId={nudgeTarget.userId}
           toName={nudgeTarget.name}
-          fromName={displayName ?? 'A teammate'}
           onSent={handleNudgeSent}
           onClose={() => setNudgeTarget(null)}
         />

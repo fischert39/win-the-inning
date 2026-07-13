@@ -8,7 +8,6 @@ interface Props {
   teamId:      string
   toUserId:    string
   toName:      string
-  fromName:    string
   onSent:      () => void
   onClose:     () => void
 }
@@ -20,7 +19,7 @@ const PRESETS: { key: NudgePreset; label: string; emoji: string }[] = [
   { key: 'nice_work',    label: 'Nice work!',   emoji: '🏆' },
 ]
 
-export default function NudgeModal({ teamId, toUserId, toName, fromName, onSent, onClose }: Props) {
+export default function NudgeModal({ teamId, toUserId, toName, onSent, onClose }: Props) {
   const supabase = createClient()
   const [selected, setSelected] = useState<NudgePreset | null>(null)
   const [custom,   setCustom]   = useState('')
@@ -54,7 +53,6 @@ export default function NudgeModal({ teamId, toUserId, toName, fromName, onSent,
         to_user_id:     toUserId,
         preset_key:     selected,
         custom_message: custom.trim() || null,
-        from_name:      fromName,
       }),
     }).catch(() => {})
 
