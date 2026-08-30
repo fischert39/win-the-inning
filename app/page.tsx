@@ -8,8 +8,9 @@ import type { Profile, FullSeason, FullGame, FullInning, OffenseGoal, SeasonGoal
 import {
   today, addDays, getWeekStart, getWeekEnd, inningNumber, displayDate, toDateKey, getNextDate,
   effectiveOuts, simulateRuns, inningResult, gameResult, getDailyQuote, getDailyVerse, currentStreak, getPrevDate,
-  isPreSeasonGame, getFirstRealWeekStart,
+  isPreSeasonGame, getFirstRealWeekStart, getPlanTargetWeekStart, getWeekDates,
 } from '@/lib/game-logic'
+import WeekPlanner, { type WeekPlan } from '@/components/WeekPlanner'
 import { applyPaletteAndCache } from '@/lib/palettes'
 import AppHeader      from '@/components/AppHeader'
 import StreakBanner   from '@/components/StreakBanner'
@@ -55,6 +56,7 @@ export default function AppPage() {
   const [showWinCelebration, setShowWinCelebration] = useState(false)
   const [winData,            setWinData]            = useState<{ runs: number; streak: number } | null>(null)
   const [seasonInGrace,      setSeasonInGrace]      = useState(false)
+  const [showWeekPlanner,    setShowWeekPlanner]    = useState(false)
   const [showShareCard,      setShowShareCard]      = useState(false)
   const [showTeamSettings,   setShowTeamSettings]   = useState(false)
   const [showShareSheet,     setShowShareSheet]     = useState(false)
@@ -272,10 +274,80 @@ export default function AppPage() {
             })),
         }))
 
-      // Auto-close any IN_PROGRESS innings whose 48-hour editing window has expired.
-      // Window = 2 full days after the inning date, so cutoff = today - 2 days.
       const cutoff = addDays(today(), -2)
       const now    = new Date().toISOString()
+
+      // ── Backfill missing days ────────────────────────────────────────────────
+      // Innings are created lazily, so a day the user never opened simply didn't
+      // exist and was never scored. If you don't play, you lose — so materialize
+      // every past day up to the 48-hour cutoff. The auto-close pass below then
+      // records them as losses, and the player can still re-open any of them.
+      {
+        const seasonLastDay = raw.length_weeks
+          ? addDays(getFirstRealWeekStart(raw.start_date), raw.length_weeks * 7 - 1)
+          : null
+        const backfillLast = seasonLastDay && seasonLastDay < cutoff ? seasonLastDay : cutoff
+
+        const seen = new Set<string>()
+        for (const g of raw.games) for (const i of g.innings) seen.add(i.date)
+
+        const missing: string[] = []
+        for (let d = raw.start_date; d <= backfillLast; d = addDays(d, 1)) {
+          if (!seen.has(d)) missing.push(d)
+        }
+
+        if (missing.length > 0) {
+          const byWeek = new Map<string, string[]>()
+          for (const d of missing) {
+            const ws  = getWeekStart(d)
+            const arr = byWeek.get(ws)
+            if (arr) arr.push(d); else byWeek.set(ws, [d])
+          }
+
+          const stamp = Date.now()
+          const newInnings: Record<string, unknown>[] = []
+
+          for (const [ws, dates] of Array.from(byWeek)) {
+            let game = raw.games.find((g: FullGame) => g.week_start === ws)
+            if (!game) {
+              const { data: ng } = await supabase.from('games')
+                .insert({
+                  id: 'g_' + ws + '_' + stamp, user_id: user.id,
+                  season_id: raw.id, week_start: ws, week_end: getWeekEnd(ws),
+                })
+                .select().single()
+              if (!ng) continue
+              game = { ...ng, innings: [] } as FullGame
+              raw.games.push(game)
+            }
+            for (const d of dates) {
+              newInnings.push({
+                id: 'i_' + d + '_bf' + stamp, user_id: user.id, game_id: game.id, date: d,
+                inning_number: inningNumber(d), target_goals: 5,
+                mind_task: '',   mind_completed:   false,
+                spirit_task: '', spirit_completed: false,
+                body_task: '',   body_completed:   false,
+                reflection: '', future_goals: '',
+                status: 'IN_PROGRESS', result: 'IN_PROGRESS',
+                is_rain_delay: false, pinch_hit_used: false,
+              })
+            }
+          }
+
+          if (newInnings.length > 0) {
+            const { data: inserted } = await supabase.from('innings').insert(newInnings).select()
+            for (const inn of (inserted ?? [])) {
+              const g = raw.games.find((gg: FullGame) => gg.id === inn.game_id)
+              if (g) g.innings.push({ ...inn, offense_goals: [] })
+            }
+            raw.games.forEach((g: FullGame) => g.innings.sort((a, b) => a.date.localeCompare(b.date)))
+            raw.games.sort((a: FullGame, b: FullGame) => a.week_start.localeCompare(b.week_start))
+          }
+        }
+      }
+
+      // Auto-close any IN_PROGRESS innings whose 48-hour editing window has expired.
+      // Window = 2 full days after the inning date, so cutoff = today - 2 days.
       for (const game of raw.games) {
         let gameChanged = false
         for (const inning of game.innings) {
@@ -294,6 +366,36 @@ export default function AppPage() {
           const newResult = gameResult(game.innings)
           await supabase.from('games').update({ result: newResult }).eq('id', game.id)
           game.result = newResult
+        }
+      }
+
+      // ── Carry forward on day arrival ─────────────────────────────────────────
+      // Incomplete goals roll into today. This fires when the day arrives rather
+      // than when the inning row is created, because the week planner builds
+      // innings days ahead — by then the creation moment has long passed.
+      if (prof?.auto_carry_tasks) {
+        const allInnings = raw.games.flatMap((g: FullGame) => g.innings)
+        const todayInn   = allInnings.find((i: FullInning) => i.date === today())
+        if (todayInn && !todayInn.carried_forward && todayInn.status === 'IN_PROGRESS') {
+          const prevInn = allInnings.find((i: FullInning) => i.date === getPrevDate(today()))
+          const already = new Set(
+            todayInn.offense_goals.map((g: OffenseGoal) => g.goal.trim().toLowerCase()))
+          const carry = (prevInn?.offense_goals ?? []).filter((og: OffenseGoal) =>
+            !og.completed && og.goal.trim() && !already.has(og.goal.trim().toLowerCase()))
+
+          if (carry.length > 0) {
+            const base = todayInn.offense_goals.length
+            const rows = carry.map((og: OffenseGoal, idx: number) => ({
+              id: 'r_' + Date.now() + '_c' + idx,
+              user_id: user.id, inning_id: todayInn.id,
+              goal: og.goal, completed: false, hit_type: og.hit_type,
+              sort_order: base + idx,
+            }))
+            const { data: ins } = await supabase.from('offense_goals').insert(rows).select()
+            if (ins) todayInn.offense_goals.push(...ins)
+          }
+          await supabase.from('innings').update({ carried_forward: true }).eq('id', todayInn.id)
+          todayInn.carried_forward = true
         }
       }
 
@@ -685,6 +787,94 @@ export default function AppPage() {
     setSeason(null)
   }
 
+  // ===== WEEK PLANNER =====
+  async function handleSaveWeekPlan(plan: WeekPlan) {
+    if (!season || !user) { setShowWeekPlanner(false); return }
+    const ws    = getPlanTargetWeekStart(todayStr)
+    const dates = getWeekDates(ws)
+    const stamp = Date.now()
+
+    beginSave()
+
+    // Ensure the game row for the target week exists
+    let game = season.games.find(g => g.week_start === ws) ?? null
+    if (!game) {
+      const { data: ng, error: gErr } = await supabase.from('games')
+        .insert({
+          id: 'g_' + ws + '_' + stamp, user_id: user.id,
+          season_id: season.id, week_start: ws, week_end: getWeekEnd(ws),
+        })
+        .select().single()
+      if (!ng || gErr) { endSave(gErr ?? { message: 'game' }); return }
+      game = { ...ng, innings: [] } as FullGame
+    }
+
+    const newInnings: Record<string, unknown>[] = []
+    const goalRows:   Record<string, unknown>[] = []
+
+    for (let idx = 0; idx < 7; idx++) {
+      const date = dates[idx]
+      if (date < todayStr) continue                             // past days aren't planned
+      const existing = game.innings.find(i => i.date === date)
+      if (existing?.status === 'CLOSED') continue               // already finished
+
+      const inningId = existing?.id ?? 'i_' + date + '_wp' + stamp
+
+      if (!existing) {
+        newInnings.push({
+          id: inningId, user_id: user.id, game_id: game.id, date,
+          inning_number: inningNumber(date), target_goals: 5,
+          mind_task:   plan.defense.mind,   mind_completed:   false,
+          spirit_task: plan.defense.spirit, spirit_completed: false,
+          body_task:   plan.defense.body,   body_completed:   false,
+          reflection: '', future_goals: '',
+          status: 'IN_PROGRESS', result: 'IN_PROGRESS',
+          is_rain_delay: false, pinch_hit_used: false,
+          carried_forward: false,
+        })
+      } else {
+        // Only fill defense slots the day hasn't already got — never overwrite.
+        const patch: Record<string, string> = {}
+        if (plan.defense.mind   && !existing.mind_task.trim())   patch.mind_task   = plan.defense.mind
+        if (plan.defense.spirit && !existing.spirit_task.trim()) patch.spirit_task = plan.defense.spirit
+        if (plan.defense.body   && !existing.body_task.trim())   patch.body_task   = plan.defense.body
+        if (Object.keys(patch).length > 0) {
+          await supabase.from('innings').update(patch).eq('id', existing.id)
+        }
+      }
+
+      // Schedule this day's hits, skipping any goal text already on the day.
+      const already = new Set(
+        (existing?.offense_goals ?? []).map(g => g.goal.trim().toLowerCase()))
+      let order = existing?.offense_goals.length ?? 0
+      for (const g of plan.goals) {
+        if (!g.days[idx]) continue
+        if (already.has(g.text.toLowerCase())) continue
+        goalRows.push({
+          id: 'r_' + stamp + '_' + idx + '_' + order,
+          user_id: user.id, inning_id: inningId,
+          goal: g.text, completed: false, hit_type: g.hitType, sort_order: order,
+        })
+        order++
+      }
+    }
+
+    // Innings first — the goal rows reference them.
+    if (newInnings.length > 0) {
+      const { error } = await supabase.from('innings').insert(newInnings)
+      if (error) { endSave(error); return }
+    }
+    if (goalRows.length > 0) {
+      const { error } = await supabase.from('offense_goals').insert(goalRows)
+      if (error) { endSave(error); return }
+    }
+
+    endSave()
+    setShowWeekPlanner(false)
+    showToast(`📋 Lineup set — ${goalRows.length} goal${goalRows.length !== 1 ? 's' : ''} scheduled`)
+    await loadData()
+  }
+
   async function handleClearAllData() {
     if (!user) return
     const ok1 = await confirmDialog({
@@ -767,6 +957,9 @@ export default function AppPage() {
           body_completed: false,
           reflection: '', future_goals: '',
           status: 'IN_PROGRESS', result: 'IN_PROGRESS', is_rain_delay: false, pinch_hit_used: false,
+          // Today/past: the carry below runs now, so don't repeat it on next load.
+          // Future: leave false so carry-forward fires when that day arrives.
+          carried_forward: date <= today(),
         })
         .select().single()
       if (!newInning || inningError) {
@@ -1347,6 +1540,16 @@ export default function AppPage() {
   const quote       = getDailyQuote()
   const verse       = profile?.daily_bible_verse ? getDailyVerse() : null
 
+  // ── Week planner target ───────────────────────────────────────────────────
+  const planWeekStart = getPlanTargetWeekStart(todayStr)
+  const planWeekDates = getWeekDates(planWeekStart)
+  const planGame      = season.games.find(g => g.week_start === planWeekStart) ?? null
+  // Days already spent — past dates and any inning that's been closed out.
+  const planLockedDates = planWeekDates.filter(d =>
+    d < todayStr || planGame?.innings.find(i => i.date === d)?.status === 'CLOSED')
+  const planIsNextWeek  = planWeekStart > getWeekStart(todayStr)
+  const canPlanWeek     = planLockedDates.length < 7 && !seasonInGrace
+
   // ── Pre-season detection ──────────────────────────────────────────────────
   const isViewingPreSeason = viewGame
     ? isPreSeasonGame(season.start_date, viewGame.week_start)
@@ -1511,6 +1714,29 @@ export default function AppPage() {
           />
         )}
 
+        {/* ── Plan Your Week entry ── */}
+        {!isOther && canPlanWeek && (
+          <button
+            onClick={() => setShowWeekPlanner(true)}
+            className="w-full bg-white rounded-2xl shadow-sm border border-slate-100 px-5 py-4 mb-4 flex items-center justify-between hover:border-brand-orange/40 transition-colors active:scale-[0.99]"
+          >
+            <div className="flex items-center gap-3 min-w-0">
+              <span className="text-xl flex-shrink-0">📋</span>
+              <div className="text-left min-w-0">
+                <p className="font-black text-sm text-brand-navy">
+                  Plan {planIsNextWeek ? 'Next' : 'This'} Week
+                </p>
+                <p className="text-slate-400 text-xs mt-0.5 truncate">
+                  {displayDate(planWeekDates[0])} — {displayDate(planWeekDates[6])}
+                </p>
+              </div>
+            </div>
+            <span className="text-brand-orange text-xs font-black uppercase tracking-wider flex-shrink-0 ml-3">
+              Set Lineup →
+            </span>
+          </button>
+        )}
+
         <Scoreboard
           games={season.games}
           todayStr={todayStr}
@@ -1652,6 +1878,22 @@ export default function AppPage() {
 
       {showHowTo && (
         <HowToPlay sport={sport} firstTime={howToFirstTime} onClose={closeHowTo} />
+      )}
+
+      {showWeekPlanner && (
+        <WeekPlanner
+          weekStart={planWeekStart}
+          sportEmoji={sportEmoji}
+          defaults={{
+            mind:   profile?.default_mind_task   ?? '',
+            spirit: profile?.default_spirit_task ?? '',
+            body:   profile?.default_body_task   ?? '',
+          }}
+          templates={safeParseGoals(profile?.default_offense_goals)}
+          lockedDates={planLockedDates}
+          onSave={handleSaveWeekPlan}
+          onClose={() => setShowWeekPlanner(false)}
+        />
       )}
 
       {showTeamSettings && (

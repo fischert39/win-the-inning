@@ -150,6 +150,7 @@ export interface FullInning {
   result:           GameResult
   is_rain_delay:    boolean
   pinch_hit_used:   boolean
+  carried_forward:  boolean
   offense_goals:    OffenseGoal[]
 }
 

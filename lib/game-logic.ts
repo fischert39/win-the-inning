@@ -142,6 +142,20 @@ export function getFirstRealWeekStart(seasonStartDate: string): string {
 }
 
 /**
+ * Which week the planner currently targets.
+ *
+ * The window opens on Thursday of week N (planning week N+1) and stays open
+ * through Wednesday of week N+1. So Thu–Sun look ahead to next week, while
+ * Mon–Wed are still planning the week already underway. After Wednesday the
+ * current week can no longer be planned — the target rolls to the next one.
+ */
+export function getPlanTargetWeekStart(dateStr: string): string {
+  const dow      = new Date(dateStr + 'T12:00:00').getDay()  // 0 = Sun … 6 = Sat
+  const thisWeek = getWeekStart(dateStr)
+  return (dow === 0 || dow >= 4) ? addDays(thisWeek, 7) : thisWeek
+}
+
+/**
  * Returns true if this game belongs to the pre-season warmup week —
  * i.e. the season started mid-week and this is that partial first week.
  */

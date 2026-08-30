@@ -121,6 +121,14 @@ export async function GET(req: NextRequest) {
         title = `📋 New game, ${firstName} — fresh start`
         body  = `Last week is done. Today is Inning 1 of a brand new game. Make it count.`
       }
+    } else if (dow === 0) {
+      // ── Sunday (local): plan the week ahead ──
+      tag = 'wti-plan'
+      const openInnings = innings.filter(i => i.status === 'IN_PROGRESS' && i.date <= localToday).length
+      title = `🗓️ Set next week's lineup, ${firstName}`
+      body  = openInnings > 0
+        ? `Close out this week, then plan next week's goals — five minutes tonight saves you all week.`
+        : `Take five minutes to plan next week. Goals lined up now means fewer decisions later.`
     } else {
       // ── Daily motivation ──
       const yestStatus = innings.find(i => i.date === localYesterday)?.status
