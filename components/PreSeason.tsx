@@ -213,6 +213,11 @@ export default function PreSeason({ sport: initialSport, displayName, onStart, o
         </div>
 
         <div className="space-y-2">
+          <div className="bg-brand-orange/10 border border-brand-orange/20 rounded-xl p-4 text-center">
+            <p className="text-white/80 text-sm">
+              Set up a whole week in one sitting with <span className="text-brand-orange font-bold">📋 Plan the Game</span> — assign your outs and goals to each day before the week starts.
+            </p>
+          </div>
           <div className="bg-brand-green/10 border border-brand-green/20 rounded-xl p-4 text-center">
             <p className="text-white/80 text-sm">
               You can use a <span className="text-sky-400 font-bold">☔ Rain Delay</span> once per week to skip a day without a loss.
