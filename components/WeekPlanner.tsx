@@ -2,10 +2,12 @@
 
 import { useState } from 'react'
 import type { HitType } from '@/types'
-import { getWeekDates, displayDate } from '@/lib/game-logic'
+import { getWeekDates, getWeekStart, displayDate, today } from '@/lib/game-logic'
 import { GOAL_PRESETS } from '@/lib/presets'
 
 const DAY_LABELS = ['M', 'T', 'W', 'T', 'F', 'S', 'S']
+const DAY_FULL   = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+const ALL_DAYS   = () => [true, true, true, true, true, true, true]
 
 const HIT_PICKER: { key: HitType; label: string; cls: string }[] = [
   { key: 'single', label: '1B', cls: 'bg-sky-100 text-sky-700 ring-sky-400'         },
@@ -13,6 +15,20 @@ const HIT_PICKER: { key: HitType; label: string; cls: string }[] = [
   { key: 'triple', label: '3B', cls: 'bg-purple-100 text-purple-700 ring-purple-400'},
   { key: 'homer',  label: 'HR', cls: 'bg-brand-orange text-white ring-brand-orange' },
 ]
+
+export type DefenseCat = 'mind' | 'spirit' | 'body'
+
+const DEFENSE_CATS: { key: DefenseCat; icon: string; label: string; ph: string }[] = [
+  { key: 'mind',   icon: '🧠', label: 'Mind',   ph: 'Your mental clarity task…'   },
+  { key: 'spirit', icon: '✨', label: 'Spirit', ph: 'Your spirit & energy task…'  },
+  { key: 'body',   icon: '💪', label: 'Body',   ph: 'Your physical health task…'  },
+]
+
+export interface DefenseTask {
+  key:  string             // local-only React key
+  text: string
+  days: boolean[]          // 7 entries, Mon → Sun
+}
 
 export interface PlannedGoal {
   key:     string          // local-only React key
@@ -22,7 +38,7 @@ export interface PlannedGoal {
 }
 
 export interface WeekPlan {
-  defense: { mind: string; spirit: string; body: string }
+  defense: Record<DefenseCat, DefenseTask[]>
   goals:   PlannedGoal[]
 }
 
@@ -38,19 +54,26 @@ interface Props {
 }
 
 let uid = 0
-function newGoal(text = '', days = [true, true, true, true, true, true, true]): PlannedGoal {
-  uid += 1
-  return { key: 'pg_' + uid, text, hitType: 'single', days: [...days] }
+function nextKey(p: string) { uid += 1; return p + uid }
+
+function newGoal(text = ''): PlannedGoal {
+  return { key: nextKey('pg_'), text, hitType: 'single', days: ALL_DAYS() }
+}
+function newTask(text = '', days = ALL_DAYS()): DefenseTask {
+  return { key: nextKey('dt_'), text, days: [...days] }
 }
 
 export default function WeekPlanner({
   weekStart, sportEmoji, defaults, templates, lockedDates, onSave, onClose,
 }: Props) {
-  const dates = getWeekDates(weekStart)
+  const dates      = getWeekDates(weekStart)
+  const isNextWeek = weekStart > getWeekStart(today())
 
-  const [mind,   setMind]   = useState(defaults.mind)
-  const [spirit, setSpirit] = useState(defaults.spirit)
-  const [body,   setBody]   = useState(defaults.body)
+  const [defense, setDefense] = useState<Record<DefenseCat, DefenseTask[]>>({
+    mind:   [newTask(defaults.mind)],
+    spirit: [newTask(defaults.spirit)],
+    body:   [newTask(defaults.body)],
+  })
   const [goals,  setGoals]  = useState<PlannedGoal[]>([newGoal()])
   const [showPresets, setShowPresets] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -58,6 +81,37 @@ export default function WeekPlanner({
   const lockedSet   = new Set(lockedDates)
   const lockedCount = dates.filter(d => lockedSet.has(d)).length
 
+  // ── Defense mutations ──────────────────────────────────────────────────────
+  function patchTask(cat: DefenseCat, key: string, text: string) {
+    setDefense(p => ({ ...p, [cat]: p[cat].map(t => t.key === key ? { ...t, text } : t) }))
+  }
+  // A day has exactly one slot per category, so turning a day on for one task
+  // turns it off for every other task in that same category.
+  function toggleTaskDay(cat: DefenseCat, key: string, idx: number) {
+    setDefense(p => {
+      const turningOn = !p[cat].find(t => t.key === key)?.days[idx]
+      return {
+        ...p,
+        [cat]: p[cat].map(t => {
+          if (t.key === key) return { ...t, days: t.days.map((v, i) => i === idx ? turningOn : v) }
+          if (turningOn)     return { ...t, days: t.days.map((v, i) => i === idx ? false : v) }
+          return t
+        }),
+      }
+    })
+  }
+  function addTask(cat: DefenseCat) {
+    // New rows start empty — the user picks which days to pull across.
+    setDefense(p => ({ ...p, [cat]: [...p[cat], newTask('', [false,false,false,false,false,false,false])] }))
+  }
+  function removeTask(cat: DefenseCat, key: string) {
+    setDefense(p => ({
+      ...p,
+      [cat]: p[cat].length === 1 ? [newTask()] : p[cat].filter(t => t.key !== key),
+    }))
+  }
+
+  // ── Offense mutations ──────────────────────────────────────────────────────
   function patch(key: string, updates: Partial<PlannedGoal>) {
     setGoals(prev => prev.map(g => g.key === key ? { ...g, ...updates } : g))
   }
@@ -68,25 +122,77 @@ export default function WeekPlanner({
   function setAllDays(key: string, val: boolean) {
     setGoals(prev => prev.map(g => g.key === key ? { ...g, days: g.days.map(() => val) } : g))
   }
-  function addGoal(text = '') {
-    setGoals(prev => [...prev, newGoal(text)])
-  }
+  function addGoal(text = '') { setGoals(prev => [...prev, newGoal(text)]) }
   function removeGoal(key: string) {
     setGoals(prev => prev.length === 1 ? [newGoal()] : prev.filter(g => g.key !== key))
   }
 
-  const filled     = goals.filter(g => g.text.trim() && g.days.some(Boolean))
-  const totalHits  = filled.reduce((n, g) => n + g.days.filter(Boolean).length, 0)
-  const hasDefense = !!(mind.trim() || spirit.trim() || body.trim())
-  const canSave    = hasDefense || filled.length > 0
+  // ── Derived ────────────────────────────────────────────────────────────────
+  const filled    = goals.filter(g => g.text.trim() && g.days.some(Boolean))
+  const totalHits = filled.reduce((n, g) => n + g.days.filter(Boolean).length, 0)
+
+  const cleanDefense = (cat: DefenseCat) =>
+    defense[cat].filter(t => t.text.trim() && t.days.some(Boolean))
+
+  const totalOuts = DEFENSE_CATS.reduce((n, c) =>
+    n + cleanDefense(c.key).reduce((m, t) => m + t.days.filter(Boolean).length, 0), 0)
+
+  /** Days in this category with no task assigned (and not already locked). */
+  function uncoveredDays(cat: DefenseCat): string[] {
+    const covered = new Array(7).fill(false)
+    for (const t of cleanDefense(cat)) t.days.forEach((v, i) => { if (v) covered[i] = true })
+    return DAY_FULL.filter((_, i) => !covered[i] && !lockedSet.has(dates[i]))
+  }
+
+  const canSave = totalOuts > 0 || filled.length > 0
 
   async function handleSave() {
     if (!canSave || saving) return
     setSaving(true)
     await onSave({
-      defense: { mind: mind.trim(), spirit: spirit.trim(), body: body.trim() },
-      goals:   filled.map(g => ({ ...g, text: g.text.trim() })),
+      defense: {
+        mind:   cleanDefense('mind').map(t   => ({ ...t, text: t.text.trim() })),
+        spirit: cleanDefense('spirit').map(t => ({ ...t, text: t.text.trim() })),
+        body:   cleanDefense('body').map(t   => ({ ...t, text: t.text.trim() })),
+      },
+      goals: filled.map(g => ({ ...g, text: g.text.trim() })),
     })
+  }
+
+  // ── Shared day-toggle row ──────────────────────────────────────────────────
+  function DayRow({ days, onToggle, trailing }: {
+    days: boolean[]
+    onToggle: (idx: number) => void
+    trailing?: React.ReactNode
+  }) {
+    return (
+      <div className="flex items-center gap-1.5">
+        <span className="text-[9px] font-black text-slate-400 uppercase tracking-wide w-8">Days</span>
+        {DAY_LABELS.map((lbl, i) => {
+          const locked = lockedSet.has(dates[i])
+          const on     = days[i] && !locked
+          return (
+            <button
+              key={i}
+              onClick={() => { if (!locked) onToggle(i) }}
+              disabled={locked}
+              title={locked ? 'This day is already finished' : dates[i]}
+              aria-pressed={on}
+              className={`w-7 h-7 rounded-lg text-[11px] font-black transition-all active:scale-90 ${
+                locked
+                  ? 'bg-slate-100 text-slate-300 cursor-not-allowed'
+                  : on
+                    ? 'bg-brand-orange text-white shadow-sm shadow-brand-orange/40'
+                    : 'bg-white text-slate-400 ring-1 ring-slate-100 hover:text-slate-600'
+              }`}
+            >
+              {lbl}
+            </button>
+          )
+        })}
+        {trailing}
+      </div>
+    )
   }
 
   return (
@@ -99,7 +205,9 @@ export default function WeekPlanner({
             <p className="text-white/40 text-[10px] font-black uppercase tracking-widest mb-1">
               {sportEmoji} Lineup Card
             </p>
-            <h1 className="text-white font-black text-xl leading-tight">Plan Your Week</h1>
+            <h1 className="text-white font-black text-xl leading-tight">
+              Plan {isNextWeek ? 'Next' : 'This'} Week&apos;s Game
+            </h1>
             <p className="text-white/50 text-xs mt-0.5">
               {displayDate(dates[0])} — {displayDate(dates[6])}
             </p>
@@ -130,37 +238,77 @@ export default function WeekPlanner({
         <section className="bg-white rounded-2xl shadow-sm overflow-hidden border-l-4 border-brand-purple">
           <div className="bg-brand-navy px-5 py-3 flex items-center justify-between">
             <span className="text-white/40 text-[10px] font-black uppercase tracking-widest">
-              Defense · Your 3 Outs
+              Defense · Your Outs
             </span>
-            <span className="text-white/30 text-[10px] font-semibold">every day</span>
+            <span className="text-brand-orange text-[10px] font-black tabular-nums">
+              {totalOuts} scheduled
+            </span>
           </div>
-          <div className="px-5 py-4 space-y-3">
-            <p className="text-slate-400 text-xs -mt-1 mb-1">
-              These three repeat all week. Change any single day later from that day&apos;s view.
+
+          <div className="px-5 py-4 space-y-4">
+            <p className="text-slate-400 text-xs -mt-1">
+              Three outs a day — one each from Mind, Spirit and Body. Add more than one
+              task per category to vary it across the week.
             </p>
-            {([
-              { icon: '🧠', label: 'Mind',   val: mind,   set: setMind,   ph: 'Your mental clarity task…' },
-              { icon: '✨', label: 'Spirit', val: spirit, set: setSpirit, ph: 'Your spirit & energy task…' },
-              { icon: '💪', label: 'Body',   val: body,   set: setBody,   ph: 'Your physical health task…' },
-            ]).map(row => (
-              <div key={row.label} className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 border border-slate-100">
-                <span className="text-lg flex-shrink-0 w-6 text-center">{row.icon}</span>
-                <div className="flex-1 min-w-0">
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-wide mb-0.5">
-                    {row.label}
-                  </p>
-                  <input
-                    type="text"
-                    value={row.val}
-                    onChange={e => row.set(e.target.value)}
-                    placeholder={row.ph}
-                    autoCorrect="off"
-                    autoCapitalize="sentences"
-                    className="w-full text-sm text-brand-navy bg-transparent outline-none placeholder:text-slate-300"
-                  />
+
+            {DEFENSE_CATS.map(cat => {
+              const uncovered = uncoveredDays(cat.key)
+              return (
+                <div key={cat.key}>
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-base leading-none">{cat.icon}</span>
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-wide">
+                      {cat.label}
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    {defense[cat.key].map(t => (
+                      <div key={t.key} className="rounded-xl border border-slate-100 bg-slate-50 overflow-hidden">
+                        <div className="flex items-center gap-2 px-3 pt-2.5 pb-2">
+                          <input
+                            type="text"
+                            value={t.text}
+                            onChange={e => patchTask(cat.key, t.key, e.target.value)}
+                            placeholder={cat.ph}
+                            autoCorrect="off"
+                            autoCapitalize="sentences"
+                            className="flex-1 text-sm text-brand-navy bg-transparent outline-none placeholder:text-slate-300"
+                          />
+                          <button
+                            onClick={() => removeTask(cat.key, t.key)}
+                            aria-label={`Remove ${cat.label} task`}
+                            className="text-slate-300 hover:text-brand-red text-lg leading-none transition-colors"
+                          >
+                            ×
+                          </button>
+                        </div>
+                        <div className="px-3 pb-3">
+                          <DayRow
+                            days={t.days}
+                            onToggle={i => toggleTaskDay(cat.key, t.key, i)}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="flex items-center justify-between mt-1.5">
+                    <button
+                      onClick={() => addTask(cat.key)}
+                      className="text-[11px] font-bold text-slate-400 hover:text-brand-orange transition-colors"
+                    >
+                      + Different {cat.label.toLowerCase()} task on some days
+                    </button>
+                    {uncovered.length > 0 && uncovered.length < 7 && (
+                      <span className="text-[10px] text-amber-600 font-semibold">
+                        No task: {uncovered.join(', ')}
+                      </span>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         </section>
 
@@ -182,7 +330,6 @@ export default function WeekPlanner({
 
             {goals.map(g => (
               <div key={g.key} className="rounded-xl border border-slate-100 bg-slate-50 overflow-hidden">
-                {/* Text */}
                 <div className="flex items-center gap-2 px-3 pt-2.5 pb-2">
                   <span className="text-base flex-shrink-0">{sportEmoji}</span>
                   <input
@@ -203,7 +350,6 @@ export default function WeekPlanner({
                   </button>
                 </div>
 
-                {/* Hit type */}
                 <div className="flex items-center gap-1.5 px-3 pb-2">
                   <span className="text-[9px] font-black text-slate-400 uppercase tracking-wide w-8">Hit</span>
                   {HIT_PICKER.map(h => (
@@ -222,37 +368,19 @@ export default function WeekPlanner({
                   ))}
                 </div>
 
-                {/* Days */}
-                <div className="flex items-center gap-1.5 px-3 pb-3">
-                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-wide w-8">Days</span>
-                  {DAY_LABELS.map((lbl, i) => {
-                    const locked = lockedSet.has(dates[i])
-                    const on     = g.days[i] && !locked
-                    return (
+                <div className="px-3 pb-3">
+                  <DayRow
+                    days={g.days}
+                    onToggle={i => toggleDay(g.key, i)}
+                    trailing={
                       <button
-                        key={i}
-                        onClick={() => { if (!locked) toggleDay(g.key, i) }}
-                        disabled={locked}
-                        title={locked ? 'This day is already finished' : dates[i]}
-                        aria-pressed={on}
-                        className={`w-7 h-7 rounded-lg text-[11px] font-black transition-all active:scale-90 ${
-                          locked
-                            ? 'bg-slate-100 text-slate-300 cursor-not-allowed'
-                            : on
-                              ? 'bg-brand-orange text-white shadow-sm shadow-brand-orange/40'
-                              : 'bg-white text-slate-400 ring-1 ring-slate-100 hover:text-slate-600'
-                        }`}
+                        onClick={() => setAllDays(g.key, !g.days.every(Boolean))}
+                        className="ml-auto text-[10px] font-bold text-slate-400 hover:text-brand-orange transition-colors"
                       >
-                        {lbl}
+                        {g.days.every(Boolean) ? 'None' : 'All'}
                       </button>
-                    )
-                  })}
-                  <button
-                    onClick={() => setAllDays(g.key, !g.days.every(Boolean))}
-                    className="ml-auto text-[10px] font-bold text-slate-400 hover:text-brand-orange transition-colors"
-                  >
-                    {g.days.every(Boolean) ? 'None' : 'All'}
-                  </button>
+                    }
+                  />
                 </div>
               </div>
             ))}
@@ -273,7 +401,6 @@ export default function WeekPlanner({
               </button>
             )}
 
-            {/* Presets */}
             <div className="border border-slate-100 rounded-xl overflow-hidden">
               <button
                 onClick={() => setShowPresets(v => !v)}
@@ -287,13 +414,13 @@ export default function WeekPlanner({
               </button>
               {showPresets && (
                 <div className="px-3.5 pb-3 space-y-3">
-                  {GOAL_PRESETS.map(cat => (
-                    <div key={cat.category}>
+                  {GOAL_PRESETS.map(c => (
+                    <div key={c.category}>
                       <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide mb-1.5">
-                        {cat.category}
+                        {c.category}
                       </p>
                       <div className="flex flex-wrap gap-1.5">
-                        {cat.goals.map(text => (
+                        {c.goals.map(text => (
                           <button
                             key={text}
                             onClick={() => addGoal(text)}

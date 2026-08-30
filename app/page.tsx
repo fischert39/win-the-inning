@@ -812,6 +812,11 @@ export default function AppPage() {
     const newInnings: Record<string, unknown>[] = []
     const goalRows:   Record<string, unknown>[] = []
 
+    // Each category has at most one task covering a given day (the planner keeps
+    // day selection exclusive within a category), so the first match wins.
+    const taskFor = (cat: 'mind' | 'spirit' | 'body', idx: number) =>
+      plan.defense[cat].find(t => t.days[idx])?.text ?? ''
+
     for (let idx = 0; idx < 7; idx++) {
       const date = dates[idx]
       if (date < todayStr) continue                             // past days aren't planned
@@ -819,14 +824,17 @@ export default function AppPage() {
       if (existing?.status === 'CLOSED') continue               // already finished
 
       const inningId = existing?.id ?? 'i_' + date + '_wp' + stamp
+      const dMind    = taskFor('mind', idx)
+      const dSpirit  = taskFor('spirit', idx)
+      const dBody    = taskFor('body', idx)
 
       if (!existing) {
         newInnings.push({
           id: inningId, user_id: user.id, game_id: game.id, date,
           inning_number: inningNumber(date), target_goals: 5,
-          mind_task:   plan.defense.mind,   mind_completed:   false,
-          spirit_task: plan.defense.spirit, spirit_completed: false,
-          body_task:   plan.defense.body,   body_completed:   false,
+          mind_task:   dMind,   mind_completed:   false,
+          spirit_task: dSpirit, spirit_completed: false,
+          body_task:   dBody,   body_completed:   false,
           reflection: '', future_goals: '',
           status: 'IN_PROGRESS', result: 'IN_PROGRESS',
           is_rain_delay: false, pinch_hit_used: false,
@@ -835,9 +843,9 @@ export default function AppPage() {
       } else {
         // Only fill defense slots the day hasn't already got — never overwrite.
         const patch: Record<string, string> = {}
-        if (plan.defense.mind   && !existing.mind_task.trim())   patch.mind_task   = plan.defense.mind
-        if (plan.defense.spirit && !existing.spirit_task.trim()) patch.spirit_task = plan.defense.spirit
-        if (plan.defense.body   && !existing.body_task.trim())   patch.body_task   = plan.defense.body
+        if (dMind   && !existing.mind_task.trim())   patch.mind_task   = dMind
+        if (dSpirit && !existing.spirit_task.trim()) patch.spirit_task = dSpirit
+        if (dBody   && !existing.body_task.trim())   patch.body_task   = dBody
         if (Object.keys(patch).length > 0) {
           await supabase.from('innings').update(patch).eq('id', existing.id)
         }
@@ -1724,7 +1732,7 @@ export default function AppPage() {
               <span className="text-xl flex-shrink-0">📋</span>
               <div className="text-left min-w-0">
                 <p className="font-black text-sm text-brand-navy">
-                  Plan {planIsNextWeek ? 'Next' : 'This'} Week
+                  Plan {planIsNextWeek ? 'Next' : 'This'} Week&apos;s Game
                 </p>
                 <p className="text-slate-400 text-xs mt-0.5 truncate">
                   {displayDate(planWeekDates[0])} — {displayDate(planWeekDates[6])}
