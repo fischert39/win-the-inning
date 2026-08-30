@@ -7,9 +7,15 @@ export const runtime = 'nodejs'
 
 const DOW = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 
-// Send the daily reminder at this local hour. The endpoint is triggered every
-// hour (GitHub Actions), and each run only notifies users whose local clock
-// just hit this hour — so everyone gets it at 8am *their* time.
+// Earliest local hour we'll send the daily reminder. The endpoint is triggered
+// hourly (GitHub Actions) so most users get it right at 8am their time.
+//
+// We deliberately do NOT require an exact hour match. GitHub drops a large
+// share of its scheduled runs — measured at roughly half, with the 12:00 UTC
+// hour landing only 3 times in 8 days — so an exact-match window meant most
+// users got nothing on most days. Instead we send at or after this hour and
+// use profiles.last_notified_date to guarantee exactly one send per local day.
+// A dropped run now means a later notification, not a missing one.
 const TARGET_HOUR = 8
 
 // Local calendar date (YYYY-MM-DD), day-of-week, and hour for an instant in a
@@ -49,10 +55,25 @@ export async function GET(req: NextRequest) {
 
   const userIds = subs.map(s => s.user_id)
 
-  // Load profiles (name + timezone)
-  const { data: profiles } = await supabase
-    .from('profiles').select('id, display_name, timezone').in('id', userIds)
+  // Load profiles (name + timezone + last send)
+  const { data: profiles, error: profErr } = await supabase
+    .from('profiles').select('id, display_name, timezone, last_notified_date').in('id', userIds)
+
+  // Bail rather than send blind. Without last_notified_date the once-per-day
+  // guard can't work, and every run after 8am would re-notify the same people.
+  // This also makes deploy-before-migration safe: the run no-ops instead.
+  if (profErr) {
+    return NextResponse.json({ error: 'profile load failed', detail: profErr.message }, { status: 500 })
+  }
+
   const profileMap = new Map(profiles?.map(p => [p.id, p]) ?? [])
+
+  // One user can have several devices — decide once per user, then send to all.
+  const subsByUser = new Map<string, typeof subs>()
+  for (const s of subs) {
+    const arr = subsByUser.get(s.user_id)
+    if (arr) arr.push(s); else subsByUser.set(s.user_id, [s])
+  }
 
   // One window covers everything we need: last week's recap + the streak lookback.
   // Timezones shift a user's local day by at most ~1 day vs UTC, so a 16-day
@@ -72,17 +93,19 @@ export async function GET(req: NextRequest) {
   let sent = 0
   const expired: string[] = []
 
-  await Promise.allSettled(subs.map(async sub => {
-    const prof      = profileMap.get(sub.user_id)
+  await Promise.allSettled(Array.from(subsByUser).map(async ([userId, userSubs]) => {
+    const prof      = profileMap.get(userId)
     const firstName = prof?.display_name?.split(' ')[0] ?? 'there'
-    const innings   = byUser.get(sub.user_id) ?? []
+    const innings   = byUser.get(userId) ?? []
 
     // Each user's "today" in their own timezone.
     const { date: localToday, dow, hour } = localParts(now, prof?.timezone ?? null)
 
-    // Only notify users whose local clock is at the target hour. Runs at other
-    // hours skip them — the next hourly trigger will catch their timezone.
-    if (hour !== TARGET_HOUR) return
+    // Too early in their day — a later run will pick them up.
+    if (hour < TARGET_HOUR) return
+    // Already notified today. This is what makes dropped runs recoverable
+    // without ever double-sending.
+    if (prof?.last_notified_date === localToday) return
 
     const localYesterday = getPrevDate(localToday)
 
@@ -154,12 +177,23 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    const result = await sendPush(
-      { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
-      { title, body, url: '/', tag }
-    )
-    if (result.success) sent++
-    else if (result.expired) expired.push(sub.endpoint)
+    // Deliver to every device this user has registered.
+    let delivered = false
+    for (const sub of userSubs) {
+      const result = await sendPush(
+        { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
+        { title, body, url: '/', tag }
+      )
+      if (result.success) { sent++; delivered = true }
+      else if (result.expired) expired.push(sub.endpoint)
+    }
+
+    // Only mark the day done if something actually landed, so a total failure
+    // can still be retried by the next run.
+    if (delivered) {
+      await supabase.from('profiles')
+        .update({ last_notified_date: localToday }).eq('id', userId)
+    }
   }))
 
   if (expired.length > 0) {
