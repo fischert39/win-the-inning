@@ -17,6 +17,8 @@ const DOW = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 // use profiles.last_notified_date to guarantee exactly one send per local day.
 // A dropped run now means a later notification, not a missing one.
 const TARGET_HOUR = 8
+// No reminders at or after this local hour (9pm).
+const LATEST_HOUR = 21
 
 // Local calendar date (YYYY-MM-DD), day-of-week, and hour for an instant in a
 // given IANA timezone. Falls back to UTC if the timezone is missing or invalid.
@@ -101,8 +103,9 @@ export async function GET(req: NextRequest) {
     // Each user's "today" in their own timezone.
     const { date: localToday, dow, hour } = localParts(now, prof?.timezone ?? null)
 
-    // Too early in their day — a later run will pick them up.
-    if (hour < TARGET_HOUR) return
+    // Too early in their day — a later run will pick them up. Too late (if every
+    // run was dropped until evening) — skip it rather than buzz someone at night.
+    if (hour < TARGET_HOUR || hour >= LATEST_HOUR) return
     // Already notified today. This is what makes dropped runs recoverable
     // without ever double-sending.
     if (prof?.last_notified_date === localToday) return

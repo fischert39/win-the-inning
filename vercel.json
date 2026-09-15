@@ -2,8 +2,8 @@
   "framework": "nextjs",
   "crons": [
     {
-      "path": "/api/finalize-week",
-      "schedule": "0 8 * * 1"
+      "path": "/api/cron/finalize",
+      "schedule": "0 9 * * *"
     },
     {
       "path": "/api/cron/notify",

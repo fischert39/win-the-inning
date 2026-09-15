@@ -151,6 +151,7 @@ export interface FullInning {
   is_rain_delay:    boolean
   pinch_hit_used:   boolean
   carried_forward:  boolean
+  reopened_at:      string | null  // set when a player re-opens; grants a fresh 48h before auto-close
   offense_goals:    OffenseGoal[]
 }
 

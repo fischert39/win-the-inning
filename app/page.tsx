@@ -12,6 +12,7 @@ import {
 } from '@/lib/game-logic'
 import WeekPlanner, { type WeekPlan } from '@/components/WeekPlanner'
 import { applyPaletteAndCache } from '@/lib/palettes'
+import { reconcileSeason, carryForwardGoals, seasonLastDay } from '@/lib/reconcile'
 import AppHeader      from '@/components/AppHeader'
 import StreakBanner   from '@/components/StreakBanner'
 import DayContext     from '@/components/DayContext'
@@ -238,8 +239,10 @@ export default function AppPage() {
     try {
       const tz = Intl.DateTimeFormat().resolvedOptions().timeZone
       if (tz && prof && prof.timezone !== tz) {
-        supabase.from('profiles').update({ timezone: tz }).eq('id', user.id)
-        setProfile(p => p ? { ...p, timezone: tz } : p)
+        // Supabase queries only send when awaited or .then()'d — a bare call
+        // here silently never ran, leaving every profile without a timezone.
+        void supabase.from('profiles').update({ timezone: tz }).eq('id', user.id)
+          .then(({ error }) => { if (!error) setProfile(p => p ? { ...p, timezone: tz } : p) })
       }
     } catch { /* Intl may be unavailable */ }
 
@@ -274,121 +277,29 @@ export default function AppPage() {
             })),
         }))
 
-      const cutoff = addDays(today(), -2)
-      const now    = new Date().toISOString()
-
-      // ── Backfill missing days ────────────────────────────────────────────────
-      // Innings are created lazily, so a day the user never opened simply didn't
-      // exist and was never scored. If you don't play, you lose — so materialize
-      // every past day up to the 48-hour cutoff. The auto-close pass below then
-      // records them as losses, and the player can still re-open any of them.
-      {
-        const seasonLastDay = raw.length_weeks
-          ? addDays(getFirstRealWeekStart(raw.start_date), raw.length_weeks * 7 - 1)
-          : null
-        const backfillLast = seasonLastDay && seasonLastDay < cutoff ? seasonLastDay : cutoff
-
-        const seen = new Set<string>()
-        for (const g of raw.games) for (const i of g.innings) seen.add(i.date)
-
-        const missing: string[] = []
-        for (let d = raw.start_date; d <= backfillLast; d = addDays(d, 1)) {
-          if (!seen.has(d)) missing.push(d)
-        }
-
-        if (missing.length > 0) {
-          const byWeek = new Map<string, string[]>()
-          for (const d of missing) {
-            const ws  = getWeekStart(d)
-            const arr = byWeek.get(ws)
-            if (arr) arr.push(d); else byWeek.set(ws, [d])
-          }
-
-          const stamp = Date.now()
-          const newInnings: Record<string, unknown>[] = []
-
-          for (const [ws, dates] of Array.from(byWeek)) {
-            let game = raw.games.find((g: FullGame) => g.week_start === ws)
-            if (!game) {
-              const { data: ng } = await supabase.from('games')
-                .insert({
-                  id: 'g_' + ws + '_' + stamp, user_id: user.id,
-                  season_id: raw.id, week_start: ws, week_end: getWeekEnd(ws),
-                })
-                .select().single()
-              if (!ng) continue
-              game = { ...ng, innings: [] } as FullGame
-              raw.games.push(game)
-            }
-            for (const d of dates) {
-              newInnings.push({
-                id: 'i_' + d + '_bf' + stamp, user_id: user.id, game_id: game.id, date: d,
-                inning_number: inningNumber(d), target_goals: 5,
-                mind_task: '',   mind_completed:   false,
-                spirit_task: '', spirit_completed: false,
-                body_task: '',   body_completed:   false,
-                reflection: '', future_goals: '',
-                status: 'IN_PROGRESS', result: 'IN_PROGRESS',
-                is_rain_delay: false, pinch_hit_used: false,
-              })
-            }
-          }
-
-          if (newInnings.length > 0) {
-            const { data: inserted } = await supabase.from('innings').insert(newInnings).select()
-            for (const inn of (inserted ?? [])) {
-              const g = raw.games.find((gg: FullGame) => gg.id === inn.game_id)
-              if (g) g.innings.push({ ...inn, offense_goals: [] })
-            }
-            raw.games.forEach((g: FullGame) => g.innings.sort((a, b) => a.date.localeCompare(b.date)))
-            raw.games.sort((a: FullGame, b: FullGame) => a.week_start.localeCompare(b.week_start))
-          }
-        }
-      }
-
-      // Auto-close any IN_PROGRESS innings whose 48-hour editing window has expired.
-      // Window = 2 full days after the inning date, so cutoff = today - 2 days.
-      for (const game of raw.games) {
-        let gameChanged = false
-        for (const inning of game.innings) {
-          if (inning.status !== 'IN_PROGRESS') continue
-          if (inning.date > cutoff) continue  // still within the 48-hour window
-          const outs   = effectiveOuts(inning)
-          const runs   = simulateRuns(inning.offense_goals)
-          const result: GameResult = outs < 3 ? 'LOSS' : runs > 0 ? 'WIN' : 'TIE'
-          await supabase.from('innings').update({ status: 'CLOSED', result, closed_at: now }).eq('id', inning.id)
-          inning.status    = 'CLOSED'
-          inning.result    = result
-          inning.closed_at = now
-          gameChanged = true
-        }
-        if (gameChanged) {
-          const newResult = gameResult(game.innings)
-          await supabase.from('games').update({ result: newResult }).eq('id', game.id)
-          game.result = newResult
-        }
-      }
+      // Backfill never-opened days as losses and close innings past their edit
+      // window (re-opened innings keep a fresh 48 hours). Same rules the daily
+      // server job applies — see lib/reconcile.ts.
+      await reconcileSeason(supabase, raw, { userId: user.id, localToday: today() })
 
       // ── Carry forward on day arrival ─────────────────────────────────────────
-      // Incomplete goals roll into today. This fires when the day arrives rather
-      // than when the inning row is created, because the week planner builds
-      // innings days ahead — by then the creation moment has long passed.
-      if (prof?.auto_carry_tasks) {
+      // Unfinished goals always roll into today. This fires when the day arrives
+      // rather than when the inning row is created, because the week planner
+      // builds innings days ahead — by then the creation moment has long passed.
+      {
         const allInnings = raw.games.flatMap((g: FullGame) => g.innings)
         const todayInn   = allInnings.find((i: FullInning) => i.date === today())
         if (todayInn && !todayInn.carried_forward && todayInn.status === 'IN_PROGRESS') {
           const prevInn = allInnings.find((i: FullInning) => i.date === getPrevDate(today()))
-          const already = new Set(
-            todayInn.offense_goals.map((g: OffenseGoal) => g.goal.trim().toLowerCase()))
-          const carry = (prevInn?.offense_goals ?? []).filter((og: OffenseGoal) =>
-            !og.completed && og.goal.trim() && !already.has(og.goal.trim().toLowerCase()))
+          const carry   = carryForwardGoals(prevInn, todayInn.offense_goals.map((g: OffenseGoal) => g.goal))
 
           if (carry.length > 0) {
-            const base = todayInn.offense_goals.length
-            const rows = carry.map((og: OffenseGoal, idx: number) => ({
-              id: 'r_' + Date.now() + '_c' + idx,
+            const base  = todayInn.offense_goals.length
+            const stamp = Date.now()
+            const rows  = carry.map((c, idx) => ({
+              id: 'r_' + stamp + '_c' + idx,
               user_id: user.id, inning_id: todayInn.id,
-              goal: og.goal, completed: false, hit_type: og.hit_type,
+              goal: c.goal, completed: false, hit_type: c.hit_type,
               sort_order: base + idx,
             }))
             const { data: ins } = await supabase.from('offense_goals').insert(rows).select()
@@ -425,18 +336,16 @@ export default function AppPage() {
             game.result = gr
           }
           await supabase.from('seasons').update({ end_date: plannedEnd, is_current: false }).eq('id', raw.id)
-          // Post to team feed if on a team
-          if (user) {
-            const { data: prof } = await supabase.from('profiles').select('group_team_id').eq('id', user.id).maybeSingle()
-            if (prof?.group_team_id) {
-              const gWins   = raw.games.filter((g: FullGame) => gameResult(g.innings) === 'WIN').length
-              const gLosses = raw.games.filter((g: FullGame) => gameResult(g.innings) === 'LOSS').length
-              supabase.from('team_activity').insert({
-                team_id: prof.group_team_id, user_id: user.id,
-                type: 'season_ended',
-                metadata: { wins: gWins, losses: gLosses },
-              })
-            }
+          // Post to team feed if on a team (pre-season never counts toward the record)
+          if (prof?.group_team_id) {
+            const realGames = raw.games.filter((g: FullGame) => !isPreSeasonGame(raw.start_date, g.week_start))
+            const gWins     = realGames.filter((g: FullGame) => gameResult(g.innings) === 'WIN').length
+            const gLosses   = realGames.filter((g: FullGame) => gameResult(g.innings) === 'LOSS').length
+            await supabase.from('team_activity').insert({
+              team_id: prof.group_team_id, user_id: user.id,
+              type: 'season_ended',
+              metadata: { wins: gWins, losses: gLosses },
+            })
           }
           setRecapSeason({ ...raw, end_date: plannedEnd })
           setSeason(null)
@@ -771,11 +680,12 @@ export default function AppPage() {
 
     await supabase.from('seasons').update({ end_date: endDate, is_current: false }).eq('id', s.id)
 
-    // Post to team feed
+    // Post to team feed (pre-season never counts toward the record)
     if (user && profile?.group_team_id) {
-      const gWins   = updatedGames.filter(g => gameResult(g.innings) === 'WIN').length
-      const gLosses = updatedGames.filter(g => gameResult(g.innings) === 'LOSS').length
-      supabase.from('team_activity').insert({
+      const realGames = updatedGames.filter(g => !isPreSeasonGame(s.start_date, g.week_start))
+      const gWins     = realGames.filter(g => gameResult(g.innings) === 'WIN').length
+      const gLosses   = realGames.filter(g => gameResult(g.innings) === 'LOSS').length
+      await supabase.from('team_activity').insert({
         team_id: profile.group_team_id, user_id: user.id,
         type: 'season_ended',
         metadata: { wins: gWins, losses: gLosses },
@@ -790,88 +700,94 @@ export default function AppPage() {
   // ===== WEEK PLANNER =====
   async function handleSaveWeekPlan(plan: WeekPlan) {
     if (!season || !user) { setShowWeekPlanner(false); return }
-    const ws    = getPlanTargetWeekStart(todayStr)
-    const dates = getWeekDates(ws)
-    const stamp = Date.now()
+    const ws       = getPlanTargetWeekStart(todayStr)
+    const dates    = getWeekDates(ws)
+    const stamp    = Date.now()
+    const lastDay  = seasonLastDay(season)
+    // Days that can be planned: today onward, and not past the end of the season.
+    const plannable = (d: string) => d >= todayStr && (!lastDay || d <= lastDay)
 
     beginSave()
 
-    // Ensure the game row for the target week exists
+    // Ensure the game row for the target week exists (someone else may have just
+    // made it — the unique index turns that into a no-op, then we read it back).
     let game = season.games.find(g => g.week_start === ws) ?? null
     if (!game) {
+      await supabase.from('games').upsert({
+        id: 'g_' + ws + '_' + stamp, user_id: user.id,
+        season_id: season.id, week_start: ws, week_end: getWeekEnd(ws),
+      }, { onConflict: 'season_id,week_start', ignoreDuplicates: true })
       const { data: ng, error: gErr } = await supabase.from('games')
-        .insert({
-          id: 'g_' + ws + '_' + stamp, user_id: user.id,
-          season_id: season.id, week_start: ws, week_end: getWeekEnd(ws),
-        })
-        .select().single()
+        .select('*').eq('season_id', season.id).eq('week_start', ws).single()
       if (!ng || gErr) { endSave(gErr ?? { message: 'game' }); return }
       game = { ...ng, innings: [] } as FullGame
     }
-
-    const newInnings: Record<string, unknown>[] = []
-    const goalRows:   Record<string, unknown>[] = []
 
     // Each category has at most one task covering a given day (the planner keeps
     // day selection exclusive within a category), so the first match wins.
     const taskFor = (cat: 'mind' | 'spirit' | 'body', idx: number) =>
       plan.defense[cat].find(t => t.days[idx])?.text ?? ''
 
+    // 1. Create the innings that don't exist yet.
+    const newInnings = dates.flatMap((date, idx) => {
+      if (!plannable(date) || game!.innings.some(i => i.date === date)) return []
+      return [{
+        id: 'i_' + date + '_wp' + stamp, user_id: user.id, game_id: game!.id, date,
+        inning_number: inningNumber(date), target_goals: 5,
+        mind_task:   taskFor('mind', idx),   mind_completed:   false,
+        spirit_task: taskFor('spirit', idx), spirit_completed: false,
+        body_task:   taskFor('body', idx),   body_completed:   false,
+        reflection: '', future_goals: '',
+        status: 'IN_PROGRESS', result: 'IN_PROGRESS',
+        is_rain_delay: false, pinch_hit_used: false,
+        carried_forward: false,
+      }]
+    })
+    if (newInnings.length > 0) {
+      const { error } = await supabase.from('innings')
+        .upsert(newInnings, { onConflict: 'game_id,date', ignoreDuplicates: true })
+      if (error) { endSave(error); return }
+    }
+
+    // 2. Read the week back as it now stands, so goals attach to real rows and
+    //    dedupe against goals that are really there.
+    const { data: weekInnings, error: readErr } = await supabase.from('innings')
+      .select('*, offense_goals(goal)').eq('game_id', game.id)
+    if (readErr) { endSave(readErr); return }
+
+    const goalRows: Record<string, unknown>[] = []
     for (let idx = 0; idx < 7; idx++) {
       const date = dates[idx]
-      if (date < todayStr) continue                             // past days aren't planned
-      const existing = game.innings.find(i => i.date === date)
-      if (existing?.status === 'CLOSED') continue               // already finished
+      if (!plannable(date)) continue
+      const row = (weekInnings ?? []).find(i => i.date === date)
+      if (!row || row.status === 'CLOSED') continue               // already finished
 
-      const inningId = existing?.id ?? 'i_' + date + '_wp' + stamp
-      const dMind    = taskFor('mind', idx)
-      const dSpirit  = taskFor('spirit', idx)
-      const dBody    = taskFor('body', idx)
-
-      if (!existing) {
-        newInnings.push({
-          id: inningId, user_id: user.id, game_id: game.id, date,
-          inning_number: inningNumber(date), target_goals: 5,
-          mind_task:   dMind,   mind_completed:   false,
-          spirit_task: dSpirit, spirit_completed: false,
-          body_task:   dBody,   body_completed:   false,
-          reflection: '', future_goals: '',
-          status: 'IN_PROGRESS', result: 'IN_PROGRESS',
-          is_rain_delay: false, pinch_hit_used: false,
-          carried_forward: false,
-        })
-      } else {
-        // Only fill defense slots the day hasn't already got — never overwrite.
-        const patch: Record<string, string> = {}
-        if (dMind   && !existing.mind_task.trim())   patch.mind_task   = dMind
-        if (dSpirit && !existing.spirit_task.trim()) patch.spirit_task = dSpirit
-        if (dBody   && !existing.body_task.trim())   patch.body_task   = dBody
-        if (Object.keys(patch).length > 0) {
-          await supabase.from('innings').update(patch).eq('id', existing.id)
-        }
+      // Existing day: only fill defense slots it hasn't already got — never overwrite.
+      const patch: Record<string, string> = {}
+      const dMind = taskFor('mind', idx), dSpirit = taskFor('spirit', idx), dBody = taskFor('body', idx)
+      if (dMind   && !row.mind_task?.trim())   patch.mind_task   = dMind
+      if (dSpirit && !row.spirit_task?.trim()) patch.spirit_task = dSpirit
+      if (dBody   && !row.body_task?.trim())   patch.body_task   = dBody
+      if (Object.keys(patch).length > 0) {
+        await supabase.from('innings').update(patch).eq('id', row.id)
       }
 
       // Schedule this day's hits, skipping any goal text already on the day.
-      const already = new Set(
-        (existing?.offense_goals ?? []).map(g => g.goal.trim().toLowerCase()))
-      let order = existing?.offense_goals.length ?? 0
+      const have  = (row.offense_goals ?? []) as { goal: string }[]
+      const seen  = new Set(have.map(g => g.goal.trim().toLowerCase()))
+      let order   = have.length
       for (const g of plan.goals) {
-        if (!g.days[idx]) continue
-        if (already.has(g.text.toLowerCase())) continue
+        if (!g.days[idx] || seen.has(g.text.toLowerCase())) continue
+        seen.add(g.text.toLowerCase())
         goalRows.push({
           id: 'r_' + stamp + '_' + idx + '_' + order,
-          user_id: user.id, inning_id: inningId,
+          user_id: user.id, inning_id: row.id,
           goal: g.text, completed: false, hit_type: g.hitType, sort_order: order,
         })
         order++
       }
     }
 
-    // Innings first — the goal rows reference them.
-    if (newInnings.length > 0) {
-      const { error } = await supabase.from('innings').insert(newInnings)
-      if (error) { endSave(error); return }
-    }
     if (goalRows.length > 0) {
       const { error } = await supabase.from('offense_goals').insert(goalRows)
       if (error) { endSave(error); return }
@@ -934,17 +850,27 @@ export default function AppPage() {
       const ws  = getWeekStart(date)
       const we  = getWeekEnd(ws)
       const gid = 'g_' + ws + '_' + Date.now()
-      const { data: newGame, error: gameError } = await supabase
+      let { data: newGame, error: gameError } = await supabase
         .from('games')
         .insert({ id: gid, user_id: user.id, season_id: season.id, week_start: ws, week_end: we })
         .select().single()
+      // Another tab or the server job created this week first — use theirs.
+      if (gameError?.code === '23505') {
+        ({ data: newGame, error: gameError } = await supabase.from('games')
+          .select('*').eq('season_id', season.id).eq('week_start', ws).single())
+      }
       if (!newGame || gameError) {
         showToast('❌ Failed to load this week. Please try again.')
         viewDateInProgressRef.current = false
         return
       }
-      game = { ...newGame, innings: [] }
-      setSeason(prev => prev ? { ...prev, games: [...prev.games, game!].sort((a, b) => a.week_start.localeCompare(b.week_start)) } : prev)
+      const created: FullGame = { ...newGame, innings: [] }
+      game = created
+      setSeason(prev => prev ? {
+        ...prev,
+        games: [...prev.games.filter(g => g.id !== created.id), created]
+          .sort((a, b) => a.week_start.localeCompare(b.week_start)),
+      } : prev)
     }
 
     if (!game) return  // TypeScript guard — game is always defined at this point
@@ -952,7 +878,7 @@ export default function AppPage() {
     // Ensure inning exists for this date
     if (!game.innings.find(i => i.date === date)) {
       const iid = 'i_' + date + '_' + Date.now()
-      const { data: newInning, error: inningError } = await supabase
+      let { data: newInning, error: inningError } = await supabase
         .from('innings')
         .insert({
           id: iid, user_id: user.id, game_id: game.id, date,
@@ -970,6 +896,14 @@ export default function AppPage() {
           carried_forward: date <= today(),
         })
         .select().single()
+      // Already created elsewhere (another tab, or the server job) — load that one.
+      let existingGoals: OffenseGoal[] | null = null
+      if (inningError?.code === '23505') {
+        const { data: found, error: findErr } = await supabase.from('innings')
+          .select('*, offense_goals(*)').eq('game_id', game.id).eq('date', date).single()
+        newInning = found; inningError = findErr
+        if (found) existingGoals = (found.offense_goals ?? []).sort((a: OffenseGoal, b: OffenseGoal) => a.sort_order - b.sort_order)
+      }
       if (!newInning || inningError) {
         showToast("❌ Couldn't load this day — please try again")
         viewDateInProgressRef.current = false
@@ -977,40 +911,19 @@ export default function AppPage() {
         if (next) { pendingViewDateRef.current = null; handleViewDate(next) }
         return
       }
-      let offenseGoals: OffenseGoal[] = []
+      let offenseGoals: OffenseGoal[] = existingGoals ?? []
 
-      const prevDate   = getPrevDate(date)
-      const prevInning = season.games.flatMap(g => g.innings).find(i => i.date === prevDate)
-
-      if (profile?.auto_carry_tasks && prevInning) {
-        // Carry forward incomplete offense goals from the previous day
-        const incomplete = prevInning.offense_goals.filter(og => !og.completed && og.goal.trim())
-        if (incomplete.length > 0) {
-          const inserts = incomplete.map((og, idx) => ({
-            id: 'r_' + Date.now() + '_c' + idx,
-            user_id: user.id,
-            inning_id: iid,
-            goal: og.goal,
-            completed: false,
-            hit_type: og.hit_type,
-            sort_order: idx,
+      // Unfinished goals and "plan tomorrow" lines roll in — but only once the day
+      // has arrived. A future day picks them up on load when it gets here.
+      if (!existingGoals && date <= today()) {
+        const prevInning = season.games.flatMap(g => g.innings).find(i => i.date === getPrevDate(date))
+        const carry      = carryForwardGoals(prevInning, [])
+        if (carry.length > 0) {
+          const stamp   = Date.now()
+          const inserts = carry.map((c, idx) => ({
+            id: 'r_' + stamp + '_c' + idx, user_id: user.id, inning_id: newInning!.id,
+            goal: c.goal, completed: false, hit_type: c.hit_type, sort_order: idx,
           }))
-          const { data: inserted } = await supabase.from('offense_goals').insert(inserts).select()
-          if (inserted) offenseGoals = inserted
-        }
-      } else if (prevInning?.future_goals?.trim()) {
-        // Fall back to manual future_goals text
-        const lines = prevInning.future_goals.split('\n').map((l: string) => l.trim()).filter(Boolean)
-        const inserts = lines.map((text: string, idx: number) => ({
-          id: 'r_' + Date.now() + '_' + idx,
-          user_id: user.id,
-          inning_id: iid,
-          goal: text,
-          completed: false,
-          hit_type: 'single' as const,
-          sort_order: idx,
-        }))
-        if (inserts.length > 0) {
           const { data: inserted } = await supabase.from('offense_goals').insert(inserts).select()
           if (inserted) offenseGoals = inserted
         }
@@ -1021,7 +934,7 @@ export default function AppPage() {
         ...prev,
         games: prev.games.map(g =>
           g.id === game!.id
-            ? { ...g, innings: [...g.innings, inning].sort((a, b) => a.date.localeCompare(b.date)) }
+            ? { ...g, innings: [...g.innings.filter(i => i.id !== inning.id), inning].sort((a, b) => a.date.localeCompare(b.date)) }
             : g),
       })
     }
@@ -1323,19 +1236,21 @@ export default function AppPage() {
       showToast(isUpdate ? '✅ Inning updated!' : '💪 Inning closed. Get \'em tomorrow!')
     }
 
-    // Post to team activity feed (fire-and-forget)
+    // Post to team activity feed, then check team achievements (fire-and-forget).
+    // Returning the rpc from .then() is what makes it actually send — a bare
+    // supabase call inside the callback never runs.
     if (!innErr && !isUpdate && profile?.group_team_id) {
-      const teamId = profile.group_team_id
-      supabase.from('team_activity').insert({
+      const teamId     = profile.group_team_id
+      const inningDate = viewInning.date
+      void supabase.from('team_activity').insert({
         team_id:  teamId,
         user_id:  user?.id,
         type:     result === 'WIN' ? 'inning_won' : 'inning_closed',
-        metadata: { result, runs, date: viewInning?.date },
-      }).then(() => {
-        if (result === 'WIN') {
-          supabase.rpc('check_team_achievements', { p_team_id: teamId })
-        }
-      })
+        metadata: { result, runs, date: inningDate },
+      }).then(() =>
+        // Every close is checked — Lockdown can be earned on a tie.
+        supabase.rpc('check_team_achievements', { p_team_id: teamId, p_date: inningDate })
+      )
     }
   }
 
@@ -1345,15 +1260,19 @@ export default function AppPage() {
     const inningId     = viewInning.id
     const capturedGame = viewGame
     const originalFields = {
-      status:    viewInning.status,
-      result:    viewInning.result,
-      closed_at: viewInning.closed_at,
+      status:      viewInning.status,
+      result:      viewInning.result,
+      closed_at:   viewInning.closed_at,
+      reopened_at: viewInning.reopened_at,
     }
 
+    // reopened_at gives the inning a fresh 48 hours. Without it, the realtime
+    // reload this very write triggers would auto-close an older inning again.
     const patch = {
-      status:    'IN_PROGRESS' as Status,
-      result:    'IN_PROGRESS' as GameResult,
-      closed_at: null,
+      status:      'IN_PROGRESS' as Status,
+      result:      'IN_PROGRESS' as GameResult,
+      closed_at:   null,
+      reopened_at: new Date().toISOString(),
     }
 
     // Set forceOpen FIRST so any reload that fires sees it immediately
@@ -1552,11 +1471,16 @@ export default function AppPage() {
   const planWeekStart = getPlanTargetWeekStart(todayStr)
   const planWeekDates = getWeekDates(planWeekStart)
   const planGame      = season.games.find(g => g.week_start === planWeekStart) ?? null
-  // Days already spent — past dates and any inning that's been closed out.
+  const planSeasonEnd = seasonLastDay(season)
+  // Days that can't be planned — already past, closed out, or after the season ends.
   const planLockedDates = planWeekDates.filter(d =>
-    d < todayStr || planGame?.innings.find(i => i.date === d)?.status === 'CLOSED')
+    d < todayStr
+    || (planSeasonEnd !== null && d > planSeasonEnd)
+    || planGame?.innings.find(i => i.date === d)?.status === 'CLOSED')
   const planIsNextWeek  = planWeekStart > getWeekStart(todayStr)
+  // Hidden once the target week starts after the season's last day.
   const canPlanWeek     = planLockedDates.length < 7 && !seasonInGrace
+    && (planSeasonEnd === null || planWeekStart <= planSeasonEnd)
 
   // ── Pre-season detection ──────────────────────────────────────────────────
   const isViewingPreSeason = viewGame

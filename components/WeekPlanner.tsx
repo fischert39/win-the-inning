@@ -176,7 +176,7 @@ export default function WeekPlanner({
               key={i}
               onClick={() => { if (!locked) onToggle(i) }}
               disabled={locked}
-              title={locked ? 'This day is already finished' : dates[i]}
+              title={locked ? "This day can't be planned" : dates[i]}
               aria-pressed={on}
               className={`w-7 h-7 rounded-lg text-[11px] font-black transition-all active:scale-90 ${
                 locked
@@ -228,8 +228,8 @@ export default function WeekPlanner({
           <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 flex items-start gap-3">
             <span className="text-lg leading-none">⏳</span>
             <p className="text-amber-800 text-xs leading-snug">
-              <strong className="font-bold">{lockedCount} day{lockedCount !== 1 ? 's' : ''} already finished.</strong>{' '}
-              Those innings won&apos;t be changed — planning applies to the days still ahead.
+              <strong className="font-bold">{lockedCount} day{lockedCount !== 1 ? 's' : ''} can&apos;t be planned.</strong>{' '}
+              They&apos;re already played, or fall after your season ends — planning applies to the days that remain.
             </p>
           </div>
         )}

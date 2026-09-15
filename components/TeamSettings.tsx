@@ -75,7 +75,8 @@ export default function TeamSettings({
   const [teamName,      setTeamName]      = useState(currentTeamName ?? '')
   const [mascot,        setMascot]        = useState(currentMascot ?? MASCOTS[0].emoji)
   const [palette,       setPalette]       = useState(currentPalette ?? buildPaletteString('orange', 'navy'))
-  const [autoCarry,     setAutoCarry]     = useState(currentAutoCarry)
+  // Unfinished goals always carry to the next day — no longer a setting.
+  const autoCarry = true
   const [discoverable,  setDiscoverable]  = useState(currentDiscoverable)
   const [publicEmail,   setPublicEmail]   = useState(currentPublicEmail ?? '')
   const [saving,        setSaving]        = useState(false)
@@ -133,17 +134,6 @@ export default function TeamSettings({
           </label>
           <PaletteSelector value={palette} onChange={setPalette} dark />
         </div>
-
-        {/* Auto-carry toggle */}
-        <Toggle
-          icon="🔄"
-          title="Auto-carry incomplete tasks"
-          desc="Unfinished goals roll to the next day"
-          active={autoCarry}
-          onToggle={() => setAutoCarry(v => !v)}
-          color="orange"
-          className="mb-3"
-        />
 
         {/* Discoverable toggle */}
         <Toggle
