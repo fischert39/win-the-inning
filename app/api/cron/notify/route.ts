@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { sendPush } from '@/lib/web-push'
 import { today, addDays, getPrevDate, getWeekStart } from '@/lib/game-logic'
+import { seasonLastDay } from '@/lib/reconcile'
 
 export const runtime = 'nodejs'
 
@@ -71,6 +72,11 @@ export async function GET(req: NextRequest) {
   const profileMap = new Map(profiles?.map(p => [p.id, p]) ?? [])
 
   // One user can have several devices — decide once per user, then send to all.
+  // Each player's current season, so reminders match where they are in it.
+  const { data: seasons } = await supabase
+    .from('seasons').select('user_id, start_date, length_weeks').eq('is_current', true).in('user_id', userIds)
+  const seasonByUser = new Map((seasons ?? []).map(s => [s.user_id as string, s]))
+
   const subsByUser = new Map<string, typeof subs>()
   for (const s of subs) {
     const arr = subsByUser.get(s.user_id)
@@ -116,7 +122,27 @@ export async function GET(req: NextRequest) {
     let body: string
     let tag = 'wti-daily'
 
-    if (dow === 1) {
+    const season  = seasonByUser.get(userId)
+    const lastDay = season ? seasonLastDay(season) : null
+
+    if (!season) {
+      // ── Between seasons: a gentle weekly invite, not a daily nag ──
+      if (dow !== 1) return
+      tag   = 'wti-season'
+      title = `⚾ Ready for a new season, ${firstName}?`
+      body  = "Your last season is in the books. Start the next one whenever you're ready."
+    } else if (lastDay && localToday > lastDay) {
+      // ── Season over, recap waiting: the day after, then Mondays ──
+      if (localToday !== addDays(lastDay, 1) && dow !== 1) return
+      tag   = 'wti-season'
+      title = `🏁 Your season is over, ${firstName}`
+      body  = 'Open the app to see your season recap and start the next one.'
+    } else if (lastDay && localToday === lastDay) {
+      // ── Final day: no next week to plan ──
+      tag   = 'wti-final'
+      title = `🏆 Final inning of the season, ${firstName}`
+      body  = 'Last day — win it and close out the season strong.'
+    } else if (dow === 1) {
       // ── Monday (local): last week's recap ──
       tag = 'wti-weekly'
       const prevWeekEnd   = localYesterday               // last Sunday (local)

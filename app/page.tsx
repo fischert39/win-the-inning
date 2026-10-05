@@ -12,7 +12,7 @@ import {
 } from '@/lib/game-logic'
 import WeekPlanner, { type WeekPlan } from '@/components/WeekPlanner'
 import { applyPaletteAndCache } from '@/lib/palettes'
-import { reconcileSeason, carryForwardGoals, seasonLastDay } from '@/lib/reconcile'
+import { reconcileSeason, carryForwardGoals, seasonLastDay, closingResult } from '@/lib/reconcile'
 import AppHeader      from '@/components/AppHeader'
 import StreakBanner   from '@/components/StreakBanner'
 import DayContext     from '@/components/DayContext'
@@ -640,7 +640,7 @@ export default function AppPage() {
     if (!season) return
     const ok = await confirmDialog({
       title: 'End this season?',
-      message: 'Your record will be saved to your history and a fresh season can begin.',
+      message: "Your record so far will be saved to your history and a fresh season can begin. Any days you've planned after today will be cleared.",
       confirmLabel: 'End Season',
       icon: '🏁',
     })
@@ -649,28 +649,40 @@ export default function AppPage() {
   }
 
   async function doEndSeason(s: FullSeason) {
-    // Use the planned end date if available, otherwise today
-    const endDate = s.length_weeks
-      ? addDays(getFirstRealWeekStart(s.start_date), s.length_weeks * 7 - 1)
-      : todayStr
+    // A season ends on its planned last day — or today, when ended early.
+    const plannedEnd = seasonLastDay(s)
+    const endDate    = plannedEnd && plannedEnd < todayStr ? plannedEnd : todayStr
 
-    // Finalize any still-open innings so the recap shows accurate results
-    const now = new Date().toISOString()
-    const updatedGames = await Promise.all(s.games.map(async game => {
-      const updatedInnings = game.innings.map(inning => {
-        if (inning.status !== 'IN_PROGRESS') return inning
-        const outs   = effectiveOuts(inning)
-        const runs   = simulateRuns(inning.offense_goals)
-        const result = (outs < 3 ? 'LOSS' : runs > 0 ? 'WIN' : 'TIE') as GameResult
-        return { ...inning, status: 'CLOSED' as Status, result, closed_at: now }
-      })
-      for (const inning of game.innings) {
-        if (inning.status !== 'IN_PROGRESS') continue
-        const outs   = effectiveOuts(inning)
-        const runs   = simulateRuns(inning.offense_goals)
-        const result = (outs < 3 ? 'LOSS' : runs > 0 ? 'WIN' : 'TIE') as GameResult
-        await supabase.from('innings').update({ status: 'CLOSED', result, closed_at: now }).eq('id', inning.id)
+    // Days planned after the end won't be played in this season: clear them
+    // rather than recording them as losses.
+    const laterInnings = s.games.flatMap(g => g.innings).filter(i => i.date > endDate)
+    if (laterInnings.length > 0) {
+      await supabase.from('innings').delete().in('id', laterInnings.map(i => i.id))
+    }
+    const laterGames = s.games.filter(g => g.week_start > endDate)
+    if (laterGames.length > 0) {
+      await supabase.from('games').delete().in('id', laterGames.map(g => g.id))
+    }
+
+    // Close whatever's still open (up to the end date) as it stands, so the
+    // recap shows final results. Batched: one update per result type.
+    const now        = new Date().toISOString()
+    const keptGames  = s.games
+      .filter(g => g.week_start <= endDate)
+      .map(g => ({ ...g, innings: g.innings.filter(i => i.date <= endDate) }))
+    const toClose    = keptGames.flatMap(g => g.innings).filter(i => i.status === 'IN_PROGRESS')
+    for (const res of ['WIN', 'TIE', 'LOSS'] as GameResult[]) {
+      const ids = toClose.filter(i => closingResult(i) === res).map(i => i.id)
+      if (ids.length > 0) {
+        await supabase.from('innings').update({ status: 'CLOSED', result: res, closed_at: now }).in('id', ids)
       }
+    }
+
+    const updatedGames = await Promise.all(keptGames.map(async game => {
+      const updatedInnings = game.innings.map(inning =>
+        inning.status === 'IN_PROGRESS'
+          ? { ...inning, status: 'CLOSED' as Status, result: closingResult(inning), closed_at: now }
+          : inning)
       const gr = gameResult(updatedInnings)
       if (gr !== game.result) {
         await supabase.from('games').update({ result: gr }).eq('id', game.id)

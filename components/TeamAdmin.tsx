@@ -20,6 +20,18 @@ export default function TeamAdmin({ team, members, myUserId, onClose, onLeft, on
   const [loading,  setLoading]  = useState(false)
   const [copied,   setCopied]   = useState(false)
   const [confirm,  setConfirm]  = useState<string | null>(null)
+  const [error,    setError]    = useState<string | null>(null)
+
+  // Team actions answer with { error: code } instead of failing — say why.
+  function explain(res: { data: unknown; error: { message: string } | null }) {
+    const code = (res.data as { error?: string } | null)?.error
+    if (res.error) setError("That didn't go through — check your connection and try again.")
+    else if (code === 'last_admin') setError('Every team needs an admin. Make someone else an admin first.')
+    else if (code === 'team_full') setError('The team is full — 10 members is the limit.')
+    else if (code === 'not_admin') setError('Only team admins can do that.')
+    else { setError(null); return true }
+    return false
+  }
 
   const loadPending = useCallback(async () => {
     if (!isAdmin) return
@@ -38,7 +50,7 @@ export default function TeamAdmin({ team, members, myUserId, onClose, onLeft, on
 
   async function handleRequest(userId: string, approve: boolean) {
     setLoading(true)
-    await supabase.rpc('handle_join_request', { p_user_id: userId, p_approve: approve })
+    explain(await supabase.rpc('handle_join_request', { p_user_id: userId, p_approve: approve }))
     await loadPending()
     onRefresh()
     setLoading(false)
@@ -47,7 +59,7 @@ export default function TeamAdmin({ team, members, myUserId, onClose, onLeft, on
   async function handleRemove(userId: string) {
     setConfirm(null)
     setLoading(true)
-    await supabase.rpc('leave_team', { p_user_id: userId })
+    explain(await supabase.rpc('leave_team', { p_user_id: userId }))
     onRefresh()
     setLoading(false)
   }
@@ -55,7 +67,7 @@ export default function TeamAdmin({ team, members, myUserId, onClose, onLeft, on
   async function handlePromote(userId: string, currentRole: string) {
     setLoading(true)
     const newRole = currentRole === 'admin' ? 'member' : 'admin'
-    await supabase.rpc('set_member_role', { p_user_id: userId, p_role: newRole })
+    explain(await supabase.rpc('set_member_role', { p_user_id: userId, p_role: newRole }))
     onRefresh()
     setLoading(false)
   }
@@ -63,8 +75,9 @@ export default function TeamAdmin({ team, members, myUserId, onClose, onLeft, on
   async function handleLeave() {
     setConfirm(null)
     setLoading(true)
-    await supabase.rpc('leave_team')
-    onLeft()
+    const ok = explain(await supabase.rpc('leave_team'))
+    setLoading(false)
+    if (ok) onLeft()
   }
 
   return (
@@ -79,6 +92,9 @@ export default function TeamAdmin({ team, members, myUserId, onClose, onLeft, on
         </div>
 
         <div className="flex-1 overflow-y-auto px-6 py-5 space-y-6">
+          {error && (
+            <p role="alert" className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-xl px-4 py-2.5">{error}</p>
+          )}
           {/* Invite code (admin only) */}
           {isAdmin && team.invite_code && (
             <div>

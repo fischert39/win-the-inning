@@ -24,6 +24,7 @@ Deploy order rule: **apply a migration before pushing code that depends on it.**
 | 027_reopen_window.sql | ✅ Sep 15 2026 | Re-open 48h window |
 | 028_dedupe_innings_unique.sql | ✅ Sep 15 2026 | Removed 11 duplicate innings + 1 duplicate week from two past seasons |
 | 029_team_scoring.sql | ✅ Sep 15 2026 | Replaces 019; team achievements + scoreboards |
+| 030_team_security.sql | ✅ Oct 4 2026 | Closes team-takeover hole; team admin always kept |
 
 Checking what's really there beats trusting this table — e.g. in the SQL editor:
 `select proname from pg_proc where pronamespace = 'public'::regnamespace order by 1;`

@@ -299,11 +299,10 @@ export default function AdminDashboard({ stats, users }: { stats: AdminStats; us
         {/* ── Feature Adoption ── */}
         <section>
           <SectionLabel>Feature Adoption</SectionLabel>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
             <Card label="Username Set"    value={stats.usernameSetUsers}   sub={`of ${stats.totalUsers} players`} />
             <Card label="Discoverable"    value={stats.discoverableUsers}  sub="social search on"    accent="text-brand-teal" />
             <Card label="Bible Verse"     value={stats.bibleVerseUsers}    sub="daily verse enabled" accent="text-brand-purple" />
-            <Card label="Auto-Carry Tasks" value={stats.autoCarryUsers}   sub="tasks carry over"    accent="text-brand-green" />
           </div>
         </section>
 
@@ -349,7 +348,6 @@ export default function AdminDashboard({ stats, users }: { stats: AdminStats; us
                   {th('bodyCompPct',      'Body%',     true)}
                   {th('rainDelayInnings', 'Rain',      true)}
                   {th('bibleVerse',       'Bible')}
-                  {th('autoCarry',        'Auto')}
                   {th('isDiscoverable',   'Social')}
                 </tr>
               </thead>
@@ -415,8 +413,6 @@ export default function AdminDashboard({ stats, users }: { stats: AdminStats; us
                     <td className="px-3 py-2.5 text-right tabular-nums text-slate-400">{u.rainDelayInnings}</td>
                     {/* Bible */}
                     <td className="px-3 py-2.5 text-center">{u.bibleVerse     ? <Check /> : <Dash />}</td>
-                    {/* Auto */}
-                    <td className="px-3 py-2.5 text-center">{u.autoCarry      ? <Check /> : <Dash />}</td>
                     {/* Social */}
                     <td className="px-3 py-2.5 text-center">{u.isDiscoverable ? <Check /> : <Dash />}</td>
                   </tr>
