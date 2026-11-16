@@ -124,7 +124,7 @@ export default function TeamPage({ userId, groupTeamId, onUnreadChange }: Props)
 
   if (loading) {
     return (
-      <div className="bg-white rounded-2xl border border-slate-100 p-6 animate-pulse space-y-4">
+      <div className="bg-surface rounded-2xl border border-slate-100 p-6 animate-pulse space-y-4">
         <div className="h-5 bg-slate-100 rounded w-1/3" />
         <div className="h-3 bg-slate-100 rounded w-1/2" />
         <div className="h-3 bg-slate-100 rounded w-2/3" />
@@ -137,9 +137,9 @@ export default function TeamPage({ userId, groupTeamId, onUnreadChange }: Props)
   if (!team) {
     return (
       <>
-        <div className="bg-white rounded-2xl border border-slate-100 overflow-hidden">
+        <div className="bg-surface rounded-2xl border border-slate-100 overflow-hidden">
           <div className="bg-brand-navy px-5 pt-5 pb-4">
-            <p className="text-white/40 text-[10px] font-black uppercase tracking-widest mb-1">Team</p>
+            <p className="text-white/60 text-[11px] font-black uppercase tracking-widest mb-1">Team</p>
             <h2 className="text-white font-black text-xl">Play Together</h2>
             <p className="text-white/60 text-sm mt-1">
               Create or join a team to cheer each other on and track your crew's progress
@@ -184,10 +184,10 @@ export default function TeamPage({ userId, groupTeamId, onUnreadChange }: Props)
 
   if (team.my_status === 'pending') {
     return (
-      <div className="bg-white rounded-2xl border border-slate-100 p-6 text-center space-y-3">
+      <div className="bg-surface rounded-2xl border border-slate-100 p-6 text-center space-y-3">
         <p className="text-3xl">📬</p>
-        <p className="font-black text-brand-navy text-lg">{team.name}</p>
-        <p className="text-slate-400 text-sm">Your join request is pending approval from the team admin.</p>
+        <p className="font-black text-ink text-lg">{team.name}</p>
+        <p className="text-slate-500 text-sm">Your join request is pending approval from the team admin.</p>
         <button
           onClick={async () => {
             await supabase.rpc('leave_team')
@@ -207,14 +207,14 @@ export default function TeamPage({ userId, groupTeamId, onUnreadChange }: Props)
 
   return (
     <>
-      <div className="bg-white rounded-2xl border border-slate-100 overflow-hidden">
+      <div className="bg-surface rounded-2xl border border-slate-100 overflow-hidden">
         {/* Team header */}
         <div className="bg-brand-navy px-5 pt-5 pb-4">
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-white/40 text-[10px] font-black uppercase tracking-widest mb-1">Team</p>
+              <p className="text-white/60 text-[11px] font-black uppercase tracking-widest mb-1">Team</p>
               <h2 className="text-white font-black text-xl">{team.name}</h2>
-              <p className="text-white/50 text-sm mt-0.5">
+              <p className="text-white/65 text-sm mt-0.5">
                 {team.member_count} member{team.member_count !== 1 ? 's' : ''}
               </p>
             </div>
@@ -265,7 +265,7 @@ export default function TeamPage({ userId, groupTeamId, onUnreadChange }: Props)
               className={`flex-1 py-3 text-sm font-bold transition-colors ${
                 subTab === tab
                   ? 'text-brand-orange border-b-2 border-brand-orange'
-                  : 'text-slate-400 hover:text-slate-600'
+                  : 'text-slate-500 hover:text-slate-600'
               }`}
             >
               {tab === 'feed' ? '📋 Feed' : '📊 Scoreboard'}
@@ -285,7 +285,7 @@ export default function TeamPage({ userId, groupTeamId, onUnreadChange }: Props)
               {!feedLoading && feed.length > 0 && (
                 <button
                   onClick={() => team.id && loadFeed(team.id)}
-                  className="w-full mt-3 py-2 text-xs text-slate-400 hover:text-brand-orange font-semibold transition-colors"
+                  className="w-full mt-3 py-2 text-xs text-slate-500 hover:text-brand-orange font-semibold transition-colors"
                 >
                   Refresh
                 </button>

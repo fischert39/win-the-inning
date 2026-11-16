@@ -159,7 +159,7 @@ export default function AdminDashboard({ stats, users }: { stats: AdminStats; us
           'px-3 py-2.5 text-xs font-semibold uppercase tracking-wide cursor-pointer select-none whitespace-nowrap',
           'transition-colors hover:bg-slate-100 border-b border-slate-200',
           right ? 'text-right' : 'text-left',
-          active ? 'text-brand-orange bg-orange-50' : 'text-slate-400',
+          active ? 'text-brand-orange bg-orange-50' : 'text-slate-500',
         ].join(' ')}
       >
         {label}{active ? (sortDir === 'asc' ? ' ↑' : ' ↓') : ''}
@@ -174,14 +174,14 @@ export default function AdminDashboard({ stats, users }: { stats: AdminStats; us
   const defDone       = stats.mindCompleted + stats.spiritCompleted + stats.bodyCompleted
 
   return (
-    <div className="min-h-screen bg-slate-50 pb-16">
+    <div className="min-h-screen bg-page pb-16">
 
       {/* ── Header ── */}
       <div className="bg-brand-navy text-white px-6 py-6">
         <div className="max-w-[1440px] mx-auto flex flex-wrap items-end gap-4 justify-between">
           <div>
             <h1 className="text-2xl font-extrabold tracking-tight">Overview</h1>
-            <p className="text-white/40 text-sm mt-0.5">
+            <p className="text-white/60 text-sm mt-0.5">
               {stats.totalUsers} registered {stats.totalUsers === 1 ? 'player' : 'players'} &nbsp;·&nbsp;
               {new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
             </p>
@@ -224,7 +224,7 @@ export default function AdminDashboard({ stats, users }: { stats: AdminStats; us
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
 
           {/* Win Rates */}
-          <div className="bg-white rounded-xl border border-slate-200 p-5 space-y-5">
+          <div className="bg-surface rounded-xl border border-slate-200 p-5 space-y-5">
             <SectionLabel>Win Rates</SectionLabel>
             <div className="space-y-4">
               <RateBlock
@@ -255,7 +255,7 @@ export default function AdminDashboard({ stats, users }: { stats: AdminStats; us
           </div>
 
           {/* Defense Breakdown */}
-          <div className="bg-white rounded-xl border border-slate-200 p-5">
+          <div className="bg-surface rounded-xl border border-slate-200 p-5">
             <SectionLabel>Defense Breakdown</SectionLabel>
             <div className="space-y-5 mt-2">
               {[
@@ -266,7 +266,7 @@ export default function AdminDashboard({ stats, users }: { stats: AdminStats; us
                 <div key={label}>
                   <div className="flex justify-between mb-1.5">
                     <span className="text-sm font-medium text-slate-700">{label}</span>
-                    <span className="text-xs text-slate-400 tabular-nums">{done.toLocaleString()} / {total.toLocaleString()}</span>
+                    <span className="text-xs text-slate-500 tabular-nums">{done.toLocaleString()} / {total.toLocaleString()}</span>
                   </div>
                   <ProgressBar value={done} total={total} color={color} />
                 </div>
@@ -275,7 +275,7 @@ export default function AdminDashboard({ stats, users }: { stats: AdminStats; us
           </div>
 
           {/* Hit Distribution */}
-          <div className="bg-white rounded-xl border border-slate-200 p-5">
+          <div className="bg-surface rounded-xl border border-slate-200 p-5">
             <SectionLabel>Hit Distribution</SectionLabel>
             <div className="space-y-5 mt-2">
               {[
@@ -287,7 +287,7 @@ export default function AdminDashboard({ stats, users }: { stats: AdminStats; us
                 <div key={label}>
                   <div className="flex justify-between mb-1.5">
                     <span className="text-sm font-medium text-slate-700 font-mono">{label}</span>
-                    <span className="text-xs text-slate-400 tabular-nums">{count.toLocaleString()} &nbsp;({safePct(count, hitTotal)}%)</span>
+                    <span className="text-xs text-slate-500 tabular-nums">{count.toLocaleString()} &nbsp;({safePct(count, hitTotal)}%)</span>
                   </div>
                   <ProgressBar value={count} total={hitTotal} color={color} />
                 </div>
@@ -314,11 +314,11 @@ export default function AdminDashboard({ stats, users }: { stats: AdminStats; us
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="Search name, email, username…"
-              className="border border-slate-200 rounded-lg px-3 py-1.5 text-sm text-slate-700 w-64 focus:ring-2 focus:ring-brand-orange/30 focus:border-brand-orange outline-none bg-white"
+              className="border border-slate-200 rounded-lg px-3 py-1.5 text-sm text-slate-700 w-64 focus:ring-2 focus:ring-brand-orange/30 focus:border-brand-orange outline-none bg-surface"
             />
           </div>
 
-          <div className="bg-white rounded-xl border border-slate-200 overflow-x-auto">
+          <div className="bg-surface rounded-xl border border-slate-200 overflow-x-auto">
             <table className="w-full text-sm border-collapse">
               <thead className="bg-slate-50 sticky top-0 z-10">
                 <tr>
@@ -355,13 +355,13 @@ export default function AdminDashboard({ stats, users }: { stats: AdminStats; us
                 {sorted.map((u, i) => (
                   <tr
                     key={u.id}
-                    className={`border-b border-slate-100 hover:bg-orange-50/40 transition-colors ${i % 2 === 0 ? 'bg-white' : 'bg-slate-50/40'}`}
+                    className={`border-b border-slate-100 hover:bg-orange-50/40 transition-colors ${i % 2 === 0 ? 'bg-surface' : 'bg-slate-50/40'}`}
                   >
                     {/* Player */}
                     <td className="px-3 py-2.5 whitespace-nowrap">
-                      <p className="font-medium text-brand-navy leading-tight">{u.displayName}</p>
-                      {u.username  && <p className="text-xs text-slate-400">@{u.username}</p>}
-                      {u.teamName  && <p className="text-xs text-slate-400">{u.teamName}</p>}
+                      <p className="font-medium text-ink leading-tight">{u.displayName}</p>
+                      {u.username  && <p className="text-xs text-slate-500">@{u.username}</p>}
+                      {u.teamName  && <p className="text-xs text-slate-500">{u.teamName}</p>}
                     </td>
                     {/* Email */}
                     <td className="px-3 py-2.5 text-slate-500 whitespace-nowrap">{u.email}</td>
@@ -380,7 +380,7 @@ export default function AdminDashboard({ stats, users }: { stats: AdminStats; us
                     {/* L */}
                     <td className="px-3 py-2.5 text-right tabular-nums text-brand-red">{u.gamesLost}</td>
                     {/* T */}
-                    <td className="px-3 py-2.5 text-right tabular-nums text-slate-400">{u.gamesTied}</td>
+                    <td className="px-3 py-2.5 text-right tabular-nums text-slate-500">{u.gamesTied}</td>
                     {/* G Win% */}
                     <td className="px-3 py-2.5 text-right tabular-nums">{fmtPct(u.gameWinPct)}</td>
                     {/* Innings */}
@@ -410,7 +410,7 @@ export default function AdminDashboard({ stats, users }: { stats: AdminStats; us
                     {/* Body% */}
                     <td className="px-3 py-2.5 text-right tabular-nums">{fmtPct(u.bodyCompPct)}</td>
                     {/* Rain */}
-                    <td className="px-3 py-2.5 text-right tabular-nums text-slate-400">{u.rainDelayInnings}</td>
+                    <td className="px-3 py-2.5 text-right tabular-nums text-slate-500">{u.rainDelayInnings}</td>
                     {/* Bible */}
                     <td className="px-3 py-2.5 text-center">{u.bibleVerse     ? <Check /> : <Dash />}</td>
                     {/* Social */}
@@ -419,13 +419,13 @@ export default function AdminDashboard({ stats, users }: { stats: AdminStats; us
                 ))}
                 {sorted.length === 0 && (
                   <tr>
-                    <td colSpan={30} className="px-3 py-10 text-center text-slate-400">No players found</td>
+                    <td colSpan={30} className="px-3 py-10 text-center text-slate-500">No players found</td>
                   </tr>
                 )}
               </tbody>
             </table>
           </div>
-          <p className="text-xs text-slate-400 mt-2 text-right">Click any column header to sort · Shift columns by scrolling</p>
+          <p className="text-xs text-slate-500 mt-2 text-right">Click any column header to sort · Shift columns by scrolling</p>
         </section>
 
       </div>
@@ -436,20 +436,20 @@ export default function AdminDashboard({ stats, users }: { stats: AdminStats; us
 // ─── Small sub-components ─────────────────────────────────────────────────────
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
-  return <h2 className="text-[11px] font-semibold uppercase tracking-widest text-slate-400 mb-3">{children}</h2>
+  return <h2 className="text-[11px] font-semibold uppercase tracking-widest text-slate-500 mb-3">{children}</h2>
 }
 
-function Card({ label, value, sub, accent = 'text-brand-navy' }: {
+function Card({ label, value, sub, accent = 'text-ink' }: {
   label: string
   value: string | number
   sub?: string
   accent?: string
 }) {
   return (
-    <div className="bg-white rounded-xl border border-slate-200 p-4">
-      <p className="text-[11px] font-medium uppercase tracking-wide text-slate-400">{label}</p>
+    <div className="bg-surface rounded-xl border border-slate-200 p-4">
+      <p className="text-[11px] font-medium uppercase tracking-wide text-slate-500">{label}</p>
       <p className={`text-2xl font-extrabold mt-1 ${accent}`}>{typeof value === 'number' ? value.toLocaleString() : value}</p>
-      {sub && <p className="text-xs text-slate-400 mt-0.5">{sub}</p>}
+      {sub && <p className="text-xs text-slate-500 mt-0.5">{sub}</p>}
     </div>
   )
 }
@@ -457,9 +457,9 @@ function Card({ label, value, sub, accent = 'text-brand-navy' }: {
 function RateBlock({ label, value, sub, color }: { label: string; value: string; sub: string; color: string }) {
   return (
     <div>
-      <p className="text-xs text-slate-400 uppercase tracking-wide mb-0.5">{label}</p>
+      <p className="text-xs text-slate-500 uppercase tracking-wide mb-0.5">{label}</p>
       <p className="text-3xl font-extrabold" style={{ color }}>{value}</p>
-      <p className="text-xs text-slate-400 mt-0.5">{sub}</p>
+      <p className="text-xs text-slate-500 mt-0.5">{sub}</p>
     </div>
   )
 }

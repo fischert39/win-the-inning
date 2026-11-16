@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import type { GroupTeam, TeamMemberStats, PendingRequest } from '@/types'
+import { useModal } from '@/lib/use-modal'
 
 interface Props {
   team:        GroupTeam
@@ -80,15 +81,17 @@ export default function TeamAdmin({ team, members, myUserId, onClose, onLeft, on
     if (ok) onLeft()
   }
 
+  const modal = useModal(() => { if (confirm) setConfirm(null); else onClose() }, 'Team admin')
+
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-      <div className="bg-white rounded-2xl w-full max-w-md shadow-xl overflow-hidden max-h-[90vh] flex flex-col">
+    <div {...modal} className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+      <div className="bg-surface rounded-2xl w-full max-w-md shadow-xl overflow-hidden max-h-[90vh] flex flex-col">
         <div className="px-6 pt-6 pb-4 border-b border-slate-100 flex items-start justify-between">
           <div>
-            <h2 className="text-brand-navy font-black text-xl">{team.name}</h2>
-            <p className="text-slate-400 text-sm">{team.member_count} member{team.member_count !== 1 ? 's' : ''}</p>
+            <h2 className="text-ink font-black text-xl">{team.name}</h2>
+            <p className="text-slate-500 text-sm">{team.member_count} member{team.member_count !== 1 ? 's' : ''}</p>
           </div>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 text-2xl leading-none mt-0.5">×</button>
+          <button onClick={onClose} className="text-slate-500 hover:text-slate-600 text-2xl leading-none mt-0.5">×</button>
         </div>
 
         <div className="flex-1 overflow-y-auto px-6 py-5 space-y-6">
@@ -100,7 +103,7 @@ export default function TeamAdmin({ team, members, myUserId, onClose, onLeft, on
             <div>
               <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Invite Code</p>
               <div className="flex items-center gap-3 bg-slate-50 rounded-xl px-4 py-3">
-                <span className="flex-1 font-mono font-black text-xl text-brand-navy tracking-widest">
+                <span className="flex-1 font-mono font-black text-xl text-ink tracking-widest">
                   {team.invite_code}
                 </span>
                 <button
@@ -110,7 +113,7 @@ export default function TeamAdmin({ team, members, myUserId, onClose, onLeft, on
                   {copied ? '✓ Copied!' : 'Copy'}
                 </button>
               </div>
-              <p className="text-xs text-slate-400 mt-1.5">Share this code so teammates can join instantly</p>
+              <p className="text-xs text-slate-500 mt-1.5">Share this code so teammates can join instantly</p>
             </div>
           )}
 
@@ -124,7 +127,7 @@ export default function TeamAdmin({ team, members, myUserId, onClose, onLeft, on
                 {pending.map(req => (
                   <div key={req.user_id} className="flex items-center gap-3 bg-amber-50 border border-amber-100 rounded-xl px-4 py-3">
                     <div className="flex-1">
-                      <p className="font-semibold text-sm text-brand-navy">{req.display_name ?? 'Unknown'}</p>
+                      <p className="font-semibold text-sm text-ink">{req.display_name ?? 'Unknown'}</p>
                     </div>
                     <button
                       onClick={() => handleRequest(req.user_id, false)}
@@ -159,17 +162,17 @@ export default function TeamAdmin({ team, members, myUserId, onClose, onLeft, on
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1.5">
-                        <p className="font-semibold text-sm text-brand-navy truncate">{m.display_name ?? 'Teammate'}</p>
-                        {isMe && <span className="text-[10px] text-slate-400">(you)</span>}
+                        <p className="font-semibold text-sm text-ink truncate">{m.display_name ?? 'Teammate'}</p>
+                        {isMe && <span className="text-[11px] text-slate-500">(you)</span>}
                       </div>
-                      <p className="text-xs text-slate-400">{m.role}</p>
+                      <p className="text-xs text-slate-500">{m.role}</p>
                     </div>
                     {isAdmin && !isMe && (
                       <div className="flex items-center gap-2">
                         <button
                           onClick={() => handlePromote(m.user_id, m.role)}
                           disabled={loading}
-                          className="text-[11px] text-slate-400 hover:text-brand-orange font-semibold transition-colors"
+                          className="text-[11px] text-slate-500 hover:text-brand-orange font-semibold transition-colors"
                         >
                           {m.role === 'admin' ? 'Remove admin' : 'Make admin'}
                         </button>
@@ -203,11 +206,11 @@ export default function TeamAdmin({ team, members, myUserId, onClose, onLeft, on
       {/* Confirm dialog */}
       {confirm && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4">
-          <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-xl space-y-4">
-            <p className="font-bold text-brand-navy text-center">
+          <div className="bg-surface rounded-2xl p-6 max-w-sm w-full shadow-xl space-y-4">
+            <p className="font-bold text-ink text-center">
               {confirm === 'self' ? 'Leave the team?' : 'Remove this member?'}
             </p>
-            <p className="text-sm text-slate-400 text-center">
+            <p className="text-sm text-slate-500 text-center">
               {confirm === 'self'
                 ? "You'll need a new invite code to rejoin."
                 : "They'll be removed immediately."}

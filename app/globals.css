@@ -15,10 +15,11 @@
   body {
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    background-color: #f8fafc;
+    background-color: rgb(var(--page));
   }
   input, textarea { outline: none; }
   textarea { resize: vertical; }
+  [role='dialog']:focus, [role='alertdialog']:focus { outline: none; }
 }
 
 @layer utilities {
@@ -28,139 +29,51 @@
 }
 
 /* ============================================================
-   Dark mode overrides — applied when <html class="dark">
+   Theme tokens. Tailwind's page / surface / ink colours and the slate and
+   tint palettes (see tailwind.config.js) read these, so every component
+   follows light/dark automatically — no per-class overrides needed.
    ============================================================ */
-
-/* Page background */
-html.dark body {
-  background-color: #0d1117;
-}
-html.dark .bg-slate-50 {
-  background-color: #0d1117 !important;
-}
-html.dark .bg-gradient-to-br {
-  background-image: none !important;
-  background-color: #0d1117 !important;
-}
-
-/* Cards / surfaces */
-html.dark .bg-white {
-  background-color: #161b22 !important;
-}
-html.dark .bg-slate-50 {
-  background-color: #1c2128 !important;
-}
-html.dark .bg-slate-100 {
-  background-color: #21262d !important;
+:root {
+  --page:    248 250 252;
+  --surface: 255 255 255;
+  --ink:     var(--brand-navy);
+  --slate-50: 248 250 252; --slate-100: 241 245 249; --slate-200: 226 232 240; --slate-300: 203 213 225; --slate-400: 148 163 184; --slate-500: 100 116 139; --slate-600: 71 85 105; --slate-700: 51 65 85; --slate-800: 30 41 59; --slate-900: 15 23 42;
+  --amber-50: 255 251 235; --amber-100: 254 243 199; --amber-200: 253 230 138; --amber-600: 217 119 6; --amber-700: 180 83 9; --amber-800: 146 64 14; --amber-900: 120 53 15;
+  --green-50: 240 253 244; --green-100: 220 252 231; --green-200: 187 247 208; --green-600: 22 163 74; --green-700: 21 128 61; --green-800: 22 101 52;
+  --red-50: 254 242 242; --red-100: 254 226 226; --red-200: 254 202 202; --red-600: 220 38 38; --red-700: 185 28 28; --red-800: 153 27 27;
+  --sky-50: 240 249 255; --sky-100: 224 242 254; --sky-200: 186 230 253; --sky-700: 3 105 161;
+  --yellow-50: 254 252 232; --yellow-200: 254 240 138; --yellow-800: 133 77 14;
+  --purple-100: 243 232 255; --purple-700: 126 34 206;
+  --teal-50: 240 253 250; --teal-100: 204 251 241; --teal-700: 15 118 110;
+  --orange-50: 255 247 237;
 }
 
-/* Borders */
-html.dark .border-slate-100 {
-  border-color: #30363d !important;
-}
-html.dark .border-slate-200 {
-  border-color: #30363d !important;
-}
-html.dark .border-dashed.border-slate-200 {
-  border-color: #30363d !important;
-}
-
-/* Primary text */
-html.dark .text-brand-navy {
-  color: #e6edf3 !important;
-}
-html.dark .text-slate-600 {
-  color: #8b949e !important;
-}
-html.dark .text-slate-500 {
-  color: #8b949e !important;
-}
-html.dark .text-slate-400 {
-  color: #6e7681 !important;
-}
-html.dark .text-slate-300 {
-  color: #484f58 !important;
+html.dark {
+  color-scheme: dark;
+  --page:    13 17 23;
+  --surface: 22 27 34;
+  --ink:     230 237 243;
+  --slate-50: 28 33 40; --slate-100: 33 38 45; --slate-200: 48 54 61; --slate-300: 72 79 88; --slate-400: 125 133 144; --slate-500: 157 167 179; --slate-600: 173 186 199; --slate-700: 201 209 217; --slate-800: 230 237 243; --slate-900: 240 246 252;
+  --amber-50: 45 32 6; --amber-100: 58 42 8; --amber-200: 90 62 5; --amber-600: 210 153 34; --amber-700: 227 179 65; --amber-800: 240 201 92; --amber-900: 247 220 138;
+  --green-50: 13 38 21; --green-100: 18 52 29; --green-200: 26 74 42; --green-600: 63 185 80; --green-700: 86 211 100; --green-800: 126 231 135;
+  --red-50: 45 18 21; --red-100: 61 23 27; --red-200: 92 34 39; --red-600: 248 81 73; --red-700: 255 123 114; --red-800: 255 161 152;
+  --sky-50: 12 34 49; --sky-100: 15 45 66; --sky-200: 22 72 99; --sky-700: 121 192 255;
+  --yellow-50: 43 36 5; --yellow-200: 90 74 10; --yellow-800: 242 204 96;
+  --purple-100: 42 27 69; --purple-700: 210 168 255;
+  --teal-50: 11 42 42; --teal-100: 15 54 54; --teal-700: 94 234 212;
+  --orange-50: 45 26 14;
 }
 
-/* Inputs */
 html.dark input,
 html.dark textarea {
-  color: #e6edf3 !important;
-  caret-color: #e6edf3;
-}
-html.dark input::placeholder,
-html.dark textarea::placeholder {
-  color: #484f58 !important;
-}
-
-/* Scoring hint bar */
-html.dark .bg-slate-50.rounded-lg {
-  background-color: #21262d !important;
-  color: #8b949e !important;
-}
-html.dark .bg-slate-50.rounded-lg strong {
-  color: #adbac7 !important;
-}
-
-/* Goal rows */
-html.dark .bg-slate-50.rounded-xl {
-  background-color: #1c2128 !important;
-}
-html.dark .bg-white.shadow-sm {
-  background-color: #21262d !important;
-}
-
-/* Defense icon badge in non-completed state */
-html.dark .bg-white.shadow-sm.border {
-  background-color: #21262d !important;
-  border-color: #30363d !important;
-}
-
-/* Toast */
-html.dark .bg-brand-navy {
-  background-color: #1c2128;
-}
-
-/* Amber banner (viewing other date) */
-html.dark .bg-amber-50 {
-  background-color: #2d2006 !important;
-}
-html.dark .border-amber-200 {
-  border-color: #5a3e05 !important;
-}
-html.dark .text-amber-800 {
-  color: #d4a017 !important;
-}
-html.dark .text-amber-700 {
-  color: #c49010 !important;
-}
-
-/* Green completed rows */
-html.dark .bg-green-50 {
-  background-color: #0d2615 !important;
-}
-html.dark .border-green-200 {
-  border-color: #1a4a2a !important;
-}
-
-/* Hover states */
-html.dark .hover\:bg-slate-100:hover {
-  background-color: #21262d !important;
-}
-html.dark .hover\:bg-slate-50:hover {
-  background-color: #1c2128 !important;
-}
-
-/* Hit type selector buttons in dark */
-html.dark .bg-white.text-slate-400 {
-  background-color: #21262d !important;
-  color: #6e7681 !important;
+  color: rgb(var(--ink));
+  caret-color: rgb(var(--ink));
 }
 
 /* Transition for smooth dark toggle — scoped to avoid jank on all elements */
-html body, html .bg-white, html .bg-slate-50, html .bg-slate-100,
+html body, html .bg-surface, html .bg-slate-50, html .bg-slate-100,
 html .bg-brand-navy, html .border-slate-100, html .border-slate-200,
-html .text-brand-navy, html .text-slate-600, html .text-slate-500, html .text-slate-400 {
+html .text-ink, html .text-slate-600, html .text-slate-500, html .text-slate-400 {
   transition: background-color 0.2s ease, border-color 0.2s ease, color 0.15s ease;
 }
 /* But don't transition things that shouldn't (animations) */

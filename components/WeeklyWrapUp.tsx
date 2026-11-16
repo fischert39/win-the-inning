@@ -45,7 +45,7 @@ export default function WeeklyWrapUp({ game, weekStart, sport }: Props) {
       {/* Header bar */}
       <div className="px-5 pt-5 pb-3 flex items-start justify-between">
         <div>
-          <p className="text-white/50 text-[10px] font-black uppercase tracking-widest mb-0.5">
+          <p className="text-white/65 text-[11px] font-black uppercase tracking-widest mb-0.5">
             Last Week&apos;s Recap
           </p>
           <h2 className="text-white font-black text-lg leading-tight">
@@ -53,13 +53,13 @@ export default function WeeklyWrapUp({ game, weekStart, sport }: Props) {
              result === 'LOSS' ? '💪 Keep Grinding'     :
                                  `${sportEmoji} Week Complete`}
           </h2>
-          <p className="text-white/40 text-xs mt-0.5">
+          <p className="text-white/60 text-xs mt-0.5">
             {displayDate(game.week_start)} — {displayDate(game.week_end)}
           </p>
         </div>
         <button
           onClick={dismiss}
-          className="text-white/30 hover:text-white/70 transition-colors text-lg leading-none mt-0.5"
+          className="text-white/55 hover:text-white/70 transition-colors text-lg leading-none mt-0.5"
           aria-label="Dismiss"
         >
           ✕
@@ -72,15 +72,15 @@ export default function WeeklyWrapUp({ game, weekStart, sport }: Props) {
           <div className="text-white font-black text-xl">
             {wins}–{losses}{ties > 0 ? `–${ties}` : ''}
           </div>
-          <div className="text-white/40 text-[10px] mt-0.5">W–L{ties > 0 ? '–T' : ''}</div>
+          <div className="text-white/60 text-[11px] mt-0.5">W–L{ties > 0 ? '–T' : ''}</div>
         </div>
         <div className="bg-white/5 rounded-xl p-3 text-center">
           <div className="text-white font-black text-xl">{totalRuns}</div>
-          <div className="text-white/40 text-[10px] mt-0.5">Runs Scored</div>
+          <div className="text-white/60 text-[11px] mt-0.5">Runs Scored</div>
         </div>
         <div className="bg-white/5 rounded-xl p-3 text-center">
           <div className="text-white font-black text-xl">{closed.length}/7</div>
-          <div className="text-white/40 text-[10px] mt-0.5">Innings Played</div>
+          <div className="text-white/60 text-[11px] mt-0.5">Innings Played</div>
         </div>
       </div>
 

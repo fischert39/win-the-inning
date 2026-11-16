@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import type { Profile, Sport } from '@/types'
-import { SunIcon, MoonIcon, PencilIcon, ClipboardIcon, HelpIcon, FlagIcon, LogOutIcon } from '@/components/icons'
+import { SunIcon, MoonIcon, PencilIcon, ClipboardIcon, HelpIcon, LogOutIcon } from '@/components/icons'
 
 interface Props {
   record:          { wins: number; losses: number }
@@ -12,11 +12,10 @@ interface Props {
   onPastSeasons:   () => void
   onEditTeam:      () => void
   onHowToPlay:     () => void
-  onEndSeason:     () => void
   onSignOut:       () => void
 }
 
-export default function AppHeader({ record, streak, sport, profile, onPastSeasons, onEditTeam, onHowToPlay, onEndSeason, onSignOut }: Props) {
+export default function AppHeader({ record, streak, sport, profile, onPastSeasons, onEditTeam, onHowToPlay, onSignOut }: Props) {
   const [menuOpen, setMenuOpen] = useState(false)
   const [dark,     setDark]     = useState(false)
   const sportEmoji = sport === 'baseball' ? '⚾' : '🥎'
@@ -46,7 +45,7 @@ export default function AppHeader({ record, streak, sport, profile, onPastSeason
             {teamName ? (
               <>
                 <p className="font-bold text-sm leading-tight truncate max-w-[120px]">{teamName}</p>
-                <p className="text-white/30 text-[10px] leading-tight tracking-wide">Win the Inning</p>
+                <p className="text-white/55 text-[11px] leading-tight tracking-wide">Win the Inning</p>
               </>
             ) : (
               <span className="font-bold text-sm leading-tight hidden sm:block">Win the Inning</span>
@@ -64,7 +63,7 @@ export default function AppHeader({ record, streak, sport, profile, onPastSeason
             }`}>
               {record.wins}
             </span>
-            <span className="text-white/30 text-lg font-light">–</span>
+            <span className="text-white/55 text-lg font-light">–</span>
             <span className={`text-2xl font-black ${
               record.losses > record.wins ? 'text-brand-red' :
               record.losses < record.wins ? 'text-white/70' :
@@ -73,7 +72,7 @@ export default function AppHeader({ record, streak, sport, profile, onPastSeason
               {record.losses}
             </span>
           </div>
-          <span className="text-white/30 text-[10px] font-semibold uppercase tracking-widest mt-0.5">
+          <span className="text-white/55 text-[11px] font-semibold uppercase tracking-widest mt-0.5">
             {record.wins === 0 && record.losses === 0
               ? 'Season Record'
               : record.wins > record.losses ? 'Winning Season'
@@ -81,12 +80,12 @@ export default function AppHeader({ record, streak, sport, profile, onPastSeason
               : 'Even'}
           </span>
           {streak.type === 'WIN' && streak.count >= 3 && (
-            <span className="text-[10px] font-bold mt-1 px-2 py-0.5 rounded-full bg-brand-orange/20 text-brand-orange">
+            <span className="text-[11px] font-bold mt-1 px-2 py-0.5 rounded-full bg-brand-orange/20 text-brand-orange">
               🔥 {streak.count} straight
             </span>
           )}
           {streak.type === 'LOSS' && streak.count >= 2 && (
-            <span className="text-[10px] font-semibold mt-1 px-2 py-0.5 rounded-full bg-red-500/20 text-red-400">
+            <span className="text-[11px] font-semibold mt-1 px-2 py-0.5 rounded-full bg-red-500/20 text-red-400">
               📉 {streak.count} in a row
             </span>
           )}
@@ -96,7 +95,7 @@ export default function AppHeader({ record, streak, sport, profile, onPastSeason
         <div className="flex items-center gap-2">
           <button
             onClick={toggleDark}
-            className="w-8 h-8 rounded-full bg-white/8 hover:bg-white/15 flex items-center justify-center transition-colors text-white/70 hover:text-white"
+            className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/15 flex items-center justify-center transition-colors text-white/70 hover:text-white"
             title={dark ? 'Switch to light mode' : 'Switch to dark mode'}
             aria-label={dark ? 'Switch to light mode' : 'Switch to dark mode'}
             aria-pressed={dark}
@@ -119,17 +118,17 @@ export default function AppHeader({ record, streak, sport, profile, onPastSeason
                   {name?.[0]?.toUpperCase() ?? '?'}
                 </div>
               )}
-              <svg className="w-3.5 h-3.5 text-white/40 hidden sm:block" viewBox="0 0 20 20" fill="currentColor">
+              <svg className="w-3.5 h-3.5 text-white/60 hidden sm:block" viewBox="0 0 20 20" fill="currentColor">
                 <path fillRule="evenodd" d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z" clipRule="evenodd" />
               </svg>
             </button>
 
             {menuOpen && (
-              <div className="absolute right-0 top-11 w-52 bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden z-50 animate-fade-in dark:bg-slate-800 dark:border-slate-700">
+              <div className="absolute right-0 top-11 w-52 bg-surface rounded-2xl shadow-xl border border-slate-100 overflow-hidden z-50 animate-fade-in">
                 {name && (
-                  <div className="px-4 py-3.5 border-b border-slate-100 dark:border-slate-700">
-                    <p className="text-brand-navy font-semibold text-sm truncate">{name}</p>
-                    <p className="text-slate-400 text-xs mt-0.5">Season in progress</p>
+                  <div className="px-4 py-3.5 border-b border-slate-100">
+                    <p className="text-ink font-semibold text-sm truncate">{name}</p>
+                    <p className="text-slate-500 text-xs mt-0.5">Season in progress</p>
                   </div>
                 )}
                 <div className="py-1">
@@ -137,27 +136,21 @@ export default function AppHeader({ record, streak, sport, profile, onPastSeason
                     onClick={() => { setMenuOpen(false); onEditTeam() }}
                     className="w-full text-left px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors flex items-center gap-3"
                   >
-                    <PencilIcon className="w-4 h-4 text-slate-400" /> Edit Team
+                    <PencilIcon className="w-4 h-4 text-slate-500" /> Profile &amp; Settings
                   </button>
                   <button
                     onClick={() => { setMenuOpen(false); onPastSeasons() }}
                     className="w-full text-left px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors flex items-center gap-3"
                   >
-                    <ClipboardIcon className="w-4 h-4 text-slate-400" /> Past Seasons
+                    <ClipboardIcon className="w-4 h-4 text-slate-500" /> Past Seasons
                   </button>
                   <button
                     onClick={() => { setMenuOpen(false); onHowToPlay() }}
                     className="w-full text-left px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors flex items-center gap-3"
                   >
-                    <HelpIcon className="w-4 h-4 text-slate-400" /> How to Play
+                    <HelpIcon className="w-4 h-4 text-slate-500" /> How to Play
                   </button>
-                  <button
-                    onClick={() => { setMenuOpen(false); onEndSeason() }}
-                    className="w-full text-left px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors flex items-center gap-3"
-                  >
-                    <FlagIcon className="w-4 h-4 text-slate-400" /> End Season
-                  </button>
-                  <div className="border-t border-slate-100 mt-1 pt-1 dark:border-slate-700">
+                  <div className="border-t border-slate-100 mt-1 pt-1">
                     <button
                       onClick={() => { setMenuOpen(false); onSignOut() }}
                       className="w-full text-left px-4 py-2.5 text-sm text-brand-red hover:bg-red-50 transition-colors flex items-center gap-3"

@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { ShieldIcon, TargetIcon, TrophyIcon, XIcon } from '@/components/icons'
 import type { Sport } from '@/types'
+import { useModal } from '@/lib/use-modal'
 
 interface Props {
   sport:      Sport
@@ -55,11 +56,13 @@ export default function HowToPlay({ sport, firstTime, onClose }: Props) {
   const last = step === cards.length - 1
   const card = cards[step]
 
+  const modal = useModal(onClose, 'How to play')
+
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-      <div className="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-sm shadow-xl p-7 animate-slide-up">
+    <div {...modal} className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+      <div className="bg-surface rounded-2xl w-full max-w-sm shadow-xl p-7 animate-slide-up">
         <div className="flex items-start justify-between mb-5">
-          <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+          <p className="text-[11px] font-black uppercase tracking-widest text-slate-500">
             {firstTime ? 'Welcome to the ballpark' : 'How to play'}
           </p>
           {!firstTime && (
@@ -73,8 +76,8 @@ export default function HowToPlay({ sport, firstTime, onClose }: Props) {
           <div className="w-16 h-16 rounded-2xl bg-brand-orange/10 flex items-center justify-center mb-4">
             {card.icon}
           </div>
-          <h2 className="text-brand-navy dark:text-white font-black text-xl mb-2">{card.title}</h2>
-          <p className="text-slate-500 dark:text-slate-400 text-sm leading-relaxed [&_strong]:text-brand-navy dark:[&_strong]:text-white">
+          <h2 className="text-ink font-black text-xl mb-2">{card.title}</h2>
+          <p className="text-slate-500 text-sm leading-relaxed [&_strong]:text-ink">
             {card.body}
           </p>
         </div>
@@ -87,7 +90,7 @@ export default function HowToPlay({ sport, firstTime, onClose }: Props) {
               onClick={() => setStep(i)}
               aria-label={`Step ${i + 1}`}
               className={`h-2 rounded-full transition-all ${
-                i === step ? 'w-6 bg-brand-orange' : 'w-2 bg-slate-200 dark:bg-slate-600'
+                i === step ? 'w-6 bg-brand-orange' : 'w-2 bg-slate-200'
               }`}
             />
           ))}
@@ -97,7 +100,7 @@ export default function HowToPlay({ sport, firstTime, onClose }: Props) {
           {step > 0 && (
             <button
               onClick={() => setStep(s => s - 1)}
-              className="flex-1 py-3.5 rounded-xl border border-slate-200 dark:border-slate-600 text-slate-500 dark:text-slate-300 font-bold text-sm hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+              className="flex-1 py-3.5 rounded-xl border border-slate-200 text-slate-500 font-bold text-sm hover:bg-slate-50 transition-colors"
             >
               Back
             </button>

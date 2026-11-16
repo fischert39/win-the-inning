@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useCallback, useRef } from 'react'
+import { useModal } from '@/lib/use-modal'
 
 export interface ConfirmOptions {
   title:         string
@@ -46,19 +47,21 @@ function ConfirmDialog({
   onConfirm, onCancel,
 }: ConfirmOptions & { onConfirm: () => void; onCancel: () => void }) {
   const danger = tone === 'danger'
+  const modal  = useModal(onCancel)
   return (
     <div
       className="fixed inset-0 z-[70] flex items-center justify-center bg-black/50 backdrop-blur-[2px] p-4 animate-fade-in"
       onClick={onCancel}
     >
       <div
-        className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl space-y-4 animate-slide-up"
+        className="bg-surface rounded-2xl p-6 max-w-sm w-full shadow-2xl space-y-4 animate-slide-up"
         onClick={e => e.stopPropagation()}
+        {...modal}
         role="alertdialog"
-        aria-modal="true"
+        aria-label={title}
       >
         {icon && <p className="text-4xl text-center leading-none">{icon}</p>}
-        <p className="font-black text-brand-navy text-center text-lg leading-snug">{title}</p>
+        <p className="font-black text-ink text-center text-lg leading-snug">{title}</p>
         {message && <p className="text-sm text-slate-500 text-center leading-relaxed">{message}</p>}
         <div className="flex gap-3 pt-1">
           <button

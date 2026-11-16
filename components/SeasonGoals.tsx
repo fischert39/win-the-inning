@@ -12,11 +12,11 @@ interface Props {
 
 export default function SeasonGoals({ goals, onAdd, onSave, onToggle, onDelete }: Props) {
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+    <div className="bg-surface rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
       <div className="px-5 pt-5 pb-3 flex items-start justify-between">
         <div>
-          <h2 className="text-brand-navy font-black text-base">🏆 Season Goals</h2>
-          <p className="text-slate-400 text-xs mt-0.5">What does a winning season look like for you?</p>
+          <h2 className="text-ink font-black text-base">🏆 Season Goals</h2>
+          <p className="text-slate-500 text-xs mt-0.5">What does a winning season look like for you?</p>
         </div>
         <button
           onClick={onAdd}
@@ -61,8 +61,8 @@ export default function SeasonGoals({ goals, onAdd, onSave, onToggle, onDelete }
                 onChange={e => onSave(goal.id, e.target.value)}
                 autoCorrect="off"
                 autoCapitalize="sentences"
-                className={`flex-1 text-sm text-brand-navy placeholder:text-slate-300 bg-transparent border-b border-transparent focus:border-brand-orange transition-colors py-0.5 ${
-                  goal.completed ? 'line-through text-slate-400' : ''
+                className={`flex-1 text-sm text-ink placeholder:text-slate-400 bg-transparent border-b border-transparent focus:border-brand-orange transition-colors py-0.5 ${
+                  goal.completed ? 'line-through text-slate-500' : ''
                 }`}
               />
 

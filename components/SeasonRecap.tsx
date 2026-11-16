@@ -113,7 +113,7 @@ export default function SeasonRecap({ season, sport, onStartNew }: Props) {
           >
             {seasonWon ? 'Winning Season!' : 'Season Complete'}
           </h1>
-          <p className="text-white/50 text-sm">
+          <p className="text-white/65 text-sm">
             {displayDate(season.start_date)}
             {season.end_date ? ` — ${displayDate(season.end_date)}` : ''}
           </p>
@@ -124,14 +124,14 @@ export default function SeasonRecap({ season, sport, onStartNew }: Props) {
           className={`rounded-2xl p-5 mb-6 text-center border ${
             seasonWon
               ? 'bg-brand-green/20 border-brand-green/30'
-              : 'bg-white/8 border-white/10'
+              : 'bg-white/10 border-white/10'
           }`}
           style={{ animation: 'sr-in 0.4s 0.3s both' }}
         >
           <p className={`text-3xl font-black mb-1 ${seasonWon ? 'text-brand-green' : 'text-white/80'}`}>
             {gameWins}–{gameLosses}
           </p>
-          <p className="text-white/50 text-sm">
+          <p className="text-white/65 text-sm">
             {seasonWon ? '🎉 Winning record — well earned.' : '💪 Keep grinding. Next season is yours.'}
           </p>
         </div>
@@ -144,17 +144,17 @@ export default function SeasonRecap({ season, sport, onStartNew }: Props) {
             { label: 'Best Streak',  value: `${bestStreak} in a row`,                icon: '🔥' },
             { label: 'Season Goals', value: `${goalsCompleted}/${goalsTotal}`,        icon: '🎯' },
           ].map(s => (
-            <div key={s.label} className="bg-white/8 border border-white/10 rounded-xl p-4 text-center">
+            <div key={s.label} className="bg-white/10 border border-white/10 rounded-xl p-4 text-center">
               <span className="text-2xl block mb-1">{s.icon}</span>
               <div className="text-white font-black text-xl">{s.value}</div>
-              <div className="text-white/50 text-xs mt-0.5">{s.label}</div>
+              <div className="text-white/65 text-xs mt-0.5">{s.label}</div>
             </div>
           ))}
         </div>
 
         {/* Defense breakdown */}
-        <div className="bg-white/8 border border-white/10 rounded-xl p-5 mb-6" style={{ animation: 'sr-in 0.4s 0.6s both' }}>
-          <p className="text-white/40 text-xs font-black uppercase tracking-widest mb-4">Defense Breakdown</p>
+        <div className="bg-white/10 border border-white/10 rounded-xl p-5 mb-6" style={{ animation: 'sr-in 0.4s 0.6s both' }}>
+          <p className="text-white/60 text-xs font-black uppercase tracking-widest mb-4">Defense Breakdown</p>
           <div className="space-y-3">
             {[
               { icon: '🧠', label: 'Mind',   count: mindOuts   },
@@ -170,7 +170,7 @@ export default function SeasonRecap({ season, sport, onStartNew }: Props) {
                     style={{ width: closedInnings.length > 0 ? `${(d.count / closedInnings.length) * 100}%` : '0%' }}
                   />
                 </div>
-                <span className="text-white/50 text-xs w-12 text-right">{d.count}/{closedInnings.length}</span>
+                <span className="text-white/65 text-xs w-12 text-right">{d.count}/{closedInnings.length}</span>
               </div>
             ))}
           </div>
@@ -178,13 +178,13 @@ export default function SeasonRecap({ season, sport, onStartNew }: Props) {
 
         {/* Season goals list */}
         {goalsTotal > 0 && (
-          <div className="bg-white/8 border border-white/10 rounded-xl p-5 mb-8" style={{ animation: 'sr-in 0.4s 0.75s both' }}>
-            <p className="text-white/40 text-xs font-black uppercase tracking-widest mb-3">Season Goals</p>
+          <div className="bg-white/10 border border-white/10 rounded-xl p-5 mb-8" style={{ animation: 'sr-in 0.4s 0.75s both' }}>
+            <p className="text-white/60 text-xs font-black uppercase tracking-widest mb-3">Season Goals</p>
             <div className="space-y-2">
               {season.season_goals.map(g => (
                 <div key={g.id} className="flex items-center gap-3">
                   <span className="text-base flex-shrink-0">{g.completed ? '✅' : '⬜'}</span>
-                  <span className={`text-sm ${g.completed ? 'text-white' : 'text-white/40'}`}>
+                  <span className={`text-sm ${g.completed ? 'text-white' : 'text-white/60'}`}>
                     {g.text || 'Untitled goal'}
                   </span>
                 </div>

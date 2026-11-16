@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import PaletteSelector from '@/components/PaletteSelector'
 import { buildPaletteString } from '@/lib/palettes'
+import { useModal } from '@/lib/use-modal'
 
 export const MASCOTS = [
   // ── Animals ──────────────────────────────────────────────────
@@ -87,15 +88,17 @@ export default function TeamSettings({
     onClose()
   }
 
+  const modal = useModal(onClose, 'Profile and settings')
+
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center p-4" onClick={onClose}>
+    <div {...modal} className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center p-4" onClick={onClose}>
       <div
-        className="bg-white rounded-2xl w-full max-w-sm p-6 animate-slide-up max-h-[90vh] overflow-y-auto"
+        className="bg-surface rounded-2xl w-full max-w-sm p-6 animate-slide-up max-h-[90vh] overflow-y-auto"
         onClick={e => e.stopPropagation()}
       >
-        <h2 className="font-black text-brand-navy text-lg mb-4">🏟️ Your Team</h2>
+        <h2 className="font-black text-ink text-lg mb-4">⚙️ Profile &amp; Settings</h2>
 
-        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1.5">
+        <label className="block text-[11px] font-black text-slate-500 uppercase tracking-wider mb-1.5">
           Team Name
         </label>
         <input
@@ -104,10 +107,10 @@ export default function TeamSettings({
           onChange={e => setTeamName(e.target.value)}
           placeholder="e.g. The Thunder Hawks"
           maxLength={30}
-          className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm text-brand-navy mb-5 outline-none focus:border-brand-orange"
+          className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm text-ink mb-5 outline-none focus:border-brand-orange"
         />
 
-        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-2">
+        <label className="block text-[11px] font-black text-slate-500 uppercase tracking-wider mb-2">
           Mascot
         </label>
         <div className="grid grid-cols-7 gap-2 mb-5">
@@ -129,7 +132,7 @@ export default function TeamSettings({
 
         {/* Team colors */}
         <div className="bg-brand-navy rounded-2xl p-4 mb-5">
-          <label className="block text-[10px] font-black text-white/40 uppercase tracking-wider mb-3">
+          <label className="block text-[11px] font-black text-white/60 uppercase tracking-wider mb-3">
             Team Colors
           </label>
           <PaletteSelector value={palette} onChange={setPalette} dark />
@@ -149,7 +152,7 @@ export default function TeamSettings({
         {/* Public email for search */}
         {discoverable && (
           <div className="mb-5">
-            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1.5">
+            <label className="block text-[11px] font-black text-slate-500 uppercase tracking-wider mb-1.5">
               Email for search <span className="normal-case font-normal">(optional)</span>
             </label>
             <input
@@ -157,9 +160,9 @@ export default function TeamSettings({
               value={publicEmail}
               onChange={e => setPublicEmail(e.target.value)}
               placeholder="e.g. coach@email.com"
-              className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm text-brand-navy outline-none focus:border-brand-orange"
+              className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm text-ink outline-none focus:border-brand-orange"
             />
-            <p className="text-slate-400 text-xs mt-1.5">Only used so teammates can find you — never shown publicly.</p>
+            <p className="text-slate-500 text-xs mt-1.5">Only used so teammates can find you — never shown publicly.</p>
           </div>
         )}
 
@@ -203,8 +206,8 @@ function TipJarLink() {
     >
       <span className="text-xl flex-shrink-0">⚾</span>
       <div className="flex-1 min-w-0">
-        <p className="text-brand-navy font-bold text-sm">Support the club</p>
-        <p className="text-slate-400 text-xs">Chip in to keep Win the Inning free and ad-free</p>
+        <p className="text-ink font-bold text-sm">Support the club</p>
+        <p className="text-slate-500 text-xs">Chip in to keep Win the Inning free and ad-free</p>
       </div>
       <span className="text-slate-300 text-lg flex-shrink-0">→</span>
     </a>
@@ -311,8 +314,8 @@ function NotificationToggle() {
       >
         <span className="text-xl flex-shrink-0">{loading ? '⏳' : '🔔'}</span>
         <div className="flex-1 min-w-0">
-          <p className="text-brand-navy font-bold text-sm">Daily reminders</p>
-          <p className="text-slate-400 text-xs">{desc}</p>
+          <p className="text-ink font-bold text-sm">Daily reminders</p>
+          <p className="text-slate-500 text-xs">{desc}</p>
         </div>
         <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
           subscribed ? 'border-brand-orange bg-brand-orange' : 'border-slate-300'
@@ -356,8 +359,8 @@ function Toggle({ icon, title, desc, active, onToggle, color, className = '' }: 
     >
       <span className="text-xl flex-shrink-0">{icon}</span>
       <div className="flex-1 min-w-0">
-        <p className="text-brand-navy font-bold text-sm">{title}</p>
-        <p className="text-slate-400 text-xs">{desc}</p>
+        <p className="text-ink font-bold text-sm">{title}</p>
+        <p className="text-slate-500 text-xs">{desc}</p>
       </div>
       <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors ${dot}`}>
         {active && (

@@ -4,6 +4,7 @@ import { useState } from 'react'
 import type { HitType } from '@/types'
 import { getWeekDates, getWeekStart, displayDate, today } from '@/lib/game-logic'
 import { GOAL_PRESETS } from '@/lib/presets'
+import { useModal } from '@/lib/use-modal'
 
 const DAY_LABELS = ['M', 'T', 'W', 'T', 'F', 'S', 'S']
 const DAY_FULL   = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
@@ -167,7 +168,7 @@ export default function WeekPlanner({
   }) {
     return (
       <div className="flex items-center gap-1.5">
-        <span className="text-[9px] font-black text-slate-400 uppercase tracking-wide w-8">Days</span>
+        <span className="text-[10px] font-black text-slate-500 uppercase tracking-wide w-8">Days</span>
         {DAY_LABELS.map((lbl, i) => {
           const locked = lockedSet.has(dates[i])
           const on     = days[i] && !locked
@@ -183,7 +184,7 @@ export default function WeekPlanner({
                   ? 'bg-slate-100 text-slate-300 cursor-not-allowed'
                   : on
                     ? 'bg-brand-orange text-white shadow-sm shadow-brand-orange/40'
-                    : 'bg-white text-slate-400 ring-1 ring-slate-100 hover:text-slate-600'
+                    : 'bg-surface text-slate-500 ring-1 ring-slate-100 hover:text-slate-600'
               }`}
             >
               {lbl}
@@ -195,27 +196,29 @@ export default function WeekPlanner({
     )
   }
 
+  const modal = useModal(onClose, 'Plan your week')
+
   return (
-    <div className="fixed inset-0 z-50 bg-slate-50 overflow-y-auto">
+    <div {...modal} className="fixed inset-0 z-50 bg-page overflow-y-auto">
 
       {/* ── Header ── */}
       <div className="bg-brand-navy sticky top-0 z-10 px-5 py-4">
         <div className="max-w-2xl mx-auto flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <p className="text-white/40 text-[10px] font-black uppercase tracking-widest mb-1">
+            <p className="text-white/60 text-[11px] font-black uppercase tracking-widest mb-1">
               {sportEmoji} Lineup Card
             </p>
             <h1 className="text-white font-black text-xl leading-tight">
               Plan {isNextWeek ? 'Next' : 'This'} Week&apos;s Game
             </h1>
-            <p className="text-white/50 text-xs mt-0.5">
+            <p className="text-white/65 text-xs mt-0.5">
               {displayDate(dates[0])} — {displayDate(dates[6])}
             </p>
           </div>
           <button
             onClick={onClose}
             aria-label="Close planner"
-            className="text-white/40 hover:text-white text-2xl leading-none flex-shrink-0 -mt-1"
+            className="text-white/60 hover:text-white text-2xl leading-none flex-shrink-0 -mt-1"
           >
             ×
           </button>
@@ -235,18 +238,18 @@ export default function WeekPlanner({
         )}
 
         {/* ── Defense ── */}
-        <section className="bg-white rounded-2xl shadow-sm overflow-hidden border-l-4 border-brand-purple">
+        <section className="bg-surface rounded-2xl shadow-sm overflow-hidden border-l-4 border-brand-purple">
           <div className="bg-brand-navy px-5 py-3 flex items-center justify-between">
-            <span className="text-white/40 text-[10px] font-black uppercase tracking-widest">
+            <span className="text-white/60 text-[11px] font-black uppercase tracking-widest">
               Defense · Your Outs
             </span>
-            <span className="text-brand-orange text-[10px] font-black tabular-nums">
+            <span className="text-brand-orange text-[11px] font-black tabular-nums">
               {totalOuts} scheduled
             </span>
           </div>
 
           <div className="px-5 py-4 space-y-4">
-            <p className="text-slate-400 text-xs -mt-1">
+            <p className="text-slate-500 text-xs -mt-1">
               Three outs a day — one each from Mind, Spirit and Body. Add more than one
               task per category to vary it across the week.
             </p>
@@ -257,7 +260,7 @@ export default function WeekPlanner({
                 <div key={cat.key}>
                   <div className="flex items-center gap-2 mb-2">
                     <span className="text-base leading-none">{cat.icon}</span>
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-wide">
+                    <p className="text-[11px] font-black text-slate-500 uppercase tracking-wide">
                       {cat.label}
                     </p>
                   </div>
@@ -273,7 +276,7 @@ export default function WeekPlanner({
                             placeholder={cat.ph}
                             autoCorrect="off"
                             autoCapitalize="sentences"
-                            className="flex-1 text-sm text-brand-navy bg-transparent outline-none placeholder:text-slate-300"
+                            className="flex-1 text-sm text-ink bg-transparent outline-none placeholder:text-slate-400"
                           />
                           <button
                             onClick={() => removeTask(cat.key, t.key)}
@@ -296,12 +299,12 @@ export default function WeekPlanner({
                   <div className="flex items-center justify-between mt-1.5">
                     <button
                       onClick={() => addTask(cat.key)}
-                      className="text-[11px] font-bold text-slate-400 hover:text-brand-orange transition-colors"
+                      className="text-[11px] font-bold text-slate-500 hover:text-brand-orange transition-colors"
                     >
                       + Different {cat.label.toLowerCase()} task on some days
                     </button>
                     {uncovered.length > 0 && uncovered.length < 7 && (
-                      <span className="text-[10px] text-amber-600 font-semibold">
+                      <span className="text-[11px] text-amber-600 font-semibold">
                         No task: {uncovered.join(', ')}
                       </span>
                     )}
@@ -313,18 +316,18 @@ export default function WeekPlanner({
         </section>
 
         {/* ── Offense ── */}
-        <section className="bg-white rounded-2xl shadow-sm overflow-hidden border-l-4 border-brand-orange">
+        <section className="bg-surface rounded-2xl shadow-sm overflow-hidden border-l-4 border-brand-orange">
           <div className="bg-brand-navy px-5 py-3 flex items-center justify-between">
-            <span className="text-white/40 text-[10px] font-black uppercase tracking-widest">
+            <span className="text-white/60 text-[11px] font-black uppercase tracking-widest">
               Offense · Your Hits
             </span>
-            <span className="text-brand-orange text-[10px] font-black tabular-nums">
+            <span className="text-brand-orange text-[11px] font-black tabular-nums">
               {totalHits} scheduled
             </span>
           </div>
 
           <div className="px-5 py-4 space-y-3">
-            <p className="text-slate-400 text-xs -mt-1">
+            <p className="text-slate-500 text-xs -mt-1">
               Add a goal once, then pick the days it lands on.
             </p>
 
@@ -339,7 +342,7 @@ export default function WeekPlanner({
                     placeholder="What's your goal?"
                     autoCorrect="off"
                     autoCapitalize="sentences"
-                    className="flex-1 text-sm text-brand-navy bg-transparent outline-none placeholder:text-slate-300"
+                    className="flex-1 text-sm text-ink bg-transparent outline-none placeholder:text-slate-400"
                   />
                   <button
                     onClick={() => removeGoal(g.key)}
@@ -351,7 +354,7 @@ export default function WeekPlanner({
                 </div>
 
                 <div className="flex items-center gap-1.5 px-3 pb-2">
-                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-wide w-8">Hit</span>
+                  <span className="text-[10px] font-black text-slate-500 uppercase tracking-wide w-8">Hit</span>
                   {HIT_PICKER.map(h => (
                     <button
                       key={h.key}
@@ -360,7 +363,7 @@ export default function WeekPlanner({
                       className={`px-2.5 py-1 rounded-lg text-[11px] font-black ring-1 transition-all active:scale-95 ${
                         g.hitType === h.key
                           ? h.cls
-                          : 'bg-white text-slate-400 ring-slate-100 hover:text-slate-600'
+                          : 'bg-surface text-slate-500 ring-slate-100 hover:text-slate-600'
                       }`}
                     >
                       {h.label}
@@ -375,7 +378,7 @@ export default function WeekPlanner({
                     trailing={
                       <button
                         onClick={() => setAllDays(g.key, !g.days.every(Boolean))}
-                        className="ml-auto text-[10px] font-bold text-slate-400 hover:text-brand-orange transition-colors"
+                        className="ml-auto text-[11px] font-bold text-slate-500 hover:text-brand-orange transition-colors"
                       >
                         {g.days.every(Boolean) ? 'None' : 'All'}
                       </button>
@@ -395,7 +398,7 @@ export default function WeekPlanner({
             {templates.length > 0 && (
               <button
                 onClick={() => templates.forEach(t => addGoal(t))}
-                className="w-full rounded-xl py-2 text-xs font-bold border bg-white border-slate-200 text-slate-500 hover:text-brand-orange hover:border-brand-orange/30 transition-all"
+                className="w-full rounded-xl py-2 text-xs font-bold border bg-surface border-slate-200 text-slate-500 hover:text-brand-orange hover:border-brand-orange/30 transition-all"
               >
                 📋 Load my templates ({templates.length} goals)
               </button>
@@ -408,7 +411,7 @@ export default function WeekPlanner({
                 className="w-full flex items-center justify-between px-3.5 py-2.5 text-left hover:bg-slate-50 transition-colors"
               >
                 <span className="text-xs font-semibold text-slate-500">⚡ Goal Presets</span>
-                <svg className={`w-3.5 h-3.5 text-slate-400 transition-transform ${showPresets ? 'rotate-180' : ''}`} viewBox="0 0 20 20" fill="currentColor">
+                <svg className={`w-3.5 h-3.5 text-slate-500 transition-transform ${showPresets ? 'rotate-180' : ''}`} viewBox="0 0 20 20" fill="currentColor">
                   <path fillRule="evenodd" d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z" clipRule="evenodd" />
                 </svg>
               </button>
@@ -416,7 +419,7 @@ export default function WeekPlanner({
                 <div className="px-3.5 pb-3 space-y-3">
                   {GOAL_PRESETS.map(c => (
                     <div key={c.category}>
-                      <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide mb-1.5">
+                      <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">
                         {c.category}
                       </p>
                       <div className="flex flex-wrap gap-1.5">
@@ -440,11 +443,11 @@ export default function WeekPlanner({
       </div>
 
       {/* ── Sticky save bar ── */}
-      <div className="fixed bottom-0 inset-x-0 bg-white border-t border-slate-100 px-4 py-3 safe-area-pb">
+      <div className="fixed bottom-0 inset-x-0 bg-surface border-t border-slate-100 px-4 py-3 safe-area-pb">
         <div className="max-w-2xl mx-auto flex items-center gap-3">
           <button
             onClick={onClose}
-            className="px-5 py-3.5 rounded-xl text-slate-400 font-semibold text-sm hover:text-slate-600 transition-colors"
+            className="px-5 py-3.5 rounded-xl text-slate-500 font-semibold text-sm hover:text-slate-600 transition-colors"
           >
             Cancel
           </button>
@@ -454,7 +457,7 @@ export default function WeekPlanner({
             className={`flex-1 py-3.5 rounded-xl font-black text-sm tracking-widest uppercase transition-all text-white active:scale-[0.98] ${
               canSave && !saving
                 ? 'bg-brand-orange hover:bg-brand-orange-dark shadow-md shadow-brand-orange/30'
-                : 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                : 'bg-slate-200 text-slate-500 cursor-not-allowed'
             }`}
           >
             {saving ? 'Setting lineup…' : '📋 Set the Lineup'}

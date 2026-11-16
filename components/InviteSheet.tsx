@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useModal } from '@/lib/use-modal'
 
 interface Props {
   teamName:    string
@@ -41,15 +42,17 @@ export default function InviteSheet({ teamName, inviteCode, onClose }: Props) {
 
   const canNativeShare = typeof navigator !== 'undefined' && !!navigator.share
 
+  const modal = useModal(onClose, 'Invite teammates')
+
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-      <div className="bg-white rounded-2xl w-full max-w-sm shadow-xl overflow-hidden">
+    <div {...modal} className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+      <div className="bg-surface rounded-2xl w-full max-w-sm shadow-xl overflow-hidden">
         {/* Header */}
         <div className="px-6 pt-6 pb-4 border-b border-slate-100">
           <div className="flex items-start justify-between">
             <div>
-              <h2 className="text-brand-navy font-black text-lg">Invite to {teamName}</h2>
-              <p className="text-slate-400 text-sm mt-0.5">Share any way you like</p>
+              <h2 className="text-ink font-black text-lg">Invite to {teamName}</h2>
+              <p className="text-slate-500 text-sm mt-0.5">Share any way you like</p>
             </div>
             <button onClick={onClose} className="text-slate-300 hover:text-slate-500 text-2xl leading-none mt-0.5 transition-colors">×</button>
           </div>
@@ -82,15 +85,15 @@ export default function InviteSheet({ teamName, inviteCode, onClose }: Props) {
             <span className="text-2xl leading-none">{copiedLink ? '✅' : '🔗'}</span>
             <div className="text-left">
               <p className="text-sm font-black">{copiedLink ? 'Link copied!' : 'Copy invite link'}</p>
-              <p className="text-xs text-slate-400 font-normal truncate">{joinUrl}</p>
+              <p className="text-xs text-slate-500 font-normal truncate">{joinUrl}</p>
             </div>
           </button>
 
           {/* Invite code */}
           <div className="bg-slate-50 border border-slate-200 rounded-xl px-5 py-4">
-            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Or share the code</p>
+            <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Or share the code</p>
             <div className="flex items-center justify-between gap-3">
-              <span className="font-mono font-black text-2xl text-brand-navy tracking-[0.2em]">
+              <span className="font-mono font-black text-2xl text-ink tracking-[0.2em]">
                 {inviteCode}
               </span>
               <button
@@ -98,13 +101,13 @@ export default function InviteSheet({ teamName, inviteCode, onClose }: Props) {
                 className={`text-xs font-black px-3 py-1.5 rounded-lg transition-all ${
                   copiedCode
                     ? 'bg-green-100 text-green-700'
-                    : 'bg-white border border-slate-200 text-brand-orange hover:border-brand-orange'
+                    : 'bg-surface border border-slate-200 text-brand-orange hover:border-brand-orange'
                 }`}
               >
                 {copiedCode ? '✓ Copied' : 'Copy'}
               </button>
             </div>
-            <p className="text-xs text-slate-400 mt-2">They enter this in the app under Social → Join a Team</p>
+            <p className="text-xs text-slate-500 mt-2">They enter this in the app under Social → Join a Team</p>
           </div>
 
           {/* Email — coming soon */}

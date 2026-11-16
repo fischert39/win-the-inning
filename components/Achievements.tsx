@@ -20,7 +20,7 @@ export default function Achievements({ achievements, initialOpen = false }: Prop
   const unlocked = achievements.filter(a => a.unlocked).length
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+    <div className="bg-surface rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
       <button
         onClick={() => setOpen(o => !o)}
         className="w-full px-5 py-4 flex items-center justify-between"
@@ -28,8 +28,8 @@ export default function Achievements({ achievements, initialOpen = false }: Prop
         <div className="flex items-center gap-3">
           <span className="text-xl">🏅</span>
           <div className="text-left">
-            <h2 className="font-black text-base text-brand-navy">Achievements</h2>
-            <p className="text-slate-400 text-xs mt-0.5">{unlocked}/{achievements.length} unlocked</p>
+            <h2 className="font-black text-base text-ink">Achievements</h2>
+            <p className="text-slate-500 text-xs mt-0.5">{unlocked}/{achievements.length} unlocked</p>
           </div>
         </div>
         <div className="flex items-center gap-3">
@@ -40,7 +40,7 @@ export default function Achievements({ achievements, initialOpen = false }: Prop
             />
           </div>
           <svg
-            className={`w-4 h-4 text-slate-400 transition-transform ${open ? 'rotate-180' : ''}`}
+            className={`w-4 h-4 text-slate-500 transition-transform ${open ? 'rotate-180' : ''}`}
             viewBox="0 0 16 16" fill="none"
           >
             <path d="M4 6l4 4 4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
@@ -57,8 +57,8 @@ export default function Achievements({ achievements, initialOpen = false }: Prop
               <div key={cat.key}>
                 <div className="flex items-center gap-2 mb-2">
                   <span className="text-sm">{cat.icon}</span>
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider">{cat.label}</p>
-                  <span className="text-[10px] text-slate-300 ml-auto">{catUnlocked}/{catBadges.length}</span>
+                  <p className="text-[11px] font-black text-slate-500 uppercase tracking-wider">{cat.label}</p>
+                  <span className="text-[11px] text-slate-300 ml-auto">{catUnlocked}/{catBadges.length}</span>
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   {catBadges.map(a => (
@@ -73,13 +73,13 @@ export default function Achievements({ achievements, initialOpen = false }: Prop
                       <div className="flex items-center gap-2 mb-1">
                         <span className={`text-xl ${a.unlocked ? '' : 'grayscale'}`}>{a.icon}</span>
                         {a.unlocked && (
-                          <span className="text-[10px] font-black text-brand-orange uppercase tracking-wider">Unlocked</span>
+                          <span className="text-[11px] font-black text-brand-orange uppercase tracking-wider">Unlocked</span>
                         )}
                       </div>
-                      <p className={`text-sm font-black ${a.unlocked ? 'text-brand-navy' : 'text-slate-400'}`}>
+                      <p className={`text-sm font-black ${a.unlocked ? 'text-ink' : 'text-slate-500'}`}>
                         {a.name}
                       </p>
-                      <p className="text-[11px] text-slate-400 mt-0.5 leading-snug">{a.description}</p>
+                      <p className="text-[11px] text-slate-500 mt-0.5 leading-snug">{a.description}</p>
                     </div>
                   ))}
                 </div>

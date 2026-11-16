@@ -85,7 +85,7 @@ export default function TeamAchievements() {
   const total    = items.length
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+    <div className="bg-surface rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
       <button
         onClick={() => setOpen(o => !o)}
         className="w-full px-5 py-4 flex items-center justify-between"
@@ -93,8 +93,8 @@ export default function TeamAchievements() {
         <div className="flex items-center gap-3">
           <span className="text-xl">🏅</span>
           <div className="text-left">
-            <h2 className="font-black text-base text-brand-navy">Team Achievements</h2>
-            <p className="text-slate-400 text-xs mt-0.5">
+            <h2 className="font-black text-base text-ink">Team Achievements</h2>
+            <p className="text-slate-500 text-xs mt-0.5">
               {loading ? 'Loading…' : `${unlocked}/${total} unlocked${team ? ` · ${team.name}` : ''}`}
             </p>
           </div>
@@ -109,7 +109,7 @@ export default function TeamAchievements() {
             </div>
           )}
           <svg
-            className={`w-4 h-4 text-slate-400 transition-transform ${open ? 'rotate-180' : ''}`}
+            className={`w-4 h-4 text-slate-500 transition-transform ${open ? 'rotate-180' : ''}`}
             viewBox="0 0 16 16" fill="none"
           >
             <path d="M4 6l4 4 4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
@@ -131,10 +131,10 @@ export default function TeamAchievements() {
                 <div key={cat.key}>
                   <div className="flex items-center gap-2 mb-2">
                     <span className="text-sm">{cat.icon}</span>
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider">
+                    <p className="text-[11px] font-black text-slate-500 uppercase tracking-wider">
                       {cat.label}
                     </p>
-                    <span className="text-[10px] text-slate-300 ml-auto">
+                    <span className="text-[11px] text-slate-300 ml-auto">
                       {catUnlocked}/{catItems.length}
                     </span>
                   </div>
@@ -151,19 +151,19 @@ export default function TeamAchievements() {
                         <div className="flex items-center gap-2 mb-1">
                           <span className={`text-xl ${a.unlocked ? '' : 'grayscale'}`}>{a.icon}</span>
                           {a.unlocked && (
-                            <span className="text-[10px] font-black text-brand-orange uppercase tracking-wider">
+                            <span className="text-[11px] font-black text-brand-orange uppercase tracking-wider">
                               {a.count > 1 ? `×${a.count}` : 'Unlocked'}
                             </span>
                           )}
                         </div>
-                        <p className={`text-sm font-black ${a.unlocked ? 'text-brand-navy' : 'text-slate-400'}`}>
+                        <p className={`text-sm font-black ${a.unlocked ? 'text-ink' : 'text-slate-500'}`}>
                           {a.name}
                         </p>
-                        <p className="text-[11px] text-slate-400 mt-0.5 leading-snug">
+                        <p className="text-[11px] text-slate-500 mt-0.5 leading-snug">
                           {a.description}
                         </p>
                         {a.unlocked && a.unlockedAt && (
-                          <p className="text-[10px] text-slate-300 mt-1">
+                          <p className="text-[11px] text-slate-300 mt-1">
                             {new Date(a.unlockedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                           </p>
                         )}

@@ -1,5 +1,6 @@
 'use client'
 
+import { useModal } from '@/lib/use-modal'
 interface MissedSummary {
   days:   number
   wins:   number
@@ -36,32 +37,34 @@ export default function WelcomeBack({ summary, onClose, onReview }: Props) {
 
   const cta = wins > losses ? 'Back in the Game →' : 'Get Back in the Game →'
 
+  const modal = useModal(onClose, 'Welcome back')
+
   return (
-    <div className="fixed inset-0 bg-black/60 z-50 flex items-end sm:items-center justify-center p-4 animate-fade-in">
+    <div {...modal} className="fixed inset-0 bg-black/60 z-50 flex items-end sm:items-center justify-center p-4 animate-fade-in">
       <div className="bg-brand-navy rounded-2xl w-full max-w-sm p-6 animate-slide-up border border-white/10">
 
         <div className="text-4xl mb-3">⚾</div>
         <h2 className="text-white font-black text-xl mb-1">{headline}</h2>
-        <p className="text-white/50 text-sm mb-5">{sub}</p>
+        <p className="text-white/65 text-sm mb-5">{sub}</p>
 
         {total > 0 && (
           <div className="grid grid-cols-3 gap-2 mb-5">
             <div className="bg-brand-green/15 rounded-xl p-3 text-center border border-brand-green/20">
               <p className="text-2xl font-black text-brand-green">{wins}</p>
-              <p className="text-[10px] font-black text-brand-green/70 uppercase tracking-wide mt-0.5">Wins</p>
+              <p className="text-[11px] font-black text-brand-green/70 uppercase tracking-wide mt-0.5">Wins</p>
             </div>
             <div className="bg-brand-red/15 rounded-xl p-3 text-center border border-brand-red/20">
               <p className="text-2xl font-black text-brand-red">{losses}</p>
-              <p className="text-[10px] font-black text-brand-red/70 uppercase tracking-wide mt-0.5">Losses</p>
+              <p className="text-[11px] font-black text-brand-red/70 uppercase tracking-wide mt-0.5">Losses</p>
             </div>
             <div className="bg-yellow-500/15 rounded-xl p-3 text-center border border-yellow-500/20">
               <p className="text-2xl font-black text-yellow-400">{ties}</p>
-              <p className="text-[10px] font-black text-yellow-400/70 uppercase tracking-wide mt-0.5">Ties</p>
+              <p className="text-[11px] font-black text-yellow-400/70 uppercase tracking-wide mt-0.5">Ties</p>
             </div>
           </div>
         )}
 
-        <p className="text-xs text-white/30 mb-5">
+        <p className="text-xs text-white/55 mb-5">
           Swipe back to any missed date to re-open, edit, and close it.
         </p>
 
@@ -75,7 +78,7 @@ export default function WelcomeBack({ summary, onClose, onReview }: Props) {
         {onReview && total > 0 && (
           <button
             onClick={onReview}
-            className="w-full text-white/30 text-sm py-2.5 mt-1 hover:text-white/60 transition-colors"
+            className="w-full text-white/55 text-sm py-2.5 mt-1 hover:text-white/60 transition-colors"
           >
             Review missed innings →
           </button>

@@ -138,14 +138,14 @@ export default function TeamFeed({ items, loading, myUserId }: Props) {
               {item.mascot ?? icon}
             </div>
             <div className="flex-1 min-w-0 pt-0.5">
-              <p className={`text-sm font-semibold leading-snug ${isAchievement ? 'text-amber-700' : 'text-brand-navy'}`}>
+              <p className={`text-sm font-semibold leading-snug ${isAchievement ? 'text-amber-700' : 'text-ink'}`}>
                 {main}
               </p>
               {sub && (
-                <p className={`text-xs mt-0.5 ${isAchievement ? 'text-amber-600' : 'text-slate-400'}`}>{sub}</p>
+                <p className={`text-xs mt-0.5 ${isAchievement ? 'text-amber-600' : 'text-slate-500'}`}>{sub}</p>
               )}
             </div>
-            <span className="text-[10px] text-slate-300 flex-shrink-0 pt-1 whitespace-nowrap">
+            <span className="text-[11px] text-slate-300 flex-shrink-0 pt-1 whitespace-nowrap">
               {timeAgo(item.created_at)}
             </span>
           </div>

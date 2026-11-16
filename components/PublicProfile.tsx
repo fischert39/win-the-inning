@@ -25,7 +25,7 @@ export default function PublicProfile({ profile }: Props) {
   const recentGames = (profile.recent_games ?? []).slice().reverse()
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-brand-navy to-[#0F3460] flex flex-col items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-[#0f172a] via-brand-navy to-[#0F3460] flex flex-col items-center justify-center p-4">
       <div className="w-full max-w-sm">
 
         {/* Profile card */}
@@ -36,9 +36,9 @@ export default function PublicProfile({ profile }: Props) {
             <span className="text-7xl block mb-3">{displayIcon}</span>
             <h1 className="font-black text-2xl text-white leading-tight">{name}</h1>
             {profile.team_name && profile.display_name && (
-              <p className="text-white/50 text-sm mt-0.5">{profile.display_name}</p>
+              <p className="text-white/65 text-sm mt-0.5">{profile.display_name}</p>
             )}
-            <p className="text-white/50 text-xs mt-1">@{profile.username} · Win the Inning</p>
+            <p className="text-white/65 text-xs mt-1">@{profile.username} · Win the Inning</p>
           </div>
 
           {/* Stats */}
@@ -46,26 +46,26 @@ export default function PublicProfile({ profile }: Props) {
             <div className="bg-white/10 rounded-2xl p-4 text-center">
               <p className="text-3xl font-black text-white tabular-nums">
                 {profile.game_wins}
-                <span className="text-white/40 font-normal">–</span>
+                <span className="text-white/60 font-normal">–</span>
                 {profile.game_losses}
               </p>
-              <p className="text-white/40 text-[10px] font-bold uppercase tracking-wider mt-1">Game Record</p>
+              <p className="text-white/60 text-[11px] font-bold uppercase tracking-wider mt-1">Game Record</p>
             </div>
             <div className="bg-white/10 rounded-2xl p-4 text-center">
               <p className="text-3xl font-black text-white tabular-nums">
-                {winPct}<span className="text-white/40 text-lg font-normal">%</span>
+                {winPct}<span className="text-white/60 text-lg font-normal">%</span>
               </p>
-              <p className="text-white/40 text-[10px] font-bold uppercase tracking-wider mt-1">
+              <p className="text-white/60 text-[11px] font-bold uppercase tracking-wider mt-1">
                 Innings Won
               </p>
-              <p className="text-white/30 text-[10px]">{profile.innings_won}/{profile.innings_played}</p>
+              <p className="text-white/55 text-[11px]">{profile.innings_won}/{profile.innings_played}</p>
             </div>
           </div>
 
           {/* Recent games */}
           {recentGames.length > 0 && (
             <div className="text-center">
-              <p className="text-white/30 text-[10px] font-black uppercase tracking-widest mb-2">Recent Games</p>
+              <p className="text-white/55 text-[11px] font-black uppercase tracking-widest mb-2">Recent Games</p>
               <div className="flex justify-center gap-2">
                 {recentGames.map((result, i) => (
                   <div
@@ -91,7 +91,7 @@ export default function PublicProfile({ profile }: Props) {
         >
           {sportEmoji} Play Win the Inning
         </a>
-        <p className="text-center text-white/50 text-xs mt-3">
+        <p className="text-center text-white/65 text-xs mt-3">
           Track your daily habits like a baseball season
         </p>
       </div>

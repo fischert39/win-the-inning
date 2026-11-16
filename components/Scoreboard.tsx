@@ -50,13 +50,13 @@ export default function Scoreboard({ games, todayStr, viewDate, seasonStartDate,
           <button
             onClick={() => shiftWeek(-1)}
             disabled={!canGoPrev}
-            className="w-6 h-6 flex items-center justify-center text-white/40 hover:text-white disabled:opacity-20 transition-colors"
+            className="w-6 h-6 flex items-center justify-center text-white/60 hover:text-white disabled:opacity-20 transition-colors"
           >
             <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
               <path fillRule="evenodd" d="M11.78 5.22a.75.75 0 0 1 0 1.06L8.06 10l3.72 3.72a.75.75 0 1 1-1.06 1.06l-4.25-4.25a.75.75 0 0 1 0-1.06l4.25-4.25a.75.75 0 0 1 1.06 0Z" clipRule="evenodd" />
             </svg>
           </button>
-          <span className={`text-xs font-bold ${isPreSeason ? 'text-amber-400' : 'text-white/50'}`}>
+          <span className={`text-xs font-bold ${isPreSeason ? 'text-amber-400' : 'text-white/65'}`}>
             {isPreSeason
               ? '⚾ Pre-Season'
               : `Week of ${(() => { const d = new Date(displayWeekStart + 'T12:00:00'); return `${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}` })()}`
@@ -65,7 +65,7 @@ export default function Scoreboard({ games, todayStr, viewDate, seasonStartDate,
           <button
             onClick={() => shiftWeek(1)}
             disabled={!canGoNext}
-            className="w-6 h-6 flex items-center justify-center text-white/40 hover:text-white disabled:opacity-20 transition-colors"
+            className="w-6 h-6 flex items-center justify-center text-white/60 hover:text-white disabled:opacity-20 transition-colors"
           >
             <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
               <path fillRule="evenodd" d="M8.22 5.22a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.75.75 0 0 1-1.06-1.06L11.94 10 8.22 6.28a.75.75 0 0 1 0-1.06Z" clipRule="evenodd" />
@@ -86,7 +86,7 @@ export default function Scoreboard({ games, todayStr, viewDate, seasonStartDate,
       {/* Pre-season note */}
       {isPreSeason && (
         <div className="mb-3 px-1">
-          <p className="text-amber-400/70 text-[10px] font-semibold text-center">
+          <p className="text-amber-400/70 text-[11px] font-semibold text-center">
             Warm-up week · doesn&apos;t count toward your record
           </p>
         </div>
@@ -96,12 +96,12 @@ export default function Scoreboard({ games, todayStr, viewDate, seasonStartDate,
       {!isPreSeason && gResult === 'IN_PROGRESS' && activeGame && (
         <div className="mb-3 px-1">
           <div className="flex items-center justify-between mb-1.5">
-            <span className="text-white/50 text-[10px] font-medium">
+            <span className="text-white/65 text-[11px] font-medium">
               {inningWins >= winsNeeded
                 ? 'Game secured!'
                 : `${winsNeeded - inningWins} more win${winsNeeded - inningWins !== 1 ? 's' : ''} to lock up the game`}
             </span>
-            <span className="text-white/50 text-[10px] tabular-nums">{inningWins}/{winsNeeded}</span>
+            <span className="text-white/65 text-[11px] tabular-nums">{inningWins}/{winsNeeded}</span>
           </div>
           <div className="flex gap-1">
             {Array.from({ length: winsNeeded }).map((_, i) => (
@@ -147,19 +147,19 @@ export default function Scoreboard({ games, todayStr, viewDate, seasonStartDate,
             if (res === 'WIN')  return (
               <div className="flex flex-col items-center">
                 <span className="text-brand-green font-black text-base leading-none">W</span>
-                <span className="text-brand-green/70 text-[10px] font-bold tabular-nums leading-none mt-0.5">{runs}R</span>
+                <span className="text-brand-green/70 text-[11px] font-bold tabular-nums leading-none mt-0.5">{runs}R</span>
               </div>
             )
             if (res === 'TIE')  return (
               <div className="flex flex-col items-center">
                 <span className="text-yellow-400 font-black text-base leading-none">T</span>
-                <span className="text-yellow-400/70 text-[10px] font-bold leading-none mt-0.5">–</span>
+                <span className="text-yellow-400/70 text-[11px] font-bold leading-none mt-0.5">–</span>
               </div>
             )
             if (res === 'LOSS') return (
               <div className="flex flex-col items-center">
                 <span className="text-brand-red font-black text-base leading-none">L</span>
-                <span className="text-brand-red/70 text-[10px] font-bold tabular-nums leading-none mt-0.5">{outs}/3</span>
+                <span className="text-brand-red/70 text-[11px] font-bold tabular-nums leading-none mt-0.5">{outs}/3</span>
               </div>
             )
             // In-progress: show out dots
@@ -171,7 +171,7 @@ export default function Scoreboard({ games, todayStr, viewDate, seasonStartDate,
                   ))}
                 </div>
                 {runs > 0 && (
-                  <span className="text-brand-orange/70 text-[10px] font-bold tabular-nums leading-none">{runs}R</span>
+                  <span className="text-brand-orange/70 text-[11px] font-bold tabular-nums leading-none">{runs}R</span>
                 )}
               </div>
             )
@@ -185,13 +185,13 @@ export default function Scoreboard({ games, todayStr, viewDate, seasonStartDate,
             >
               {/* Day name */}
               <span className={`text-[11px] font-black uppercase tracking-wide leading-none ${
-                isToday ? 'text-brand-orange' : 'text-white/40'
+                isToday ? 'text-brand-orange' : 'text-white/60'
               }`}>
                 {dayShort(date)}
               </span>
 
               {/* Inning number */}
-              <span className="text-white/20 text-[9px] font-semibold leading-none">{idx + 1}</span>
+              <span className="text-white/20 text-[10px] font-semibold leading-none">{idx + 1}</span>
 
               {/* Result glyph */}
               <div className="flex items-center justify-center min-h-[32px]">
@@ -202,10 +202,10 @@ export default function Scoreboard({ games, todayStr, viewDate, seasonStartDate,
         })}
 
         {/* Totals column */}
-        <div className="bg-white/8 rounded-xl px-2.5 py-3.5 flex flex-col items-center justify-center gap-1.5 min-w-[44px] border border-white/10">
-          <span className="text-white/30 text-[9px] font-black uppercase tracking-wide">Runs</span>
+        <div className="bg-white/10 rounded-xl px-2.5 py-3.5 flex flex-col items-center justify-center gap-1.5 min-w-[44px] border border-white/10">
+          <span className="text-white/55 text-[10px] font-black uppercase tracking-wide">Runs</span>
           <span className="text-white text-xl font-black tabular-nums leading-none">{totalRuns}</span>
-          <span className="text-white/20 text-[9px] font-semibold">Total</span>
+          <span className="text-white/20 text-[10px] font-semibold">Total</span>
         </div>
       </div>
     </div>

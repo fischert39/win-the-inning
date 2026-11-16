@@ -3,6 +3,7 @@
 import { useEffect, useRef } from 'react'
 import type { FullGame } from '@/types'
 import { inningResult, gameResult, simulateRuns, displayDate } from '@/lib/game-logic'
+import { useModal } from '@/lib/use-modal'
 
 interface Props {
   game:    FullGame | null
@@ -175,12 +176,14 @@ export default function ShareCard({ game, record, streak, sport, onClose }: Prop
     }, 'image/png')
   }
 
+  const modal = useModal(onClose, 'Share scorecard')
+
   return (
-    <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4 animate-fade-in" onClick={onClose}>
+    <div {...modal} className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4 animate-fade-in" onClick={onClose}>
       <div className="bg-brand-navy rounded-2xl overflow-hidden shadow-2xl w-full max-w-lg" onClick={e => e.stopPropagation()}>
         <div className="p-4 flex items-center justify-between border-b border-white/10">
           <p className="text-white font-black text-sm">Your Scorecard</p>
-          <button onClick={onClose} className="text-white/40 hover:text-white text-lg leading-none">✕</button>
+          <button onClick={onClose} className="text-white/60 hover:text-white text-lg leading-none">✕</button>
         </div>
 
         <div className="p-4">

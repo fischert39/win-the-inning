@@ -178,14 +178,14 @@ export default function DayContext({ season, todayStr, sport, inningsPlayed, inn
       <div className="bg-brand-navy px-5 pt-4 pb-4">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <p className="text-white/40 text-[10px] font-black uppercase tracking-widest mb-1">
+            <p className="text-white/60 text-[11px] font-black uppercase tracking-widest mb-1">
               {sportEmoji} Game {gameNum} · Inning {inningNum}
             </p>
             <p className="text-white font-black text-xl leading-tight">
               {flavorLine}
             </p>
             {winRate !== null && inningsPlayed >= 3 && (
-              <p className="text-white/40 text-xs mt-1.5 font-semibold">
+              <p className="text-white/60 text-xs mt-1.5 font-semibold">
                 {inningsWon}W–{inningsPlayed - inningsWon}L &nbsp;·&nbsp; {winRate}% win rate
                 {daysLeft !== null ? ` · ${daysLeft}d left` : ''}
               </p>
@@ -195,7 +195,7 @@ export default function DayContext({ season, todayStr, sport, inningsPlayed, inn
           {pct !== null && (
             <div className="text-right flex-shrink-0 pt-0.5">
               <p className="text-3xl font-black text-brand-orange leading-none tabular-nums">{pct}%</p>
-              <p className="text-white/30 text-[10px] mt-0.5 font-semibold">
+              <p className="text-white/55 text-[11px] mt-0.5 font-semibold">
                 {progressLabel}
               </p>
             </div>
@@ -217,7 +217,7 @@ export default function DayContext({ season, todayStr, sport, inningsPlayed, inn
       {season.success_definition && (
         <div className="bg-brand-navy/5 border-t border-slate-100 px-5 py-2.5">
           <p className="text-xs text-slate-500">
-            <span className="font-semibold text-brand-navy">🎯 Win condition: </span>
+            <span className="font-semibold text-ink">🎯 Win condition: </span>
             {season.success_definition}
           </p>
         </div>

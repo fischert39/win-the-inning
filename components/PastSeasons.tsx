@@ -54,20 +54,20 @@ export default function PastSeasons({ userId, sport, onBack }: Props) {
         <div className="flex items-center gap-3 mb-8">
           <button
             onClick={onBack}
-            className="text-white/50 hover:text-white transition-colors text-sm font-semibold"
+            className="text-white/65 hover:text-white transition-colors text-sm font-semibold"
           >
             ← Back
           </button>
           <div>
             <h1 className="text-2xl font-black text-white">Past Seasons</h1>
-            <p className="text-white/40 text-xs mt-0.5">{sportEmoji} Your full history</p>
+            <p className="text-white/60 text-xs mt-0.5">{sportEmoji} Your full history</p>
           </div>
         </div>
 
         {loading && (
           <div className="text-center py-16">
             <span className="text-4xl block mb-3 animate-bounce-slow">{sportEmoji}</span>
-            <p className="text-white/50">Loading seasons…</p>
+            <p className="text-white/65">Loading seasons…</p>
           </div>
         )}
 
@@ -75,7 +75,7 @@ export default function PastSeasons({ userId, sport, onBack }: Props) {
           <div className="text-center py-16">
             <span className="text-4xl block mb-3">🏟️</span>
             <p className="text-white/60 font-semibold">No seasons in the books yet.</p>
-            <p className="text-white/30 text-sm mt-1">Finish your current season to start building your history.</p>
+            <p className="text-white/55 text-sm mt-1">Finish your current season to start building your history.</p>
           </div>
         )}
 
@@ -90,7 +90,7 @@ export default function PastSeasons({ userId, sport, onBack }: Props) {
                     <p className="text-white font-black text-base">
                       Season {seasons.length - idx}
                     </p>
-                    <p className="text-white/40 text-xs mt-0.5">
+                    <p className="text-white/60 text-xs mt-0.5">
                       {displayDate(season.start_date)}
                       {season.end_date ? ` — ${displayDate(season.end_date)}` : ''}
                     </p>
@@ -114,7 +114,7 @@ export default function PastSeasons({ userId, sport, onBack }: Props) {
                   ].map(stat => (
                     <div key={stat.label} className="text-center">
                       <div className="text-white font-black text-sm">{stat.value}</div>
-                      <div className="text-white/40 text-[10px] mt-0.5">{stat.label}</div>
+                      <div className="text-white/60 text-[11px] mt-0.5">{stat.label}</div>
                     </div>
                   ))}
                 </div>
@@ -125,7 +125,7 @@ export default function PastSeasons({ userId, sport, onBack }: Props) {
                     {season.season_goals.map(g => (
                       <div key={g.id} className="flex items-center gap-2">
                         <span className="text-xs flex-shrink-0">{g.completed ? '✅' : '⬜'}</span>
-                        <span className={`text-xs ${g.completed ? 'text-white/70' : 'text-white/30'}`}>
+                        <span className={`text-xs ${g.completed ? 'text-white/70' : 'text-white/55'}`}>
                           {g.text || 'Untitled goal'}
                         </span>
                       </div>

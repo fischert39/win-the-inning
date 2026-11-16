@@ -47,13 +47,13 @@ export default function UndoToast({ action, onDismiss }: Props) {
 
   return (
     <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 w-[calc(100%-2rem)] max-w-sm animate-slide-up">
-      <div className="bg-slate-800 text-white rounded-2xl shadow-2xl overflow-hidden">
+      <div className="bg-[#1e293b] text-white rounded-2xl shadow-2xl overflow-hidden">
         {dbError ? (
           <div className="flex items-center gap-3 px-4 py-3">
             <span className="text-sm flex-1 text-red-400">⚠️ Undo failed — please refresh and try again.</span>
             <button
               onClick={onDismiss}
-              className="text-white/40 hover:text-white/70 transition-colors text-xl leading-none flex-shrink-0"
+              className="text-white/60 hover:text-white/70 transition-colors text-xl leading-none flex-shrink-0"
             >
               ×
             </button>
@@ -70,7 +70,7 @@ export default function UndoToast({ action, onDismiss }: Props) {
             </button>
             <button
               onClick={onDismiss}
-              className="text-white/40 hover:text-white/70 transition-colors text-xl leading-none flex-shrink-0"
+              className="text-white/60 hover:text-white/70 transition-colors text-xl leading-none flex-shrink-0"
             >
               ×
             </button>
