@@ -35,10 +35,10 @@ export default function FindFriends({ isDiscoverable, onOpenSettings }: Props) {
   }
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+    <div className="bg-surface rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
       <div className="px-5 pt-5 pb-4">
-        <h2 className="font-black text-brand-navy text-base mb-0.5">🔍 Find Players</h2>
-        <p className="text-slate-400 text-xs mb-4">Search by name, username, or email</p>
+        <h2 className="font-black text-ink text-base mb-0.5">🔍 Find Players</h2>
+        <p className="text-slate-500 text-xs mb-4">Search by name, username, or email</p>
 
         {!isDiscoverable && (
           <button
@@ -47,7 +47,7 @@ export default function FindFriends({ isDiscoverable, onOpenSettings }: Props) {
           >
             <p className="text-amber-800 text-xs font-semibold">
               💡 You're not discoverable — others can't find you yet.{' '}
-              <span className="underline">Enable in Team Settings →</span>
+              <span className="underline">Enable in Profile &amp; Settings →</span>
             </p>
           </button>
         )}
@@ -59,7 +59,7 @@ export default function FindFriends({ isDiscoverable, onOpenSettings }: Props) {
             onChange={e => setQuery(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && handleSearch()}
             placeholder="Name, @username, or email…"
-            className="flex-1 border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-brand-navy outline-none focus:border-brand-orange"
+            className="flex-1 border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-ink outline-none focus:border-brand-orange"
           />
           <button
             onClick={handleSearch}
@@ -74,7 +74,7 @@ export default function FindFriends({ isDiscoverable, onOpenSettings }: Props) {
       {searched && (
         <div className="border-t border-slate-100">
           {results.length === 0 ? (
-            <p className="text-center text-slate-400 text-sm py-6 px-5">
+            <p className="text-center text-slate-500 text-sm py-6 px-5">
               No players found. Try a different name or ask them to enable discoverability.
             </p>
           ) : (
@@ -85,10 +85,10 @@ export default function FindFriends({ isDiscoverable, onOpenSettings }: Props) {
                     {r.mascot ?? (r.sport === 'baseball' ? '⚾' : '🥎')}
                   </span>
                   <div className="flex-1 min-w-0">
-                    <p className="font-black text-sm text-brand-navy truncate">
+                    <p className="font-black text-sm text-ink truncate">
                       {r.display_name ?? r.username}
                     </p>
-                    <p className="text-slate-400 text-xs truncate">
+                    <p className="text-slate-500 text-xs truncate">
                       @{r.username}{r.team_name ? ` · ${r.team_name}` : ''}
                     </p>
                   </div>

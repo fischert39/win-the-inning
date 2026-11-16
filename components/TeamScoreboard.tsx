@@ -13,7 +13,7 @@ const STATUS_CONFIG = {
   won:    { label: 'Won ✓',     bg: 'bg-green-100',  text: 'text-green-700'  },
   closed: { label: 'Closed',    bg: 'bg-slate-100',  text: 'text-slate-500'  },
   open:   { label: 'In progress', bg: 'bg-sky-100',  text: 'text-sky-700'    },
-  none:   { label: 'Not started', bg: 'bg-slate-50', text: 'text-slate-400'  },
+  none:   { label: 'Not started', bg: 'bg-slate-50', text: 'text-slate-500'  },
 }
 
 export default function TeamScoreboard({ members, loading, myUserId, onNudge }: Props) {
@@ -57,7 +57,7 @@ export default function TeamScoreboard({ members, loading, myUserId, onNudge }: 
           <div
             key={m.user_id}
             className={`rounded-2xl border transition-all ${
-              isMe ? 'border-brand-orange/30 bg-brand-orange/5' : 'border-slate-100 bg-white'
+              isMe ? 'border-brand-orange/30 bg-brand-orange/5' : 'border-slate-100 bg-surface'
             }`}
           >
             <div className="px-4 pt-4 pb-3">
@@ -68,21 +68,21 @@ export default function TeamScoreboard({ members, loading, myUserId, onNudge }: 
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1.5 flex-wrap">
-                    <p className="font-black text-brand-navy text-sm truncate">
+                    <p className="font-black text-ink text-sm truncate">
                       {m.display_name ?? 'Teammate'}
                     </p>
                     {isMe && (
-                      <span className="text-[10px] bg-brand-orange/10 text-brand-orange font-bold px-1.5 py-0.5 rounded-full">You</span>
+                      <span className="text-[11px] bg-brand-orange/10 text-brand-orange font-bold px-1.5 py-0.5 rounded-full">You</span>
                     )}
                     {m.role === 'admin' && (
-                      <span className="text-[10px] bg-slate-100 text-slate-500 font-bold px-1.5 py-0.5 rounded-full">Admin</span>
+                      <span className="text-[11px] bg-slate-100 text-slate-500 font-bold px-1.5 py-0.5 rounded-full">Admin</span>
                     )}
                     {idx === 0 && members.length > 1 && (
-                      <span className="text-[10px] bg-amber-100 text-amber-700 font-bold px-1.5 py-0.5 rounded-full">🥇 Leader</span>
+                      <span className="text-[11px] bg-amber-100 text-amber-700 font-bold px-1.5 py-0.5 rounded-full">🥇 Leader</span>
                     )}
                   </div>
                   {m.team_name && (
-                    <p className="text-xs text-slate-400 truncate">{m.team_name}</p>
+                    <p className="text-xs text-slate-500 truncate">{m.team_name}</p>
                   )}
                 </div>
 
@@ -125,10 +125,10 @@ export default function TeamScoreboard({ members, loading, myUserId, onNudge }: 
 function StatPill({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) {
   return (
     <div className="flex flex-col items-center min-w-0">
-      <span className={`text-sm font-black tabular-nums leading-tight ${highlight ? 'text-brand-orange' : 'text-brand-navy'}`}>
+      <span className={`text-sm font-black tabular-nums leading-tight ${highlight ? 'text-brand-orange' : 'text-ink'}`}>
         {value}
       </span>
-      <span className="text-[10px] text-slate-400 mt-0.5">{label}</span>
+      <span className="text-[11px] text-slate-500 mt-0.5">{label}</span>
     </div>
   )
 }

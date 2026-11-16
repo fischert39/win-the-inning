@@ -34,9 +34,9 @@ export default async function AdminPage() {
 
   if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <div className="bg-white rounded-xl border border-slate-200 p-8 max-w-md text-center">
-          <p className="text-brand-navy font-semibold mb-2">Setup Required</p>
+      <div className="min-h-screen bg-page flex items-center justify-center">
+        <div className="bg-surface rounded-xl border border-slate-200 p-8 max-w-md text-center">
+          <p className="text-ink font-semibold mb-2">Setup Required</p>
           <p className="text-slate-500 text-sm">Add <code className="bg-slate-100 px-1 rounded">SUPABASE_SERVICE_ROLE_KEY</code> to your environment variables.</p>
         </div>
       </div>
@@ -58,15 +58,15 @@ export default async function AdminPage() {
   // setup message rather than a stack trace.
   if (userStatsRes.error || globalRes.error || !userStatsRes.data || !globalRes.data) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-xl border border-slate-200 p-8 max-w-md text-center">
-          <p className="text-brand-navy font-semibold mb-2">Migration Required</p>
+      <div className="min-h-screen bg-page flex items-center justify-center p-4">
+        <div className="bg-surface rounded-xl border border-slate-200 p-8 max-w-md text-center">
+          <p className="text-ink font-semibold mb-2">Migration Required</p>
           <p className="text-slate-500 text-sm">
             Run <code className="bg-slate-100 px-1 rounded">supabase/migrations/021_admin_stats.sql</code> in the
             Supabase SQL editor to enable the admin dashboard.
           </p>
           {userStatsRes.error && (
-            <p className="text-slate-400 text-xs mt-3 font-mono break-words">{userStatsRes.error.message}</p>
+            <p className="text-slate-500 text-xs mt-3 font-mono break-words">{userStatsRes.error.message}</p>
           )}
         </div>
       </div>

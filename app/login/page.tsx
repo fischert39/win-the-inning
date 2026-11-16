@@ -37,10 +37,10 @@ export default function LoginPage() {
               { icon: '💪', label: 'Body',   desc: 'Physical health habits' },
               { icon: '🏆', label: 'Goals',  desc: 'Score runs every day' },
             ].map(item => (
-              <div key={item.label} className="bg-white/5 border border-white/8 rounded-xl p-3">
+              <div key={item.label} className="bg-white/5 border border-white/10 rounded-xl p-3">
                 <span className="text-2xl block mb-1">{item.icon}</span>
                 <div className="text-white text-sm font-bold">{item.label}</div>
-                <div className="text-white/50 text-xs mt-0.5">{item.desc}</div>
+                <div className="text-white/65 text-xs mt-0.5">{item.desc}</div>
               </div>
             ))}
           </div>
@@ -48,7 +48,7 @@ export default function LoginPage() {
           {/* Google sign-in */}
           <button
             onClick={signInWithGoogle}
-            className="w-full bg-white text-brand-navy font-bold py-4 px-6 rounded-xl text-base hover:bg-white/90 active:scale-[0.98] transition-all duration-150 flex items-center justify-center gap-3 shadow-lg"
+            className="w-full bg-surface text-ink font-bold py-4 px-6 rounded-xl text-base hover:bg-surface/90 active:scale-[0.98] transition-all duration-150 flex items-center justify-center gap-3 shadow-lg"
           >
             <svg className="w-5 h-5 flex-shrink-0" viewBox="0 0 24 24">
               <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -60,10 +60,10 @@ export default function LoginPage() {
           </button>
         </div>
 
-        <p className="text-center text-white/50 text-sm">
+        <p className="text-center text-white/65 text-sm">
           Your data is private and secure. No spam, ever.
         </p>
-        <p className="text-center text-white/50 text-xs mt-2">
+        <p className="text-center text-white/65 text-xs mt-2">
           <a href="/privacy" className="underline hover:text-white/80 transition-colors">Privacy Policy</a>
           <span className="mx-2">·</span>
           <a href="/terms" className="underline hover:text-white/80 transition-colors">Terms of Service</a>

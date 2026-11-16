@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo } from 'react'
+import { useModal } from '@/lib/use-modal'
 import type { FullSeason } from '@/types'
 
 interface Props {
@@ -13,6 +14,7 @@ const COLORS = ['#FF6B35', '#F5A623', '#FFD700', '#FFFFFF', '#2DC653', '#00B4D8'
 const COUNT  = 48
 
 export default function SeasonCeremony({ season, onClose }: Props) {
+  const modal = useModal(onClose, 'Season started')
   const goals = season.season_goals ?? []
 
   const pieces = useMemo(() => {
@@ -52,7 +54,7 @@ export default function SeasonCeremony({ season, onClose }: Props) {
         }
       `}</style>
 
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-6 overflow-hidden"
+      <div {...modal} className="fixed inset-0 z-50 flex items-center justify-center p-6 overflow-hidden"
         style={{ background: 'linear-gradient(160deg, #1A1A2E 0%, #0D0D1E 60%, #0f1f0f 100%)' }}
       >
         {/* Confetti */}
@@ -102,17 +104,17 @@ export default function SeasonCeremony({ season, onClose }: Props) {
           >
             Season Begins.
           </h1>
-          <p className="text-white/50 text-sm mb-6" style={{ animation: 'sc-in 0.4s 0.5s both' }}>
+          <p className="text-white/65 text-sm mb-6" style={{ animation: 'sc-in 0.4s 0.5s both' }}>
             Every champion starts somewhere.<br />This is your somewhere.
           </p>
 
           {/* Success definition */}
           {season.success_definition && (
             <div
-              className="bg-white/8 border border-white/10 rounded-2xl px-5 py-4 mb-4 text-left"
+              className="bg-white/10 border border-white/10 rounded-2xl px-5 py-4 mb-4 text-left"
               style={{ animation: 'sc-in 0.4s 0.6s both' }}
             >
-              <p className="text-white/40 text-[10px] font-black uppercase tracking-wider mb-1.5">🎯 Win Condition</p>
+              <p className="text-white/60 text-[11px] font-black uppercase tracking-wider mb-1.5">🎯 Win Condition</p>
               <p className="text-white font-semibold text-sm leading-snug">{season.success_definition}</p>
             </div>
           )}
@@ -120,10 +122,10 @@ export default function SeasonCeremony({ season, onClose }: Props) {
           {/* Goals */}
           {goals.length > 0 && (
             <div
-              className="bg-white/8 border border-white/10 rounded-2xl px-5 py-4 mb-6 text-left"
+              className="bg-white/10 border border-white/10 rounded-2xl px-5 py-4 mb-6 text-left"
               style={{ animation: 'sc-in 0.4s 0.7s both' }}
             >
-              <p className="text-white/40 text-[10px] font-black uppercase tracking-wider mb-3">Season Goals</p>
+              <p className="text-white/60 text-[11px] font-black uppercase tracking-wider mb-3">Season Goals</p>
               <ul className="space-y-2">
                 {goals.map((g, i) => (
                   <li key={g.id ?? i} className="flex items-start gap-2.5 text-sm text-white">

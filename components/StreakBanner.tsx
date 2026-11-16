@@ -95,8 +95,8 @@ export default function StreakBanner({ streak, todayWon, isToday }: Props) {
           }
         `}</style>
         <div
-          className="rounded-2xl mb-4 overflow-hidden border-2 border-red-400"
-          style={{ background: '#fff7f7', animation: 'sb-danger-pulse 1.6s ease-in-out infinite' }}
+          className="rounded-2xl mb-4 overflow-hidden border-2 border-red-400 bg-red-50"
+          style={{ animation: 'sb-danger-pulse 1.6s ease-in-out infinite' }}
         >
           <div className="flex items-center gap-4 px-5 py-4">
             <span className="text-4xl leading-none select-none grayscale opacity-50">🔥</span>
@@ -169,7 +169,7 @@ export default function StreakBanner({ streak, todayWon, isToday }: Props) {
                 style={{ animation: 'sb-label-pop 0.35s ease both' }}
               >
                 <span
-                  className="text-[10px] font-black tracking-widest uppercase px-2 py-0.5 rounded-full"
+                  className="text-[11px] font-black tracking-widest uppercase px-2 py-0.5 rounded-full"
                   style={{
                     background: isBig ? 'rgba(255,255,255,0.2)' : 'rgba(255,107,53,0.15)',
                     color:       isBig ? '#ffffff' : '#FF6B35',

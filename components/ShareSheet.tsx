@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useModal } from '@/lib/use-modal'
 
 interface Props {
   username:    string | null
@@ -14,6 +15,7 @@ interface Props {
 
 export default function ShareSheet({ username, displayName, mascot, teamName, record, context, onClose }: Props) {
   const [copied, setCopied] = useState(false)
+  const [igHint, setIgHint] = useState(false)
 
   function getProfileUrl() {
     const base = window.location.origin
@@ -45,7 +47,7 @@ export default function ShareSheet({ username, displayName, mascot, teamName, re
       }
     } else {
       await copyLink()
-      alert('Link copied! Open Instagram and paste it in your bio or story caption.')
+      setIgHint(true)
     }
   }
 
@@ -70,20 +72,22 @@ export default function ShareSheet({ username, displayName, mascot, teamName, re
   const name  = teamName || displayName || 'Player'
   const emoji = mascot ?? '🏆'
 
+  const modal = useModal(onClose, 'Share')
+
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-white rounded-2xl w-full max-w-sm overflow-hidden animate-slide-up" onClick={e => e.stopPropagation()}>
+    <div {...modal} className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-surface rounded-2xl w-full max-w-sm overflow-hidden animate-slide-up" onClick={e => e.stopPropagation()}>
 
         {/* Preview card */}
         <div className="bg-gradient-to-br from-brand-navy to-brand-navy-light px-6 pt-6 pb-8 text-center">
           <div className="text-5xl mb-2">{emoji}</div>
           <h3 className="text-white font-black text-xl mb-1">{name}</h3>
           <p className="text-brand-orange font-black text-3xl mb-1">{record.wins}–{record.losses}</p>
-          <p className="text-white/40 text-xs">Win the Inning, Win the Day</p>
+          <p className="text-white/60 text-xs">Win the Inning, Win the Day</p>
         </div>
 
         <div className="px-5 py-5 space-y-3">
-          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">
+          <p className="text-[11px] font-black text-slate-500 uppercase tracking-widest text-center">
             Share Your {context === 'inning' ? 'Inning Win 🏆' : 'Season 💪'}
           </p>
 
@@ -110,6 +114,12 @@ export default function ShareSheet({ username, displayName, mascot, teamName, re
             Share to Instagram
           </button>
 
+          {igHint && (
+            <p role="status" className="text-xs text-slate-600 bg-slate-100 rounded-xl px-4 py-3 leading-snug">
+              Link copied. Open Instagram and paste it into your bio or a story.
+            </p>
+          )}
+
           {/* Copy link */}
           <button
             onClick={copyLink}
@@ -121,7 +131,7 @@ export default function ShareSheet({ username, displayName, mascot, teamName, re
             {copied ? '✓ Copied!' : 'Copy Link'}
           </button>
 
-          <button onClick={onClose} className="w-full text-slate-400 text-sm py-1.5 hover:text-slate-600 transition-colors">
+          <button onClick={onClose} className="w-full text-slate-500 text-sm py-1.5 hover:text-slate-600 transition-colors">
             Cancel
           </button>
         </div>

@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import type { NudgePreset } from '@/types'
+import { useModal } from '@/lib/use-modal'
 
 interface Props {
   teamId:      string
@@ -53,12 +54,14 @@ export default function NudgeModal({ toUserId, toName, onSent, onClose }: Props)
     onSent()
   }
 
+  const modal = useModal(onClose, 'Send a nudge')
+
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-      <div className="bg-white rounded-2xl w-full max-w-sm shadow-xl p-6 space-y-5">
+    <div {...modal} className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+      <div className="bg-surface rounded-2xl w-full max-w-sm shadow-xl p-6 space-y-5">
         <div>
-          <h2 className="text-brand-navy font-black text-lg">Nudge {toName}</h2>
-          <p className="text-slate-400 text-sm mt-0.5">Send a quick word of encouragement</p>
+          <h2 className="text-ink font-black text-lg">Nudge {toName}</h2>
+          <p className="text-slate-500 text-sm mt-0.5">Send a quick word of encouragement</p>
         </div>
 
         <div className="grid grid-cols-2 gap-2">
@@ -92,7 +95,7 @@ export default function NudgeModal({ toUserId, toName, onSent, onClose }: Props)
               maxLength={120}
               autoCorrect="off"
               autoCapitalize="sentences"
-              className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-brand-navy text-sm outline-none focus:border-brand-orange transition-colors"
+              className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-ink text-sm outline-none focus:border-brand-orange transition-colors"
             />
           </div>
         )}

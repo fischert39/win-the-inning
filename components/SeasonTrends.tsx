@@ -50,7 +50,7 @@ export default function SeasonTrends({ games }: Props) {
     : ''
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+    <div className="bg-surface rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
       <button
         onClick={() => setOpen(o => !o)}
         className="w-full px-5 py-4 flex items-center justify-between"
@@ -58,14 +58,14 @@ export default function SeasonTrends({ games }: Props) {
         <div className="flex items-center gap-3">
           <span className="text-xl">📈</span>
           <div className="text-left">
-            <h2 className="font-black text-base text-brand-navy">Season Trends</h2>
-            <p className="text-slate-400 text-xs mt-0.5">
+            <h2 className="font-black text-base text-ink">Season Trends</h2>
+            <p className="text-slate-500 text-xs mt-0.5">
               {allClosed.length} innings · {winPct}% win rate
             </p>
           </div>
         </div>
         <svg
-          className={`w-4 h-4 text-slate-400 transition-transform ${open ? 'rotate-180' : ''}`}
+          className={`w-4 h-4 text-slate-500 transition-transform ${open ? 'rotate-180' : ''}`}
           viewBox="0 0 16 16" fill="none"
         >
           <path d="M4 6l4 4 4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
@@ -78,7 +78,7 @@ export default function SeasonTrends({ games }: Props) {
           {/* Win rate line chart */}
           {dataPoints.length >= 2 && (
             <div>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Running Win Rate</p>
+              <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">Running Win Rate</p>
               <div className="relative">
                 <svg
                   viewBox={`0 0 ${svgW} ${svgH}`}
@@ -107,7 +107,7 @@ export default function SeasonTrends({ games }: Props) {
                     return <circle cx={last.x} cy={last.y} r="4" fill="#22c55e" />
                   })()}
                 </svg>
-                <div className="flex justify-between text-[10px] text-slate-400 mt-1">
+                <div className="flex justify-between text-[11px] text-slate-500 mt-1">
                   <span>Start</span>
                   <span>50%</span>
                   <span>Now</span>
@@ -119,7 +119,7 @@ export default function SeasonTrends({ games }: Props) {
           {/* Game-by-game dot grid */}
           {gamesWithPlay.length > 0 && (
             <div>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Inning Results by Week</p>
+              <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">Inning Results by Week</p>
               <div className="space-y-2">
                 {gamesWithPlay.map((game, idx) => {
                   const gr = gameResult(game.innings)
@@ -128,7 +128,7 @@ export default function SeasonTrends({ games }: Props) {
                       {/* Week label */}
                       <div className="w-16 flex-shrink-0">
                         <p className="text-[11px] font-bold text-slate-500">Wk {idx + 1}</p>
-                        <p className="text-[10px] text-slate-400">{displayDate(game.week_start)}</p>
+                        <p className="text-[11px] text-slate-500">{displayDate(game.week_start)}</p>
                       </div>
 
                       {/* Inning dots */}
@@ -154,7 +154,7 @@ export default function SeasonTrends({ games }: Props) {
                       </div>
 
                       {/* Game result badge */}
-                      <span className={`text-[10px] font-black px-2 py-0.5 rounded-full flex-shrink-0 ${
+                      <span className={`text-[11px] font-black px-2 py-0.5 rounded-full flex-shrink-0 ${
                         gr === 'WIN'  ? 'bg-green-100 text-green-700' :
                         gr === 'LOSS' ? 'bg-red-100 text-red-700'     :
                                         'bg-slate-100 text-slate-500'
@@ -176,14 +176,14 @@ export default function SeasonTrends({ games }: Props) {
               { label: 'Games',        value: `${gamesWithPlay.filter(g => gameResult(g.innings) === 'WIN').length}W–${gamesWithPlay.filter(g => gameResult(g.innings) === 'LOSS').length}L` },
             ].map(s => (
               <div key={s.label} className="text-center">
-                <p className="text-brand-navy font-black text-base">{s.value}</p>
-                <p className="text-slate-400 text-[10px] mt-0.5">{s.label}</p>
+                <p className="text-ink font-black text-base">{s.value}</p>
+                <p className="text-slate-500 text-[11px] mt-0.5">{s.label}</p>
               </div>
             ))}
           </div>
 
           {allClosed.length === 0 && (
-            <p className="text-slate-400 text-sm text-center py-4">Play some innings to see your trends!</p>
+            <p className="text-slate-500 text-sm text-center py-4">Play some innings to see your trends!</p>
           )}
         </div>
       )}

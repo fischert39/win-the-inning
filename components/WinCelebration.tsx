@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo } from 'react'
+import { useModal } from '@/lib/use-modal'
 
 interface Props {
   runs:      number
@@ -58,6 +59,7 @@ function streakMessage(count: number): string | null {
 }
 
 export default function WinCelebration({ runs, streak, onDismiss, onShare }: Props) {
+  const modal = useModal(onDismiss, 'Inning won')
   const pieces = useConfetti()
 
   function handleShare(e: React.MouseEvent) {
@@ -119,6 +121,7 @@ export default function WinCelebration({ runs, streak, onDismiss, onShare }: Pro
 
       {/* ── Backdrop ── */}
       <div
+        {...modal}
         className="fixed inset-0 z-50 flex items-center justify-center overflow-hidden"
         style={{ background: 'linear-gradient(160deg, #1A1A2E 0%, #0D0D1E 55%, #1f0d0a 100%)' }}
         onClick={onDismiss}
@@ -177,7 +180,7 @@ export default function WinCelebration({ runs, streak, onDismiss, onShare }: Pro
               >
                 {runs}
               </span>
-              <span className="text-xl font-bold text-white/50 ml-2 align-bottom mb-1 inline-block">
+              <span className="text-xl font-bold text-white/65 ml-2 align-bottom mb-1 inline-block">
                 {runs === 1 ? 'run' : 'runs'}
               </span>
             </div>

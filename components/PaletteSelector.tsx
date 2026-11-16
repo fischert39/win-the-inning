@@ -26,7 +26,7 @@ export default function PaletteSelector({ value, onChange, dark = true }: Props)
     onChange(next)
   }
 
-  const label = dark ? 'text-white/40' : 'text-slate-400'
+  const label = dark ? 'text-white/60' : 'text-slate-500'
 
   return (
     <div className="space-y-4">
@@ -57,7 +57,7 @@ export default function PaletteSelector({ value, onChange, dark = true }: Props)
             </button>
           ))}
         </div>
-        <p className={`${label} text-[10px] mt-1.5`}>
+        <p className={`${label} text-[11px] mt-1.5`}>
           {ACCENT_OPTIONS.find(o => o.id === accentId)?.name ?? 'Classic'}
         </p>
       </div>
@@ -75,7 +75,7 @@ export default function PaletteSelector({ value, onChange, dark = true }: Props)
               className={`py-3 rounded-xl border-2 text-xs font-bold transition-all active:scale-[0.97] ${
                 navyId === o.id
                   ? 'border-white text-white'
-                  : 'border-white/20 text-white/50 hover:border-white/40'
+                  : 'border-white/20 text-white/65 hover:border-white/40'
               }`}
               style={{ backgroundColor: o.hex }}
             >

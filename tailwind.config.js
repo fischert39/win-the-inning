@@ -12,6 +12,19 @@ module.exports = {
         sans: ['var(--font-sans)', 'system-ui', 'sans-serif'],
       },
       colors: {
+        // Theme tokens — light/dark values live in app/globals.css.
+        page:    'rgb(var(--page) / <alpha-value>)',
+        surface: 'rgb(var(--surface) / <alpha-value>)',
+        ink:     'rgb(var(--ink) / <alpha-value>)',
+        slate: { 50: 'rgb(var(--slate-50) / <alpha-value>)', 100: 'rgb(var(--slate-100) / <alpha-value>)', 200: 'rgb(var(--slate-200) / <alpha-value>)', 300: 'rgb(var(--slate-300) / <alpha-value>)', 400: 'rgb(var(--slate-400) / <alpha-value>)', 500: 'rgb(var(--slate-500) / <alpha-value>)', 600: 'rgb(var(--slate-600) / <alpha-value>)', 700: 'rgb(var(--slate-700) / <alpha-value>)', 800: 'rgb(var(--slate-800) / <alpha-value>)', 900: 'rgb(var(--slate-900) / <alpha-value>)' },
+        amber: { 50: 'rgb(var(--amber-50) / <alpha-value>)', 100: 'rgb(var(--amber-100) / <alpha-value>)', 200: 'rgb(var(--amber-200) / <alpha-value>)', 600: 'rgb(var(--amber-600) / <alpha-value>)', 700: 'rgb(var(--amber-700) / <alpha-value>)', 800: 'rgb(var(--amber-800) / <alpha-value>)', 900: 'rgb(var(--amber-900) / <alpha-value>)' },
+        green: { 50: 'rgb(var(--green-50) / <alpha-value>)', 100: 'rgb(var(--green-100) / <alpha-value>)', 200: 'rgb(var(--green-200) / <alpha-value>)', 600: 'rgb(var(--green-600) / <alpha-value>)', 700: 'rgb(var(--green-700) / <alpha-value>)', 800: 'rgb(var(--green-800) / <alpha-value>)' },
+        red: { 50: 'rgb(var(--red-50) / <alpha-value>)', 100: 'rgb(var(--red-100) / <alpha-value>)', 200: 'rgb(var(--red-200) / <alpha-value>)', 600: 'rgb(var(--red-600) / <alpha-value>)', 700: 'rgb(var(--red-700) / <alpha-value>)', 800: 'rgb(var(--red-800) / <alpha-value>)' },
+        sky: { 50: 'rgb(var(--sky-50) / <alpha-value>)', 100: 'rgb(var(--sky-100) / <alpha-value>)', 200: 'rgb(var(--sky-200) / <alpha-value>)', 700: 'rgb(var(--sky-700) / <alpha-value>)' },
+        yellow: { 50: 'rgb(var(--yellow-50) / <alpha-value>)', 200: 'rgb(var(--yellow-200) / <alpha-value>)', 800: 'rgb(var(--yellow-800) / <alpha-value>)' },
+        purple: { 100: 'rgb(var(--purple-100) / <alpha-value>)', 700: 'rgb(var(--purple-700) / <alpha-value>)' },
+        teal: { 50: 'rgb(var(--teal-50) / <alpha-value>)', 100: 'rgb(var(--teal-100) / <alpha-value>)', 700: 'rgb(var(--teal-700) / <alpha-value>)' },
+        orange: { 50: 'rgb(var(--orange-50) / <alpha-value>)' },
         brand: {
           // These four use CSS custom properties so team colors work.
           // The RGB values are set at runtime from the chosen palette.

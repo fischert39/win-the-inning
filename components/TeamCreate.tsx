@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { useModal } from '@/lib/use-modal'
 
 interface Props {
   onCreated: (teamId: string, inviteCode: string, teamName: string) => void
@@ -34,13 +35,15 @@ export default function TeamCreate({ onCreated, onCancel }: Props) {
     onCreated(data.team_id, data.invite_code, name.trim())
   }
 
+  const modal = useModal(onCancel, 'Create a team')
+
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-      <div className="bg-white rounded-2xl w-full max-w-md shadow-xl p-6 space-y-5">
+    <div {...modal} className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+      <div className="bg-surface rounded-2xl w-full max-w-md shadow-xl p-6 space-y-5">
         <div>
-          <p className="text-[10px] font-black text-brand-orange uppercase tracking-widest mb-1">👥 New Team</p>
-          <h2 className="text-brand-navy font-black text-xl">Build Your Crew</h2>
-          <p className="text-slate-400 text-sm mt-0.5">Hold each other accountable. Win together.</p>
+          <p className="text-[11px] font-black text-brand-orange uppercase tracking-widest mb-1">👥 New Team</p>
+          <h2 className="text-ink font-black text-xl">Build Your Crew</h2>
+          <p className="text-slate-500 text-sm mt-0.5">Hold each other accountable. Win together.</p>
         </div>
 
         <div className="space-y-4">
@@ -58,7 +61,7 @@ export default function TeamCreate({ onCreated, onCancel }: Props) {
               autoCorrect="off"
               autoCapitalize="words"
               maxLength={40}
-              className="w-full border border-slate-200 rounded-xl px-4 py-3 text-brand-navy text-sm outline-none focus:border-brand-orange transition-colors"
+              className="w-full border border-slate-200 rounded-xl px-4 py-3 text-ink text-sm outline-none focus:border-brand-orange transition-colors"
             />
           </div>
 
@@ -74,8 +77,8 @@ export default function TeamCreate({ onCreated, onCancel }: Props) {
               <div className="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform peer-checked:translate-x-4" />
             </div>
             <div>
-              <p className="text-sm font-semibold text-brand-navy">Discoverable via search</p>
-              <p className="text-xs text-slate-400 mt-0.5">Others can find your team by name and request to join. Leave off for invite-only.</p>
+              <p className="text-sm font-semibold text-ink">Discoverable via search</p>
+              <p className="text-xs text-slate-500 mt-0.5">Others can find your team by name and request to join. Leave off for invite-only.</p>
             </div>
           </label>
         </div>

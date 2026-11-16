@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import type { TeamSearchResult } from '@/types'
+import { useModal } from '@/lib/use-modal'
 
 interface Props {
   onJoined:  (teamId: string, teamName: string) => void
@@ -63,12 +64,14 @@ export default function TeamJoin({ onJoined, onPending, onCancel }: Props) {
     onPending(team.name)
   }
 
+  const modal = useModal(onCancel, 'Join a team')
+
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-      <div className="bg-white rounded-2xl w-full max-w-md shadow-xl p-6 space-y-5">
+    <div {...modal} className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+      <div className="bg-surface rounded-2xl w-full max-w-md shadow-xl p-6 space-y-5">
         <div>
-          <h2 className="text-brand-navy font-black text-xl">Join a Team</h2>
-          <p className="text-slate-400 text-sm mt-0.5">Find your crew</p>
+          <h2 className="text-ink font-black text-xl">Join a Team</h2>
+          <p className="text-slate-500 text-sm mt-0.5">Find your crew</p>
         </div>
 
         {/* Mode toggle */}
@@ -78,7 +81,7 @@ export default function TeamJoin({ onJoined, onPending, onCancel }: Props) {
               key={m}
               onClick={() => { setMode(m); setError(null) }}
               className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all ${
-                mode === m ? 'bg-white text-brand-navy shadow-sm' : 'text-slate-400'
+                mode === m ? 'bg-surface text-ink shadow-sm' : 'text-slate-500'
               }`}
             >
               {m === 'code' ? '🔑 Invite Code' : '🔍 Search'}
@@ -101,7 +104,7 @@ export default function TeamJoin({ onJoined, onPending, onCancel }: Props) {
                 autoFocus
                 autoCorrect="off"
                 autoCapitalize="characters"
-                className="w-full border border-slate-200 rounded-xl px-4 py-3 text-brand-navy text-sm font-mono tracking-widest text-center outline-none focus:border-brand-orange transition-colors uppercase"
+                className="w-full border border-slate-200 rounded-xl px-4 py-3 text-ink text-sm font-mono tracking-widest text-center outline-none focus:border-brand-orange transition-colors uppercase"
               />
             </div>
             {error && <p className="text-sm text-red-500 bg-red-50 rounded-xl px-4 py-2.5">{error}</p>}
@@ -132,7 +135,7 @@ export default function TeamJoin({ onJoined, onPending, onCancel }: Props) {
                 placeholder="Search team name…"
                 autoCorrect="off"
                 autoCapitalize="words"
-                className="flex-1 border border-slate-200 rounded-xl px-4 py-3 text-brand-navy text-sm outline-none focus:border-brand-orange transition-colors"
+                className="flex-1 border border-slate-200 rounded-xl px-4 py-3 text-ink text-sm outline-none focus:border-brand-orange transition-colors"
               />
               <button
                 onClick={handleSearch}
@@ -148,8 +151,8 @@ export default function TeamJoin({ onJoined, onPending, onCancel }: Props) {
                 {results.map(team => (
                   <div key={team.id} className="flex items-center justify-between bg-slate-50 rounded-xl px-4 py-3">
                     <div>
-                      <p className="font-bold text-sm text-brand-navy">{team.name}</p>
-                      <p className="text-xs text-slate-400">
+                      <p className="font-bold text-sm text-ink">{team.name}</p>
+                      <p className="text-xs text-slate-500">
                         {team.member_count} member{team.member_count !== 1 ? 's' : ''}
                         {team.creator_name ? ` · by ${team.creator_name}` : ''}
                       </p>
@@ -167,7 +170,7 @@ export default function TeamJoin({ onJoined, onPending, onCancel }: Props) {
             )}
 
             {results.length === 0 && query && !loading && (
-              <p className="text-sm text-slate-400 text-center py-2">No public teams found.</p>
+              <p className="text-sm text-slate-500 text-center py-2">No public teams found.</p>
             )}
 
             {error && <p className="text-sm text-red-500 bg-red-50 rounded-xl px-4 py-2.5">{error}</p>}

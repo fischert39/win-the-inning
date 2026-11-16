@@ -38,6 +38,12 @@ import WelcomeBack     from '@/components/WelcomeBack'
 import UndoToast, { type UndoAction } from '@/components/UndoToast'
 import HowToPlay      from '@/components/HowToPlay'
 import { useConfirm } from '@/components/ConfirmDialog'
+import NotificationPrompt from '@/components/NotificationPrompt'
+
+// "Mon, Nov 16" — the weekday matters more than the year when stepping through days.
+function dayLabel(dateStr: string): string {
+  return new Date(dateStr + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+}
 
 function safeParseGoals(json: string | null | undefined): string[] {
   try { return JSON.parse(json ?? '[]') } catch { return [] }
@@ -50,6 +56,8 @@ export default function AppPage() {
   const [viewDate,  setViewDate]  = useState<string | null>(null)
   const [loading,   setLoading]   = useState(true)
   const [saving,    setSaving]    = useState(false)
+  const [justSaved, setJustSaved] = useState(false)
+  const [offline,   setOffline]   = useState(false)
   const [toast,     setToast]     = useState<string | null>(null)
   const saveCountRef              = useRef(0)
   const [recapSeason,        setRecapSeason]        = useState<FullSeason | null>(null)
@@ -73,9 +81,13 @@ export default function AppPage() {
   const undoIdRef             = useRef(0)
   const touchStartX           = useRef(0)
   const touchStartY           = useRef(0)
+  const swipeBlockedRef       = useRef(false)
   const viewDateInProgressRef = useRef(false)
   const pendingViewDateRef    = useRef<string | null>(null)
   const toastTimerRef         = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const savedTimerRef         = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const lastLocalWriteRef     = useRef(0)
+  const lastLoadRef           = useRef(0)
   const reloadTimerRef        = useRef<ReturnType<typeof setTimeout> | null>(null)
   const writeTimersRef        = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map())
   const writePendingRef       = useRef<Map<string, () => Promise<void>>>(new Map())
@@ -154,12 +166,20 @@ export default function AppPage() {
   // ===== SAVE STATE =====
   function beginSave() {
     saveCountRef.current++
+    lastLocalWriteRef.current = Date.now()
     if (saveCountRef.current === 1) setSaving(true)
   }
   function endSave(error?: { message: string } | null) {
     saveCountRef.current = Math.max(0, saveCountRef.current - 1)
+    lastLocalWriteRef.current = Date.now()
     if (saveCountRef.current === 0) {
       setSaving(false)
+      // Brief "Saved" confirmation so it's clear the change landed.
+      if (!error) {
+        setJustSaved(true)
+        if (savedTimerRef.current) clearTimeout(savedTimerRef.current)
+        savedTimerRef.current = setTimeout(() => setJustSaved(false), 1800)
+      }
       // A remote change arrived while saves were in-flight — sync now that we're clear
       if (pendingRemoteSyncRef.current) {
         pendingRemoteSyncRef.current = false
@@ -209,6 +229,9 @@ export default function AppPage() {
 
   // ===== SWIPE =====
   function handleTouchStart(e: React.TouchEvent) {
+    // Sideways drags inside a scrolling strip (the scoreboard) or a text field
+    // are scrolling/selecting, not a request to change day.
+    swipeBlockedRef.current = !!(e.target as HTMLElement).closest?.('[data-no-swipe], input, textarea')
     touchStartX.current = e.touches[0].clientX
     touchStartY.current = e.touches[0].clientY
   }
@@ -217,15 +240,26 @@ export default function AppPage() {
     const dx = e.changedTouches[0].clientX - touchStartX.current
     const dy = e.changedTouches[0].clientY - touchStartY.current
     if (Math.abs(dx) < 50 || Math.abs(dx) < Math.abs(dy)) return
-    const newDate = dx < 0 ? getNextDate(vDateEarly) : getPrevDate(vDateEarly)
+    if (swipeBlockedRef.current) return
+    stepDay(dx < 0 ? 1 : -1)
+  }
+
+  // Latest day that can be opened: the season's end, or the end of this week.
+  function maxViewDate(): string | null {
+    if (!season) return null
+    return season.end_date
+      ?? (season.length_weeks ? addDays(getFirstRealWeekStart(season.start_date), season.length_weeks * 7 - 1) : getWeekEnd(getWeekStart(todayStr)))
+  }
+
+  function stepDay(delta: 1 | -1) {
+    const newDate = delta > 0 ? getNextDate(vDateEarly) : getPrevDate(vDateEarly)
     if (!season || newDate < season.start_date) {
       showToast('⛔ Already at the start of your season')
       return
     }
-    const maxDate = season.end_date
-      ?? (season.length_weeks ? addDays(getFirstRealWeekStart(season.start_date), season.length_weeks * 7 - 1) : getWeekEnd(getWeekStart(todayStr)))
-    if (newDate > maxDate) {
-      showToast('⛔ Can\'t swipe past the end of the season')
+    const maxDate = maxViewDate()
+    if (maxDate && newDate > maxDate) {
+      showToast('⛔ That\'s past the end of the season')
       return
     }
     handleViewDate(newDate)
@@ -233,6 +267,7 @@ export default function AppPage() {
 
   // ===== LOAD =====
   const loadData = useCallback(async () => {
+    lastLoadRef.current = Date.now()
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) { router.push('/login'); return }
     setUser(user)
@@ -425,12 +460,40 @@ export default function AppPage() {
   // Clear forceOpen when the user navigates to a different date
   useEffect(() => { setReopenedInningId(null) }, [viewDate])
 
+  // ===== CONNECTION =====
+  useEffect(() => {
+    const update = () => setOffline(!navigator.onLine)
+    update()
+    window.addEventListener('online', update)
+    window.addEventListener('offline', update)
+    return () => {
+      window.removeEventListener('online', update)
+      window.removeEventListener('offline', update)
+    }
+  }, [])
+
+  // Coming back to the app (new day, or changes made on another device while
+  // this one was in the background): refresh, but not more than once a minute.
+  useEffect(() => {
+    function onVisible() {
+      if (document.visibilityState !== 'visible') return
+      if (saveCountRef.current > 0) return
+      if (Date.now() - lastLoadRef.current < 60_000) return
+      loadData()
+    }
+    document.addEventListener('visibilitychange', onVisible)
+    return () => document.removeEventListener('visibilitychange', onVisible)
+  }, [])
+
   // ===== REALTIME SYNC =====
   // Re-fetch whenever another device changes innings or goals
   useEffect(() => {
     if (!user) return
 
     function scheduleReload() {
+      // The change we just saved comes straight back as a realtime event.
+      // The screen already shows it, so don't re-download the whole season.
+      if (Date.now() - lastLocalWriteRef.current < 3000) return
       pendingRemoteSyncRef.current = true
       // If saves are in-flight, endSave will trigger the reload when they clear
       if (saveCountRef.current > 0) return
@@ -1106,10 +1169,45 @@ export default function AppPage() {
 
   async function handleDeleteGoal(goalId: string) {
     if (!viewInning) return
-    removeGoal(viewInning.id, goalId)
+    const inningId = viewInning.id
+    const removed  = viewInning.offense_goals.find(og => og.id === goalId)
+    if (!removed) return
+
+    // A text edit still waiting to save would otherwise land after the delete.
+    const pendingKey = `goal:${goalId}`
+    const timer = writeTimersRef.current.get(pendingKey)
+    if (timer) {
+      clearTimeout(timer)
+      writeTimersRef.current.delete(pendingKey)
+      writePendingRef.current.delete(pendingKey)
+      endSave()
+    }
+
+    const putBack = () => setSeason(prev => !prev ? prev : {
+      ...prev,
+      games: prev.games.map(g => ({
+        ...g,
+        innings: g.innings.map(i => i.id !== inningId ? i : {
+          ...i,
+          offense_goals: [...i.offense_goals.filter(og => og.id !== removed.id), removed]
+            .sort((a, b) => a.sort_order - b.sort_order),
+        }),
+      })),
+    })
+
+    removeGoal(inningId, goalId)
     beginSave()
     const { error } = await supabase.from('offense_goals').delete().eq('id', goalId)
     endSave(error)
+    if (error) { putBack(); return }
+
+    // An empty row isn't worth an undo prompt.
+    if (removed.goal.trim()) {
+      registerUndo('Goal deleted', putBack, async () => {
+        const { error: restoreErr } = await supabase.from('offense_goals').upsert(removed)
+        if (restoreErr) showToast("❌ Couldn't restore the goal")
+      })
+    }
   }
 
   async function handleRainDelay() {
@@ -1406,11 +1504,21 @@ export default function AppPage() {
 
   // ===== RENDER =====
   if (loading) {
+    // Skeleton in the shape of the Today screen, so the layout doesn't jump.
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <div className="text-center animate-fade-in">
-          <span className="text-6xl block mb-4 animate-bounce-slow">🥎</span>
-          <p className="text-brand-navy font-bold text-lg">Loading your season…</p>
+      <div className="min-h-screen bg-page" role="status" aria-label="Loading your season">
+        <div className="bg-brand-navy h-[60px]" />
+        <div className="max-w-2xl mx-auto px-4 pt-4 space-y-4 animate-pulse">
+          <div className="h-11 rounded-xl bg-slate-200/70" />
+          <div className="h-36 rounded-2xl bg-brand-navy/80" />
+          {[0, 1].map(k => (
+            <div key={k} className="bg-surface rounded-2xl border border-slate-100 p-5 space-y-3">
+              <div className="h-4 w-1/3 rounded bg-slate-200" />
+              <div className="h-12 rounded-xl bg-slate-100" />
+              <div className="h-12 rounded-xl bg-slate-100" />
+              <div className="h-12 rounded-xl bg-slate-100" />
+            </div>
+          ))}
         </div>
       </div>
     )
@@ -1522,7 +1630,7 @@ export default function AppPage() {
   const isIn48hWindow = !!(viewInning && viewInning.status === 'IN_PROGRESS' && viewDate && viewDate < todayStr)
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-page">
       <AppHeader
         record={record}
         streak={streak}
@@ -1531,13 +1639,22 @@ export default function AppPage() {
         onPastSeasons={() => setShowPastSeasons(true)}
         onEditTeam={() => setShowTeamSettings(true)}
         onHowToPlay={() => setShowHowTo(true)}
-        onEndSeason={handleEndSeason}
         onSignOut={handleSignOut}
       />
 
-      {saving && (
-        <div className="fixed top-[57px] inset-x-0 h-0.5 z-30 overflow-hidden">
-          <div className="h-full bg-brand-orange animate-pulse" />
+      {offline && (
+        <div role="status" className="bg-amber-100 text-amber-900 text-sm font-semibold text-center px-4 py-2">
+          You&apos;re offline — changes won&apos;t save until you&apos;re back online.
+        </div>
+      )}
+
+      {(saving || justSaved) && !offline && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="fixed bottom-[92px] left-1/2 -translate-x-1/2 z-30 px-3 py-1.5 rounded-full bg-[#1e293b] text-white text-xs font-semibold shadow-lg animate-fade-in pointer-events-none"
+        >
+          {saving ? 'Saving…' : '✓ Saved'}
         </div>
       )}
 
@@ -1556,6 +1673,7 @@ export default function AppPage() {
             inningsWon={inningsWon}
             inningsPlayed={inningsPlayed}
             onPastSeasons={() => setShowPastSeasons(true)}
+            onEndSeason={handleEndSeason}
             onClearData={handleClearAllData}
           />
         )}
@@ -1583,7 +1701,7 @@ export default function AppPage() {
           <div className="bg-brand-navy rounded-2xl p-5 mb-4 animate-slide-up">
             <div className="flex items-start justify-between gap-3 mb-3">
               <div>
-                <p className="text-white/40 text-[10px] font-black uppercase tracking-widest mb-1">Season Complete</p>
+                <p className="text-white/60 text-[11px] font-black uppercase tracking-widest mb-1">Season Complete</p>
                 <h2 className="text-white font-black text-xl leading-tight">Your season has ended.</h2>
                 <p className="text-white/60 text-sm mt-1">
                   {graceHoursLeft > 0
@@ -1628,26 +1746,10 @@ export default function AppPage() {
           </div>
         )}
 
-        <StreakBanner
-          streak={streak}
-          todayWon={!isOther && closedResult === 'WIN'}
-          isToday={!isOther}
-        />
-
-        {!isOther && !isViewingPreSeason && (
-          <DayContext
-            season={season}
-            todayStr={todayStr}
-            sport={sport}
-            inningsPlayed={inningsPlayed}
-            inningsWon={inningsWon}
-          />
-        )}
-
         {/* ── Pre-season context banner ── */}
         {isViewingPreSeason && (
           <div className="bg-brand-navy rounded-2xl px-5 py-4 mb-4 animate-slide-up">
-            <p className="text-white/40 text-[10px] font-black uppercase tracking-widest mb-1">
+            <p className="text-white/60 text-[11px] font-black uppercase tracking-widest mb-1">
               {sportEmoji} Pre-Season
             </p>
             <p className="text-white font-black text-xl leading-tight mb-1">
@@ -1659,37 +1761,46 @@ export default function AppPage() {
           </div>
         )}
 
-        {prevWeekGame && (
-          <WeeklyWrapUp
-            game={prevWeekGame}
-            weekStart={currentWeekStart}
-            sport={sport}
-          />
-        )}
-
-        {/* ── Plan Your Week entry ── */}
-        {!isOther && canPlanWeek && (
+        {/* ── Day navigation ── */}
+        <div className="flex items-center justify-between gap-2 mb-3">
           <button
-            onClick={() => setShowWeekPlanner(true)}
-            className="w-full bg-white rounded-2xl shadow-sm border border-slate-100 px-5 py-4 mb-4 flex items-center justify-between hover:border-brand-orange/40 transition-colors active:scale-[0.99]"
+            onClick={() => stepDay(-1)}
+            disabled={vDate <= season.start_date}
+            aria-label="Previous day"
+            className="w-11 h-11 flex-shrink-0 rounded-xl bg-surface border border-slate-100 shadow-sm flex items-center justify-center text-slate-600 hover:border-brand-orange/40 disabled:opacity-30 transition-colors"
           >
-            <div className="flex items-center gap-3 min-w-0">
-              <span className="text-xl flex-shrink-0">📋</span>
-              <div className="text-left min-w-0">
-                <p className="font-black text-sm text-brand-navy">
-                  Plan {planIsNextWeek ? 'Next' : 'This'} Week&apos;s Game
-                </p>
-                <p className="text-slate-400 text-xs mt-0.5 truncate">
-                  {displayDate(planWeekDates[0])} — {displayDate(planWeekDates[6])}
-                </p>
-              </div>
-            </div>
-            <span className="text-brand-orange text-xs font-black uppercase tracking-wider flex-shrink-0 ml-3">
-              Set Lineup →
-            </span>
+            <svg className="w-5 h-5" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M12.5 4.5L7 10l5.5 5.5" /></svg>
           </button>
-        )}
+          <div className="min-w-0 text-center">
+            <p className="font-black text-ink text-base leading-tight">
+              {!isOther ? 'Today' : vDate === getPrevDate(todayStr) ? 'Yesterday' : vDate === getNextDate(todayStr) ? 'Tomorrow' : dayLabel(vDate)}
+            </p>
+            <p className="text-slate-500 text-xs mt-0.5">
+              {dayLabel(vDate)}
+              {isOther && (vDate < todayStr ? ' · past day' : ' · planning ahead')}
+            </p>
+          </div>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            {isOther && (
+              <button
+                onClick={() => setViewDate(null)}
+                className="h-11 px-3 rounded-xl bg-brand-orange/10 text-brand-orange text-sm font-bold hover:bg-brand-orange/15 transition-colors"
+              >
+                Today
+              </button>
+            )}
+            <button
+              onClick={() => stepDay(1)}
+              disabled={!!maxViewDate() && vDate >= maxViewDate()!}
+              aria-label="Next day"
+              className="w-11 h-11 rounded-xl bg-surface border border-slate-100 shadow-sm flex items-center justify-center text-slate-600 hover:border-brand-orange/40 disabled:opacity-30 transition-colors"
+            >
+              <svg className="w-5 h-5" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M7.5 4.5L13 10l-5.5 5.5" /></svg>
+            </button>
+          </div>
+        </div>
 
+        <div data-no-swipe>
         <Scoreboard
           games={season.games}
           todayStr={todayStr}
@@ -1697,27 +1808,13 @@ export default function AppPage() {
           seasonStartDate={season.start_date}
           onViewDate={handleViewDate}
         />
-
-        {isOther && (
-          <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 mb-4 flex items-center justify-between animate-fade-in">
-            <span className="text-amber-800 text-sm font-semibold">
-              {viewDate! < todayStr ? '📅' : '🔮'}&nbsp;
-              Viewing {displayDate(viewDate!)} — {viewDate! < todayStr ? 'editing past inning' : 'setting up future inning'}
-            </span>
-            <button
-              onClick={() => setViewDate(null)}
-              className="text-amber-700 text-sm font-bold hover:text-amber-900 ml-3 flex-shrink-0"
-            >
-              ← Today
-            </button>
-          </div>
-        )}
+        </div>
 
         {!viewInning ? (
-          <div className="text-center py-16 text-slate-400">
+          <div className="text-center py-16 text-slate-500">
             <span className="text-4xl block mb-3">⚾</span>
             <p className="font-semibold text-slate-500">Nothing on deck yet.</p>
-            <p className="text-sm text-slate-400 mt-1">Step up to the plate.</p>
+            <p className="text-sm text-slate-500 mt-1">Step up to the plate.</p>
             <button
               onClick={() => handleViewDate(vDate)}
               className="mt-5 bg-brand-orange text-white px-6 py-3 rounded-xl font-bold text-sm hover:bg-brand-orange-dark transition-colors shadow-sm shadow-brand-orange/20"
@@ -1748,8 +1845,6 @@ export default function AppPage() {
                 </button>
               </div>
             )}
-
-            <DailyQuote quote={quote} />
 
             <DefenseSection
               inning={viewInning}
@@ -1786,15 +1881,64 @@ export default function AppPage() {
               forceOpen={viewInning?.id === reopenedInningId}
             />
 
-            {verse && (
-              <div className="bg-gradient-to-r from-indigo-900 to-indigo-800 rounded-2xl p-5 flex gap-4 items-start">
-                <span className="text-2xl flex-shrink-0">✝️</span>
-                <div>
-                  <p className="text-white text-sm font-medium leading-relaxed italic">&ldquo;{verse.text}&rdquo;</p>
-                  <p className="text-white/50 text-xs mt-1.5 font-semibold">— {verse.ref}</p>
-                </div>
+            <EndOfDay
+              inning={viewInning}
+              onSaveReflection={handleSaveReflection}
+              onSaveFutureGoals={handleSaveFutureGoals}
+            />
+
+            {inningsPlayed > 0 && !isOther && <NotificationPrompt />}
+
+            {/* ── Context & motivation: after the day's work, not before it ── */}
+            <div>
+        {/* ── Plan Your Week entry ── */}
+        {!isOther && canPlanWeek && (
+          <button
+            onClick={() => setShowWeekPlanner(true)}
+            className="w-full bg-surface rounded-2xl shadow-sm border border-slate-100 px-5 py-4 mb-4 flex items-center justify-between hover:border-brand-orange/40 transition-colors active:scale-[0.99]"
+          >
+            <div className="flex items-center gap-3 min-w-0">
+              <span className="text-xl flex-shrink-0">📋</span>
+              <div className="text-left min-w-0">
+                <p className="font-black text-sm text-ink">
+                  Plan {planIsNextWeek ? 'Next' : 'This'} Week&apos;s Game
+                </p>
+                <p className="text-slate-500 text-xs mt-0.5 truncate">
+                  {displayDate(planWeekDates[0])} — {displayDate(planWeekDates[6])}
+                </p>
               </div>
-            )}
+            </div>
+            <span className="text-brand-orange text-xs font-black uppercase tracking-wider flex-shrink-0 ml-3">
+              Set Lineup →
+            </span>
+          </button>
+        )}
+
+        {prevWeekGame && (
+          <WeeklyWrapUp
+            game={prevWeekGame}
+            weekStart={currentWeekStart}
+            sport={sport}
+          />
+        )}
+
+        <StreakBanner
+          streak={streak}
+          todayWon={!isOther && closedResult === 'WIN'}
+          isToday={!isOther}
+        />
+
+        {!isOther && !isViewingPreSeason && (
+          <DayContext
+            season={season}
+            todayStr={todayStr}
+            sport={sport}
+            inningsPlayed={inningsPlayed}
+            inningsWon={inningsWon}
+          />
+        )}
+
+            </div>
 
             <SeasonGoals
               goals={season.season_goals}
@@ -1804,11 +1948,18 @@ export default function AppPage() {
               onDelete={handleDeleteSeasonGoal}
             />
 
-            <EndOfDay
-              inning={viewInning}
-              onSaveReflection={handleSaveReflection}
-              onSaveFutureGoals={handleSaveFutureGoals}
-            />
+            <DailyQuote quote={quote} />
+
+            {verse && (
+              <div className="bg-gradient-to-r from-indigo-900 to-indigo-800 rounded-2xl p-5 flex gap-4 items-start">
+                <span className="text-2xl flex-shrink-0">✝️</span>
+                <div>
+                  <p className="text-white text-sm font-medium leading-relaxed italic">&ldquo;{verse.text}&rdquo;</p>
+                  <p className="text-white/65 text-xs mt-1.5 font-semibold">— {verse.ref}</p>
+                </div>
+              </div>
+            )}
+
           </div>
         )}
         </>)}
@@ -1911,7 +2062,7 @@ export default function AppPage() {
 
       {/* Toast */}
       {toast && (
-        <div className={`fixed top-5 left-1/2 -translate-x-1/2 z-50 animate-fade-in flex items-center gap-2 px-5 py-3 rounded-full font-semibold text-sm shadow-2xl whitespace-nowrap ${
+        <div role="status" aria-live="polite" className={`fixed top-5 left-1/2 -translate-x-1/2 z-50 animate-fade-in flex items-center gap-2 px-5 py-3 rounded-2xl font-semibold text-sm shadow-2xl w-max max-w-[calc(100vw-2rem)] text-left ${
           toast.startsWith('❌') ? 'bg-red-600 text-white' : 'bg-brand-navy text-white'
         }`}>
           <span>{toast}</span>

@@ -112,7 +112,7 @@ export default function PreSeason({ sport: initialSport, displayName, onStart, o
   if (step === 2) return (
     <Screen>
       <div className="flex-1">
-        <p className="text-white/40 text-xs font-black uppercase tracking-widest mb-2">Step 1 of 3</p>
+        <p className="text-white/60 text-xs font-black uppercase tracking-widest mb-2">Step 1 of 3</p>
         <h2 className="text-3xl font-black text-white mb-2">🛡️ Defense</h2>
         <p className="text-white/60 text-sm mb-8 leading-relaxed">
           Every day you defend with three tasks — one for your Mind, Spirit, and Body.
@@ -129,7 +129,7 @@ export default function PreSeason({ sport: initialSport, displayName, onStart, o
               <span className="text-3xl">{t.icon}</span>
               <div>
                 <p className="text-white font-bold">{t.label}</p>
-                <p className="text-white/50 text-sm">{t.example}</p>
+                <p className="text-white/65 text-sm">{t.example}</p>
               </div>
               <div className="ml-auto w-6 h-6 rounded-full border-2 border-brand-green bg-brand-green/20 flex items-center justify-center">
                 <svg className="w-3 h-3 text-brand-green" viewBox="0 0 12 12" fill="none">
@@ -155,7 +155,7 @@ export default function PreSeason({ sport: initialSport, displayName, onStart, o
   if (step === 3) return (
     <Screen>
       <div className="flex-1">
-        <p className="text-white/40 text-xs font-black uppercase tracking-widest mb-2">Step 2 of 3</p>
+        <p className="text-white/60 text-xs font-black uppercase tracking-widest mb-2">Step 2 of 3</p>
         <h2 className="text-3xl font-black text-white mb-2">🏃 Offense</h2>
         <p className="text-white/60 text-sm mb-8 leading-relaxed">
           Set your daily goals. Each completed goal is a <span className="text-brand-orange font-bold">hit</span> that advances runners. Drive runners home to score runs.
@@ -191,7 +191,7 @@ export default function PreSeason({ sport: initialSport, displayName, onStart, o
   if (step === 4) return (
     <Screen>
       <div className="flex-1">
-        <p className="text-white/40 text-xs font-black uppercase tracking-widest mb-2">Step 3 of 3</p>
+        <p className="text-white/60 text-xs font-black uppercase tracking-widest mb-2">Step 3 of 3</p>
         <h2 className="text-3xl font-black text-white mb-2">🏆 The Season</h2>
         <p className="text-white/60 text-sm mb-8 leading-relaxed">
           Innings become games. Games build your season. Win more than you lose and you&apos;re a champion.
@@ -207,7 +207,7 @@ export default function PreSeason({ sport: initialSport, displayName, onStart, o
               <span className="text-3xl">{r.icon}</span>
               <div>
                 <p className="text-white font-bold text-sm">{r.label}</p>
-                <p className="text-white/50 text-xs">{r.desc}</p>
+                <p className="text-white/65 text-xs">{r.desc}</p>
               </div>
             </div>
           ))}
@@ -241,12 +241,12 @@ export default function PreSeason({ sport: initialSport, displayName, onStart, o
       <div className="flex-1 overflow-y-auto space-y-6">
         <div>
           <h2 className="text-2xl font-black text-white mb-1">🏟️ Build Your Team</h2>
-          <p className="text-white/50 text-sm">Hey {displayName}! Let&apos;s set up your team first.</p>
+          <p className="text-white/65 text-sm">Hey {displayName}! Let&apos;s set up your team first.</p>
         </div>
 
         {/* Sport */}
         <div>
-          <p className="text-white/40 text-xs font-black uppercase tracking-widest mb-2">Choose your sport</p>
+          <p className="text-white/60 text-xs font-black uppercase tracking-widest mb-2">Choose your sport</p>
           <div className="flex gap-3">
             {(['softball', 'baseball'] as Sport[]).map(s => (
               <button
@@ -267,8 +267,8 @@ export default function PreSeason({ sport: initialSport, displayName, onStart, o
 
         {/* Team Name */}
         <div>
-          <p className="text-white/40 text-xs font-black uppercase tracking-widest mb-2">
-            Team Name <span className="normal-case font-normal text-white/30">(optional)</span>
+          <p className="text-white/60 text-xs font-black uppercase tracking-widest mb-2">
+            Team Name <span className="normal-case font-normal text-white/55">(optional)</span>
           </p>
           <input
             type="text"
@@ -278,13 +278,13 @@ export default function PreSeason({ sport: initialSport, displayName, onStart, o
             maxLength={30}
             autoCorrect="off"
             autoCapitalize="words"
-            className="w-full bg-white/10 border border-white/15 rounded-xl px-4 py-3 text-sm text-white placeholder:text-white/30 outline-none focus:border-brand-orange/50"
+            className="w-full bg-white/10 border border-white/15 rounded-xl px-4 py-3 text-sm text-white placeholder:text-white/55 outline-none focus:border-brand-orange/50"
           />
         </div>
 
         {/* Mascot */}
         <div>
-          <p className="text-white/40 text-xs font-black uppercase tracking-widest mb-2">Mascot</p>
+          <p className="text-white/60 text-xs font-black uppercase tracking-widest mb-2">Mascot</p>
           <div className="grid grid-cols-7 gap-1.5">
             {MASCOTS.map(m => (
               <button
@@ -305,7 +305,7 @@ export default function PreSeason({ sport: initialSport, displayName, onStart, o
 
         {/* Team colors */}
         <div>
-          <p className="text-white/40 text-xs font-black uppercase tracking-widest mb-2">Team Colors</p>
+          <p className="text-white/60 text-xs font-black uppercase tracking-widest mb-2">Team Colors</p>
           <PaletteSelector value={teamPalette} onChange={setTeamPalette} dark />
         </div>
       </div>
@@ -319,12 +319,12 @@ export default function PreSeason({ sport: initialSport, displayName, onStart, o
       <div className="flex-1 overflow-y-auto space-y-5">
         <div>
           <h2 className="text-2xl font-black text-white mb-1">⚡ Season Vision</h2>
-          <p className="text-white/50 text-sm">Define your goals and set yourself up to win.</p>
+          <p className="text-white/65 text-sm">Define your goals and set yourself up to win.</p>
         </div>
 
         {/* Season length */}
         <div>
-          <p className="text-white/40 text-xs font-black uppercase tracking-widest mb-2">How many weeks?</p>
+          <p className="text-white/60 text-xs font-black uppercase tracking-widest mb-2">How many weeks?</p>
           <div className="flex gap-2">
             {WEEK_OPTIONS.map(w => (
               <button
@@ -340,7 +340,7 @@ export default function PreSeason({ sport: initialSport, displayName, onStart, o
               </button>
             ))}
           </div>
-          <p className="text-white/30 text-xs mt-1.5 text-center">{lengthWeeks} weeks = {lengthWeeks} games</p>
+          <p className="text-white/55 text-xs mt-1.5 text-center">{lengthWeeks} weeks = {lengthWeeks} games</p>
           <p className="text-brand-orange/70 text-xs mt-2 text-center">
             💡 First time? We recommend starting with 4 or 8 weeks to learn the system.
           </p>
@@ -348,8 +348,8 @@ export default function PreSeason({ sport: initialSport, displayName, onStart, o
 
         {/* Season goals with preset library */}
         <div>
-          <p className="text-white/40 text-xs font-black uppercase tracking-widest mb-2">
-            Season Goals <span className="normal-case font-normal text-white/30">(optional)</span>
+          <p className="text-white/60 text-xs font-black uppercase tracking-widest mb-2">
+            Season Goals <span className="normal-case font-normal text-white/55">(optional)</span>
           </p>
           <div className="space-y-1.5 mb-3">
             {goals.map((g, i) => (
@@ -361,14 +361,14 @@ export default function PreSeason({ sport: initialSport, displayName, onStart, o
                 placeholder={`Goal ${i + 1}… e.g. "Run a 5K"`}
                 autoCorrect="off"
                 autoCapitalize="sentences"
-                className="w-full bg-white/10 border border-white/15 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-white/30 outline-none focus:border-brand-orange/50"
+                className="w-full bg-white/10 border border-white/15 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-white/55 outline-none focus:border-brand-orange/50"
               />
             ))}
           </div>
           {goals.length < 7 && (
             <button
               onClick={addGoalRow}
-              className="text-white/40 hover:text-white/70 text-sm font-semibold mb-3 transition-colors"
+              className="text-white/60 hover:text-white/70 text-sm font-semibold mb-3 transition-colors"
             >
               + Add goal
             </button>
@@ -378,7 +378,7 @@ export default function PreSeason({ sport: initialSport, displayName, onStart, o
           <div className="space-y-2">
             {GOAL_PRESETS.map(cat => (
               <div key={cat.category}>
-                <p className="text-white/30 text-[10px] font-black uppercase tracking-wider mb-1.5">{cat.category}</p>
+                <p className="text-white/55 text-[11px] font-black uppercase tracking-wider mb-1.5">{cat.category}</p>
                 <div className="flex flex-wrap gap-1.5">
                   {cat.goals.map(g => {
                     const selected = goals.includes(g)
@@ -404,8 +404,8 @@ export default function PreSeason({ sport: initialSport, displayName, onStart, o
 
         {/* Define success */}
         <div>
-          <p className="text-white/40 text-xs font-black uppercase tracking-widest mb-2">
-            What does success look like? <span className="normal-case font-normal text-white/30">(optional)</span>
+          <p className="text-white/60 text-xs font-black uppercase tracking-widest mb-2">
+            What does success look like? <span className="normal-case font-normal text-white/55">(optional)</span>
           </p>
           <textarea
             value={successDefinition}
@@ -414,14 +414,14 @@ export default function PreSeason({ sport: initialSport, displayName, onStart, o
             rows={2}
             autoCorrect="off"
             autoCapitalize="sentences"
-            className="w-full bg-white/10 border border-white/15 rounded-xl px-4 py-3 text-sm text-white placeholder:text-white/30 outline-none focus:border-brand-orange/50 resize-none"
+            className="w-full bg-white/10 border border-white/15 rounded-xl px-4 py-3 text-sm text-white placeholder:text-white/55 outline-none focus:border-brand-orange/50 resize-none"
           />
         </div>
 
         {/* Define obstacles */}
         <div>
-          <p className="text-white/40 text-xs font-black uppercase tracking-widest mb-2">
-            What might stop you? <span className="normal-case font-normal text-white/30">(optional)</span>
+          <p className="text-white/60 text-xs font-black uppercase tracking-widest mb-2">
+            What might stop you? <span className="normal-case font-normal text-white/55">(optional)</span>
           </p>
           <textarea
             value={obstacle}
@@ -430,7 +430,7 @@ export default function PreSeason({ sport: initialSport, displayName, onStart, o
             rows={2}
             autoCorrect="off"
             autoCapitalize="sentences"
-            className="w-full bg-white/10 border border-white/15 rounded-xl px-4 py-3 text-sm text-white placeholder:text-white/30 outline-none focus:border-brand-orange/50 resize-none"
+            className="w-full bg-white/10 border border-white/15 rounded-xl px-4 py-3 text-sm text-white placeholder:text-white/55 outline-none focus:border-brand-orange/50 resize-none"
           />
         </div>
 
@@ -446,7 +446,7 @@ export default function PreSeason({ sport: initialSport, displayName, onStart, o
           <span className="text-2xl flex-shrink-0">✝️</span>
           <div className="flex-1 min-w-0">
             <p className="text-white font-bold text-sm">Daily Bible Verse</p>
-            <p className="text-white/50 text-xs">Show a verse of encouragement each day</p>
+            <p className="text-white/65 text-xs">Show a verse of encouragement each day</p>
           </div>
           <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
             dailyBibleVerse ? 'border-indigo-400 bg-indigo-400' : 'border-white/30'
@@ -463,7 +463,7 @@ export default function PreSeason({ sport: initialSport, displayName, onStart, o
       <div className="pt-4 space-y-3">
         <div className="flex justify-between items-center">
           <StepDots current={6} />
-          <button onClick={() => setStep(5)} className="text-white/40 hover:text-white/70 text-sm font-semibold transition-colors px-3 py-2">
+          <button onClick={() => setStep(5)} className="text-white/60 hover:text-white/70 text-sm font-semibold transition-colors px-3 py-2">
             ← Back
           </button>
         </div>
@@ -524,7 +524,7 @@ function NavRow({
       <StepDots current={step} />
       <div className="flex items-center gap-3">
         {showBack && onBack && (
-          <button onClick={onBack} className="text-white/40 hover:text-white/70 text-sm font-semibold transition-colors px-3 py-2">
+          <button onClick={onBack} className="text-white/60 hover:text-white/70 text-sm font-semibold transition-colors px-3 py-2">
             ← Back
           </button>
         )}

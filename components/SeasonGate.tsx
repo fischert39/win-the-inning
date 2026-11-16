@@ -38,7 +38,7 @@ export default function SeasonGate({ sport: initialSport, displayName, onStart, 
 
         {/* How it works */}
         <div className="mb-8">
-          <p className="text-white/40 text-xs font-bold uppercase tracking-widest mb-3">How it works</p>
+          <p className="text-white/60 text-xs font-bold uppercase tracking-widest mb-3">How it works</p>
           <div className="grid grid-cols-2 gap-3">
             {[
               { icon: '🧠', label: 'Mind Out',   desc: 'Daily mental clarity task' },
@@ -46,10 +46,10 @@ export default function SeasonGate({ sport: initialSport, displayName, onStart, 
               { icon: '💪', label: 'Body Out',    desc: 'Physical health task' },
               { icon: '🏃', label: 'Score Runs',  desc: 'Complete your daily goals' },
             ].map(item => (
-              <div key={item.label} className="bg-white/5 border border-white/8 rounded-xl p-4">
+              <div key={item.label} className="bg-white/5 border border-white/10 rounded-xl p-4">
                 <span className="text-2xl block mb-2">{item.icon}</span>
                 <div className="text-white text-sm font-bold">{item.label}</div>
-                <div className="text-white/50 text-xs mt-0.5 leading-snug">{item.desc}</div>
+                <div className="text-white/65 text-xs mt-0.5 leading-snug">{item.desc}</div>
               </div>
             ))}
           </div>
@@ -57,11 +57,11 @@ export default function SeasonGate({ sport: initialSport, displayName, onStart, 
 
         {/* Win conditions */}
         <div className="bg-white/5 border border-white/10 rounded-xl p-5 mb-8">
-          <p className="text-white/40 text-xs font-bold uppercase tracking-widest mb-3">Win conditions</p>
+          <p className="text-white/60 text-xs font-bold uppercase tracking-widest mb-3">Win conditions</p>
           <div className="space-y-3 text-sm">
             <div className="flex items-start gap-3">
               <span className="text-brand-orange font-black flex-shrink-0">Win Inning</span>
-              <span className="text-white/60">3 outs (Mind + Spirit + Body) <span className="text-white/40">+</span> at least 1 run scored</span>
+              <span className="text-white/60">3 outs (Mind + Spirit + Body) <span className="text-white/60">+</span> at least 1 run scored</span>
             </div>
             <div className="flex items-start gap-3">
               <span className="text-yellow-400 font-black flex-shrink-0">Tie Inning</span>
@@ -80,7 +80,7 @@ export default function SeasonGate({ sport: initialSport, displayName, onStart, 
 
         {/* Sport selector */}
         <div className="mb-8">
-          <p className="text-white/40 text-xs font-bold uppercase tracking-widest mb-3">Choose your sport</p>
+          <p className="text-white/60 text-xs font-bold uppercase tracking-widest mb-3">Choose your sport</p>
           <div className="flex gap-3">
             {(['softball', 'baseball'] as Sport[]).map(s => (
               <button
@@ -110,7 +110,7 @@ export default function SeasonGate({ sport: initialSport, displayName, onStart, 
 
         <button
           onClick={onSignOut}
-          className="w-full mt-4 text-white/30 text-sm hover:text-white/60 transition-colors py-2"
+          className="w-full mt-4 text-white/55 text-sm hover:text-white/60 transition-colors py-2"
         >
           Sign out
         </button>

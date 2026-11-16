@@ -15,6 +15,7 @@ interface Props {
   inningsWon:    number
   inningsPlayed: number
   onPastSeasons: () => void
+  onEndSeason:   () => void
   onClearData:   () => void
 }
 
@@ -39,7 +40,7 @@ function CollapsibleCard({ icon, title, sub, children }: {
 }) {
   const [open, setOpen] = useState(false)
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+    <div className="bg-surface rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
       <button
         onClick={() => setOpen(o => !o)}
         className="w-full px-5 py-4 flex items-center justify-between"
@@ -47,12 +48,12 @@ function CollapsibleCard({ icon, title, sub, children }: {
         <div className="flex items-center gap-3">
           <span className="text-xl">{icon}</span>
           <div className="text-left">
-            <h2 className="font-black text-base text-brand-navy">{title}</h2>
-            <p className="text-slate-400 text-xs mt-0.5">{sub}</p>
+            <h2 className="font-black text-base text-ink">{title}</h2>
+            <p className="text-slate-500 text-xs mt-0.5">{sub}</p>
           </div>
         </div>
         <svg
-          className={`w-4 h-4 text-slate-400 transition-transform ${open ? 'rotate-180' : ''}`}
+          className={`w-4 h-4 text-slate-500 transition-transform ${open ? 'rotate-180' : ''}`}
           viewBox="0 0 16 16" fill="none"
         >
           <path d="M4 6l4 4 4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
@@ -65,7 +66,7 @@ function CollapsibleCard({ icon, title, sub, children }: {
 
 export default function StatsPage({
   season, record, profile, inningsWon, inningsPlayed,
-  onPastSeasons, onClearData,
+  onPastSeasons, onEndSeason, onClearData,
 }: Props) {
   const achievements = useMemo(() => computeAchievements(season), [season])
   const unlocked     = achievements.filter(a => a.unlocked).length
@@ -120,31 +121,31 @@ export default function StatsPage({
 
       {/* ── Season summary banner ── */}
       <div className="bg-brand-navy rounded-2xl p-5 text-white">
-        <p className="text-white/40 text-[10px] font-black uppercase tracking-widest mb-3">Current Season</p>
+        <p className="text-white/60 text-[11px] font-black uppercase tracking-widest mb-3">Current Season</p>
         <div className="grid grid-cols-2 gap-3 mb-3">
           <div className="text-center bg-white/5 rounded-xl py-3">
             <p className="text-2xl font-black tabular-nums">{record.wins}–{record.losses}</p>
-            <p className="text-white/40 text-[10px] mt-0.5">Game Record</p>
+            <p className="text-white/60 text-[11px] mt-0.5">Game Record</p>
             <p className="text-brand-green text-xs font-bold mt-0.5">{gameWinRate}% win rate</p>
           </div>
           <div className="text-center bg-white/5 rounded-xl py-3">
             <p className="text-2xl font-black tabular-nums">{inningsWon}/{inningsPlayed}</p>
-            <p className="text-white/40 text-[10px] mt-0.5">Innings Won</p>
+            <p className="text-white/60 text-[11px] mt-0.5">Innings Won</p>
             <p className="text-brand-orange text-xs font-bold mt-0.5">{inningWinRate}% win rate</p>
           </div>
         </div>
         <div className="grid grid-cols-3 gap-2">
           <div className="text-center bg-white/5 rounded-xl py-2.5">
             <p className="text-lg font-black tabular-nums">{pct(defDone, defTotal)}%</p>
-            <p className="text-white/40 text-[10px] mt-0.5">Defense</p>
+            <p className="text-white/60 text-[11px] mt-0.5">Defense</p>
           </div>
           <div className="text-center bg-white/5 rounded-xl py-2.5">
             <p className="text-lg font-black tabular-nums">{pct(completedGoals, totalGoals)}%</p>
-            <p className="text-white/40 text-[10px] mt-0.5">Goals Done</p>
+            <p className="text-white/60 text-[11px] mt-0.5">Goals Done</p>
           </div>
           <div className="text-center bg-white/5 rounded-xl py-2.5">
             <p className="text-lg font-black tabular-nums">{unlocked}/{achievements.length}</p>
-            <p className="text-white/40 text-[10px] mt-0.5">Badges</p>
+            <p className="text-white/60 text-[11px] mt-0.5">Badges</p>
           </div>
         </div>
       </div>
@@ -172,8 +173,8 @@ export default function StatsPage({
           ].map(({ label, done, total, color, emoji }) => (
             <div key={label}>
               <div className="flex justify-between mb-1.5">
-                <span className="text-sm font-bold text-brand-navy">{emoji} {label}</span>
-                <span className="text-xs text-slate-400 tabular-nums">{done}/{total}</span>
+                <span className="text-sm font-bold text-ink">{emoji} {label}</span>
+                <span className="text-xs text-slate-500 tabular-nums">{done}/{total}</span>
               </div>
               <Bar value={done} total={total} color={color} />
             </div>
@@ -181,12 +182,12 @@ export default function StatsPage({
 
           <div className="border-t border-slate-100 pt-4 grid grid-cols-3 gap-2">
             <div className="text-center">
-              <p className="text-brand-navy font-black text-base">{pct(defDone, defTotal)}%</p>
-              <p className="text-slate-400 text-[10px] mt-0.5">Overall</p>
+              <p className="text-ink font-black text-base">{pct(defDone, defTotal)}%</p>
+              <p className="text-slate-500 text-[11px] mt-0.5">Overall</p>
             </div>
             <div className="text-center">
-              <p className="text-brand-navy font-black text-base">{rainDelays}</p>
-              <p className="text-slate-400 text-[10px] mt-0.5">Rain Delays</p>
+              <p className="text-ink font-black text-base">{rainDelays}</p>
+              <p className="text-slate-500 text-[11px] mt-0.5">Rain Delays</p>
             </div>
           </div>
         </div>
@@ -203,8 +204,8 @@ export default function StatsPage({
           {/* Goal completion */}
           <div>
             <div className="flex justify-between mb-1.5">
-              <span className="text-sm font-bold text-brand-navy">Goal Completion</span>
-              <span className="text-xs text-slate-400 tabular-nums">{completedGoals}/{totalGoals}</span>
+              <span className="text-sm font-bold text-ink">Goal Completion</span>
+              <span className="text-xs text-slate-500 tabular-nums">{completedGoals}/{totalGoals}</span>
             </div>
             <Bar value={completedGoals} total={totalGoals} color="#FF6B35" />
           </div>
@@ -212,7 +213,7 @@ export default function StatsPage({
           {/* Hit distribution */}
           {hitTotal > 0 && (
             <div className="space-y-3">
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Hit Distribution</p>
+              <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Hit Distribution</p>
               {[
                 { label: '1B  Single', count: singles, color: '#2DC653' },
                 { label: '2B  Double', count: doubles, color: '#00B4D8' },
@@ -222,7 +223,7 @@ export default function StatsPage({
                 <div key={label}>
                   <div className="flex justify-between mb-1">
                     <span className="text-sm font-medium text-slate-700 font-mono">{label}</span>
-                    <span className="text-xs text-slate-400 tabular-nums">{count} &nbsp;({pct(count, hitTotal)}%)</span>
+                    <span className="text-xs text-slate-500 tabular-nums">{count} &nbsp;({pct(count, hitTotal)}%)</span>
                   </div>
                   <Bar value={count} total={hitTotal} color={color} />
                 </div>
@@ -239,8 +240,8 @@ export default function StatsPage({
               { label: 'Best Win Streak', value: `${bestStreak}` },
             ].map(s => (
               <div key={s.label} className="text-center bg-slate-50 rounded-xl py-3">
-                <p className="text-brand-navy font-black text-base">{s.value}</p>
-                <p className="text-slate-400 text-[10px] mt-0.5">{s.label}</p>
+                <p className="text-ink font-black text-base">{s.value}</p>
+                <p className="text-slate-500 text-[11px] mt-0.5">{s.label}</p>
               </div>
             ))}
           </div>
@@ -250,13 +251,28 @@ export default function StatsPage({
       {/* ── Past Seasons ── */}
       <button
         onClick={onPastSeasons}
-        className="w-full bg-white rounded-2xl shadow-sm border border-slate-100 px-5 py-4 flex items-center justify-between hover:bg-slate-50 transition-colors"
+        className="w-full bg-surface rounded-2xl shadow-sm border border-slate-100 px-5 py-4 flex items-center justify-between hover:bg-slate-50 transition-colors"
       >
         <div className="flex items-center gap-3">
           <span className="text-xl">📋</span>
           <div className="text-left">
-            <p className="font-black text-base text-brand-navy">Past Seasons</p>
-            <p className="text-slate-400 text-xs mt-0.5">View your full history</p>
+            <p className="font-black text-base text-ink">Past Seasons</p>
+            <p className="text-slate-500 text-xs mt-0.5">View your full history</p>
+          </div>
+        </div>
+        <span className="text-slate-300 text-lg">›</span>
+      </button>
+
+      {/* ── End Season ── */}
+      <button
+        onClick={onEndSeason}
+        className="w-full bg-surface rounded-2xl shadow-sm border border-slate-100 px-5 py-4 flex items-center justify-between hover:border-brand-orange/40 transition-colors"
+      >
+        <div className="flex items-center gap-3">
+          <span className="text-xl">🏁</span>
+          <div className="text-left">
+            <p className="font-black text-base text-ink">End Season Early</p>
+            <p className="text-slate-500 text-xs mt-0.5">Save this record to your history and start fresh</p>
           </div>
         </div>
         <span className="text-slate-300 text-lg">›</span>
@@ -265,13 +281,13 @@ export default function StatsPage({
       {/* ── Clear All Data ── */}
       <button
         onClick={onClearData}
-        className="w-full bg-white rounded-2xl shadow-sm border border-red-100 px-5 py-4 flex items-center justify-between hover:bg-red-50 transition-colors"
+        className="w-full bg-surface rounded-2xl shadow-sm border border-red-100 px-5 py-4 flex items-center justify-between hover:bg-red-50 transition-colors"
       >
         <div className="flex items-center gap-3">
           <span className="text-xl">🗑️</span>
           <div className="text-left">
             <p className="font-black text-base text-red-500">Clear All Data</p>
-            <p className="text-slate-400 text-xs mt-0.5">Permanently delete all seasons &amp; stats</p>
+            <p className="text-slate-500 text-xs mt-0.5">Permanently delete all seasons &amp; stats</p>
           </div>
         </div>
         <span className="text-red-300 text-lg">›</span>

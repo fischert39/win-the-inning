@@ -10,10 +10,10 @@ interface Props {
 
 export default function EndOfDay({ inning, onSaveReflection, onSaveFutureGoals }: Props) {
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+    <div className="bg-surface rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
       <div className="px-5 pt-5 pb-3">
-        <h2 className="text-brand-navy font-black text-base">📝 End of Inning</h2>
-        <p className="text-slate-400 text-xs mt-0.5">Reflect on today and set your vision for tomorrow</p>
+        <h2 className="text-ink font-black text-base">📝 End of Inning</h2>
+        <p className="text-slate-500 text-xs mt-0.5">Reflect on today and set your vision for tomorrow</p>
       </div>
 
       <div className="px-5 pb-5 grid sm:grid-cols-2 gap-4">
@@ -28,7 +28,7 @@ export default function EndOfDay({ inning, onSaveReflection, onSaveFutureGoals }
             placeholder="How did today go? What did you learn? What are you grateful for?"
             autoCorrect="off"
             autoCapitalize="sentences"
-            className="w-full text-sm text-brand-navy placeholder:text-slate-300 bg-slate-50 border border-slate-100 rounded-xl p-3 outline-none focus:border-brand-orange focus:bg-white transition-all"
+            className="w-full text-sm text-ink placeholder:text-slate-400 bg-slate-50 border border-slate-100 rounded-xl p-3 outline-none focus:border-brand-orange focus:bg-surface transition-all"
           />
         </div>
 
@@ -43,7 +43,7 @@ export default function EndOfDay({ inning, onSaveReflection, onSaveFutureGoals }
             placeholder="What do you want to accomplish tomorrow?"
             autoCorrect="off"
             autoCapitalize="sentences"
-            className="w-full text-sm text-brand-navy placeholder:text-slate-300 bg-slate-50 border border-slate-100 rounded-xl p-3 outline-none focus:border-brand-orange focus:bg-white transition-all"
+            className="w-full text-sm text-ink placeholder:text-slate-400 bg-slate-50 border border-slate-100 rounded-xl p-3 outline-none focus:border-brand-orange focus:bg-surface transition-all"
           />
         </div>
       </div>
