@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
 import type { NudgePreset } from '@/types'
 
 interface Props {
@@ -19,8 +18,7 @@ const PRESETS: { key: NudgePreset; label: string; emoji: string }[] = [
   { key: 'nice_work',    label: 'Nice work!',   emoji: '🏆' },
 ]
 
-export default function NudgeModal({ teamId, toUserId, toName, onSent, onClose }: Props) {
-  const supabase = createClient()
+export default function NudgeModal({ toUserId, toName, onSent, onClose }: Props) {
   const [selected, setSelected] = useState<NudgePreset | null>(null)
   const [custom,   setCustom]   = useState('')
   const [loading,  setLoading]  = useState(false)
@@ -31,32 +29,27 @@ export default function NudgeModal({ teamId, toUserId, toName, onSent, onClose }
     setLoading(true)
     setError(null)
 
-    const { error: insertErr } = await supabase.from('nudges').insert({
-      team_id:        teamId,
-      from_user_id:   (await supabase.auth.getUser()).data.user!.id,
-      to_user_id:     toUserId,
-      preset_key:     selected,
-      custom_message: custom.trim() || null,
-    })
-
-    if (insertErr) {
-      setLoading(false)
-      setError('Failed to send — please try again.')
-      return
-    }
-
-    // Fire push notification (best-effort, don't block on it)
-    fetch('/api/nudge', {
-      method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({
-        to_user_id:     toUserId,
-        preset_key:     selected,
-        custom_message: custom.trim() || null,
-      }),
-    }).catch(() => {})
+    // The server checks the daily limit, records the nudge and sends the push.
+    let res: Response | null = null
+    try {
+      res = await fetch('/api/nudge', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({
+          to_user_id:     toUserId,
+          preset_key:     selected,
+          custom_message: custom.trim() || null,
+        }),
+      })
+    } catch { /* offline — handled below */ }
 
     setLoading(false)
+    if (!res?.ok) {
+      setError(res?.status === 429
+        ? "You've hit today's nudge limit — try again tomorrow."
+        : 'Failed to send — please try again.')
+      return
+    }
     onSent()
   }
 
