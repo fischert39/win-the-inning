@@ -45,5 +45,7 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|auth/callback|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)'],
+  // manifest.json and sw.js must load while signed out, or the login page can't
+  // register the service worker or offer "install".
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|manifest.json|sw.js|auth/callback|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)'],
 }

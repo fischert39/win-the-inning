@@ -20,19 +20,21 @@ export async function POST(req: Request) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const body = await req.json() as {
-    to_user_id:     string
-    preset_key:     string
-    custom_message: string | null
+  let body: { to_user_id?: unknown; preset_key?: unknown; custom_message?: unknown }
+  try { body = await req.json() } catch {
+    return NextResponse.json({ error: 'Invalid request' }, { status: 400 })
   }
-  const { to_user_id, preset_key } = body
+  const to_user_id = body?.to_user_id
+  const preset_key = body?.preset_key
 
-  const presetLabel = PRESET_LABELS[preset_key]
-  if (typeof to_user_id !== 'string' || !to_user_id || !presetLabel) {
+  const presetLabel = typeof preset_key === 'string' && Object.hasOwn(PRESET_LABELS, preset_key)
+    ? PRESET_LABELS[preset_key]
+    : undefined
+  if (typeof to_user_id !== 'string' || !to_user_id || to_user_id === user.id || !presetLabel) {
     return NextResponse.json({ error: 'Invalid request' }, { status: 400 })
   }
   const custom_message = typeof body.custom_message === 'string'
-    ? body.custom_message.trim().slice(0, MAX_MESSAGE_LENGTH)
+    ? body.custom_message.trim().slice(0, MAX_MESSAGE_LENGTH) || null
     : null
 
   const admin = createAdminClient()
@@ -49,16 +51,27 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Recipient is not on your team' }, { status: 403 })
   }
 
-  // Per-sender daily cap (the nudges row is inserted by the client before this call).
+  // Per-sender daily cap. The row is written here, not by the browser, so the
+  // count can't be sidestepped by calling this endpoint directly.
   const dayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
-  const { count } = await admin
+  const { count, error: countErr } = await admin
     .from('nudges')
     .select('id', { count: 'exact', head: true })
     .eq('from_user_id', user.id)
     .gte('created_at', dayAgo)
-  if ((count ?? 0) > MAX_NUDGES_PER_DAY) {
+  if (countErr) return NextResponse.json({ error: 'Could not send nudge' }, { status: 500 })
+  if ((count ?? 0) >= MAX_NUDGES_PER_DAY) {
     return NextResponse.json({ error: 'Daily nudge limit reached' }, { status: 429 })
   }
+
+  const { error: insertErr } = await admin.from('nudges').insert({
+    team_id:      senderTeam,
+    from_user_id: user.id,
+    to_user_id,
+    preset_key,
+    custom_message,
+  })
+  if (insertErr) return NextResponse.json({ error: 'Could not send nudge' }, { status: 500 })
 
   // Sender identity comes from their profile, never from the request body.
   const { data: sender } = await admin

@@ -25,6 +25,8 @@ Deploy order rule: **apply a migration before pushing code that depends on it.**
 | 028_dedupe_innings_unique.sql | ✅ Sep 15 2026 | Removed 11 duplicate innings + 1 duplicate week from two past seasons |
 | 029_team_scoring.sql | ✅ Sep 15 2026 | Replaces 019; team achievements + scoreboards |
 | 030_team_security.sql | ✅ Oct 4 2026 | Closes team-takeover hole; team admin always kept |
+| 031_join_request_fix.sql | ✅ Nov 16 2026 | Approving a join request requires a real pending request. Apply any time |
+| 032_nudges_server_only.sql | ⏳ not yet | Nudges written only by /api/nudge. **Apply AFTER the matching code is live** (exception to the rule above) |
 
 Checking what's really there beats trusting this table — e.g. in the SQL editor:
 `select proname from pg_proc where pronamespace = 'public'::regnamespace order by 1;`

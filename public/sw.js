@@ -81,13 +81,18 @@ self.addEventListener('push', e => {
 
 self.addEventListener('notificationclick', e => {
   e.notification.close()
-  const url = e.notification.data?.url ?? '/'
+  const target = new URL(e.notification.data?.url ?? '/', self.location.origin).href
   e.waitUntil(
-    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {
-      for (const client of list) {
-        if (client.url === url && 'focus' in client) return client.focus()
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(async list => {
+      // Reuse a window that's already open on the app, pointing it at the target.
+      const client = list.find(c => c.url.startsWith(self.location.origin) && 'focus' in c)
+      if (client) {
+        if (client.url !== target && 'navigate' in client) {
+          try { await client.navigate(target) } catch { /* uncontrolled client — just focus */ }
+        }
+        return client.focus()
       }
-      if (self.clients.openWindow) return self.clients.openWindow(url)
+      if (self.clients.openWindow) return self.clients.openWindow(target)
     })
   )
 })

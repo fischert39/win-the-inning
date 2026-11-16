@@ -123,6 +123,15 @@ export default function AppPage() {
     } catch { /* localStorage unavailable */ }
   }, [loading, user])
 
+  // Deep links: /?tab=social (nudge notifications, after joining a team).
+  useEffect(() => {
+    const tab = new URLSearchParams(window.location.search).get('tab')
+    if (tab === 'social' || tab === 'stats') {
+      setActiveTab(tab)
+      window.history.replaceState(null, '', window.location.pathname)
+    }
+  }, [])
+
   function closeHowTo() {
     try { localStorage.setItem('wti_onboarded', '1') } catch { /* ignore */ }
     setShowHowTo(false)
